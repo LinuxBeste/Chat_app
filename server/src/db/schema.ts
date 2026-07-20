@@ -133,3 +133,20 @@ export const notifications = pgTable("notifications", {
   isRead: text("is_read").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const totpSecrets = pgTable("totp_secrets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull().unique(),
+  secret: text("secret").notNull(),
+  verified: text("verified").default("false").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const loginHistory = pgTable("login_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  success: text("success").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

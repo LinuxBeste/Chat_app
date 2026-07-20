@@ -15,6 +15,7 @@ import privacyRoutes from "./routes/privacy.js"
 import productivityRoutes from "./routes/productivity.js"
 import { errorHandler } from "./middleware/error-handler.js"
 import developerRoutes from "./routes/developer.js"
+import securityRoutes from "./routes/security.js"
 import uploadRoutes from "./routes/uploads.js"
 import notificationRoutes from "./routes/notifications.js"
 
@@ -41,6 +42,7 @@ app.use(`${config.apiPrefix}/privacy`, privacyRoutes)
 app.use(`${config.apiPrefix}/productivity`, productivityRoutes)
 app.use(`${config.apiPrefix}/developer`, developerRoutes)
 app.use(`${config.apiPrefix}/notifications`, notificationRoutes)
+app.use(`${config.apiPrefix}/security`, securityRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 
 app.use(errorHandler)
