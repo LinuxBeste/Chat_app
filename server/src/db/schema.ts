@@ -104,3 +104,11 @@ export const mutes = pgTable("mutes", {
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const pinnedMessages = pgTable("pinned_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  messageId: uuid("message_id").references(() => messages.id).notNull(),
+  pinnedBy: uuid("pinned_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
