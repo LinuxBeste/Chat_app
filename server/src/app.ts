@@ -16,6 +16,7 @@ import productivityRoutes from "./routes/productivity.js"
 import { errorHandler } from "./middleware/error-handler.js"
 import developerRoutes from "./routes/developer.js"
 import uploadRoutes from "./routes/uploads.js"
+import notificationRoutes from "./routes/notifications.js"
 
 const app: Express = express()
 
@@ -39,6 +40,7 @@ app.use(`${config.apiPrefix}/moderation`, moderationRoutes)
 app.use(`${config.apiPrefix}/privacy`, privacyRoutes)
 app.use(`${config.apiPrefix}/productivity`, productivityRoutes)
 app.use(`${config.apiPrefix}/developer`, developerRoutes)
+app.use(`${config.apiPrefix}/notifications`, notificationRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 
 app.use(errorHandler)

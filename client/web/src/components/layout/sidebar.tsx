@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react"
+import { useNotificationCount } from "../../lib/notification-context"
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", active: true },
@@ -30,6 +31,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed }: SidebarProps) {
+  const { unreadCount } = useNotificationCount()
+
   return (
     <aside
       aria-label="Main navigation"
@@ -54,13 +57,18 @@ export function Sidebar({ collapsed }: SidebarProps) {
             aria-current={item.active ? "page" : undefined}
             aria-label={item.label}
             className={cn(
-              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary",
+              "relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary",
               item.active
                 ? "bg-accent/10 text-accent"
                 : "text-text-secondary hover:text-text-primary hover:bg-white/5",
             )}
           >
             <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            {item.label === "Notifications" && unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
             {!collapsed && <span>{item.label}</span>}
           </button>
         ))}

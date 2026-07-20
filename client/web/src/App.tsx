@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "./lib/auth-context"
 import { ThemeProvider } from "./lib/theme-context"
+import { NotificationProvider } from "./lib/notification-context"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
 import { ChatWindow } from "./components/chat/chat-window"
 import { LoginPage } from "./components/auth/login-page"
@@ -28,7 +29,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   )

@@ -120,3 +120,14 @@ export const webhooks = pgTable("webhooks", {
   events: text("events").array().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body"),
+  data: text("data"),
+  isRead: text("is_read").default("false").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
