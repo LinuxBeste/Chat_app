@@ -94,6 +94,20 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
   res.json({ ...conv, members })
 })
 
+router.put("/:id", authGuard, async (req: Request, res: Response) => {
+  const { name } = req.body
+  if (!name || typeof name !== "string") {
+    res.status(400).json({ error: "Name is required" })
+    return
+  }
+  const [updated] = await db
+    .update(conversations)
+    .set({ name })
+    .where(eq(conversations.id, req.params.id as string))
+    .returning()
+  res.json(updated)
+})
+
 router.get("/:id/messages", authGuard, async (req: Request, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100)
   const offset = parseInt(req.query.offset as string) || 0
