@@ -112,3 +112,11 @@ export const pinnedMessages = pgTable("pinned_messages", {
   pinnedBy: uuid("pinned_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const webhooks = pgTable("webhooks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  url: text("url").notNull(),
+  events: text("events").array().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

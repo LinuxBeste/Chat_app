@@ -13,6 +13,7 @@ import friendRoutes from "./routes/friends.js"
 import moderationRoutes from "./routes/moderation.js"
 import privacyRoutes from "./routes/privacy.js"
 import productivityRoutes from "./routes/productivity.js"
+import developerRoutes from "./routes/developer.js"
 import uploadRoutes from "./routes/uploads.js"
 
 const app: Express = express()
@@ -36,6 +37,7 @@ app.use(`${config.apiPrefix}/friends`, friendRoutes)
 app.use(`${config.apiPrefix}/moderation`, moderationRoutes)
 app.use(`${config.apiPrefix}/privacy`, privacyRoutes)
 app.use(`${config.apiPrefix}/productivity`, productivityRoutes)
+app.use(`${config.apiPrefix}/developer`, developerRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 
 export default app
