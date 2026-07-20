@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   avatar: text("avatar"),
   bio: text("bio"),
+  customStatus: text("custom_status"),
   status: userStatusEnum("status").default("offline").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })

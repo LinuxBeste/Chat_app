@@ -6,6 +6,9 @@ interface User {
   id: string
   username: string
   email: string
+  status?: string
+  customStatus?: string
+  displayName?: string | null
 }
 
 interface AuthState {

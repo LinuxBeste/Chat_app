@@ -2,6 +2,7 @@ import { Search, ChevronDown, PanelLeftClose, PanelLeft, Moon, Sun } from "lucid
 import { Avatar } from "../ui/avatar"
 import { Input } from "../ui/input"
 import { useTheme } from "../../lib/theme-context"
+import { StatusSelector } from "../presence/status-selector"
 
 interface TopbarProps {
   collapsed: boolean
@@ -37,7 +38,7 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
           <Avatar size="sm" fallback="JD" />
           <div className="hidden sm:block">
             <p className="text-sm font-medium text-text-primary">John Doe</p>
-            <p className="text-xs text-text-muted">Online</p>
+            <StatusSelector />
           </div>
           <ChevronDown className="h-4 w-4 text-text-muted" />
         </div>
