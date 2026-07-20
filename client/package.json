@@ -1,0 +1,9 @@
+{
+  "name": "chat-app-client",
+  "private": true,
+  "scripts": {
+    "web": "pnpm --filter web dev",
+    "mobile": "pnpm --filter mobile start",
+    "shared": "pnpm --filter shared build"
+  }
+}

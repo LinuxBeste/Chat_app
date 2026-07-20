@@ -45,6 +45,15 @@ coverage/
 # Metro bundler
 .metro-health-check*
 
+# Expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
 # Misc
 *.ts.js
 
