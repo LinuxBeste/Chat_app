@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# React Native
+ios/Pods/
+ios/build/
+android/.gradle/
+android/app/build/
+android/build/
+*.hprof
+*.keystore
+!debug.keystore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Metro bundler
+.metro-health-check*
+
+# Misc
+*.ts.js
+
+# Notes
