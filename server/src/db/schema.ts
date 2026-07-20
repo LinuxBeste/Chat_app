@@ -76,3 +76,31 @@ export const messageReads = pgTable("message_reads", {
   userId: uuid("user_id").references(() => users.id).notNull(),
   readAt: timestamp("read_at").defaultNow().notNull(),
 })
+
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reportedBy: uuid("reported_by").references(() => users.id).notNull(),
+  targetUserId: uuid("target_user_id").references(() => users.id),
+  targetMessageId: uuid("target_message_id").references(() => messages.id),
+  reason: text("reason").notNull(),
+  status: text("status").default("open").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const bans = pgTable("bans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  bannedBy: uuid("banned_by").references(() => users.id).notNull(),
+  reason: text("reason"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const mutes = pgTable("mutes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
