@@ -64,3 +64,15 @@ export const refreshTokens = pgTable("refresh_tokens", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const blocks = pgTable("blocks", {
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  blockedUserId: uuid("blocked_user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const messageReads = pgTable("message_reads", {
+  messageId: uuid("message_id").references(() => messages.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  readAt: timestamp("read_at").defaultNow().notNull(),
+})
