@@ -2,22 +2,23 @@ import { cn } from "../../lib/utils"
 import {
   MessageSquare,
   Users,
-  Hash,
   Phone,
   Bell,
+  FileText,
   User,
   Settings,
   LogOut,
 } from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
 import { useNav } from "./dashboard-layout"
+import type { View } from "./dashboard-layout"
 
-const navItems = [
-  { icon: MessageSquare, label: "Messages", active: true },
-  { icon: Users, label: "Groups", active: false },
-  { icon: Hash, label: "Channels", active: false },
-  { icon: Phone, label: "Calls", active: false },
-  { icon: Bell, label: "Notifications", active: false },
+const navItems: { icon: any; label: string; view: View }[] = [
+  { icon: MessageSquare, label: "Messages", view: "chat" },
+  { icon: Users, label: "Groups", view: "groups" },
+  { icon: Phone, label: "Calls", view: "calls" },
+  { icon: FileText, label: "Files", view: "files" },
+  { icon: Bell, label: "Notifications", view: "notifications" },
 ]
 
 const bottomItems = [
@@ -33,8 +34,9 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const { unreadCount } = useNotificationCount()
-  const { setView } = useNav()
+  const { view, setView } = useNav()
 
+  const handleNavClick = (v: View) => setView(v)
   const handleBottomClick = (label: string) => {
     if (label === "Profile") setView("profile")
   }
@@ -60,11 +62,12 @@ export function Sidebar({ collapsed }: SidebarProps) {
         {navItems.map((item) => (
           <button
             key={item.label}
-            aria-current={item.active ? "page" : undefined}
+            onClick={() => handleNavClick(item.view)}
+            aria-current={view === item.view ? "page" : undefined}
             aria-label={item.label}
             className={cn(
               "relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary",
-              item.active
+              view === item.view
                 ? "bg-accent/10 text-accent"
                 : "text-text-secondary hover:text-text-primary hover:bg-white/5",
             )}

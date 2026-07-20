@@ -3,8 +3,9 @@ import { Sidebar } from "./sidebar"
 import { Topbar } from "./topbar"
 import { ChatWindow } from "../chat/chat-window"
 import { ProfilePage } from "../profile/profile-page"
+import { FilesPage } from "../files/files-page"
 
-type View = "chat" | "profile"
+export type View = "chat" | "profile" | "files" | "groups" | "calls" | "notifications"
 
 interface NavContextValue {
   view: View
@@ -34,6 +35,7 @@ export function DashboardLayout() {
           <main className="flex-1 overflow-hidden rounded-[32px] bg-bg-primary m-3">
             {view === "chat" && <ChatWindow />}
             {view === "profile" && <ProfilePage />}
+            {view === "files" && <FilesPage />}
           </main>
         </div>
       </div>

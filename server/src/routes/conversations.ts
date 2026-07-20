@@ -4,7 +4,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
-import { conversations, participants, messages, users } from "../db/schema.js"
+import { conversations, participants, messages, users, attachments } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 
 const router: RouterType = Router()
@@ -120,6 +120,36 @@ router.get("/:id/messages", authGuard, async (req: Request, res: Response) => {
     .offset(offset)
 
   res.json(msgs.reverse())
+})
+
+router.get("/:id/files", authGuard, async (req: Request, res: Response) => {
+  const fileMsgs = await db
+    .select({
+      id: messages.id,
+      content: messages.content,
+      type: messages.type,
+      createdAt: messages.createdAt,
+      sender: { username: users.username },
+      attachment: {
+        url: attachments.url,
+        filename: attachments.filename,
+        mimeType: attachments.mimeType,
+        size: attachments.size,
+      },
+    })
+    .from(messages)
+    .innerJoin(users, eq(users.id, messages.senderId))
+    .leftJoin(attachments, eq(attachments.messageId, messages.id))
+    .where(
+      and(
+        eq(messages.conversationId, req.params.id as string),
+        eq(messages.type, "file"),
+      ),
+    )
+    .orderBy(desc(messages.createdAt))
+    .limit(50)
+
+  res.json(fileMsgs.filter((m) => m.attachment))
 })
 
 export default router
