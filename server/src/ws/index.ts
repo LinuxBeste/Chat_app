@@ -46,90 +46,102 @@ export function createWSServer(server: import("http").Server) {
           const userId = event.callerId ?? event.userId
           if (userId) sendToUser(userId, event)
         }
-      } catch { /* ignore malformed */ }
+      } catch (redisErr) {
+        console.error("Redis message handler error:", redisErr)
+      }
     })
   }
 
   wss.on("connection", (ws: WebSocket, req: HttpMessage) => {
-    const user = authenticate(req)
-    if (!user) {
-      ws.send(JSON.stringify({ type: "error", error: "Authentication required" }))
-      ws.close()
-      return
-    }
+    let authenticated = false
+    try {
+      const user = authenticate(req)
+      if (!user) {
+        ws.send(JSON.stringify({ type: "error", error: "Authentication required" }))
+        ws.close()
+        return
+      }
 
-    if (!clients.has(user.userId)) {
-      clients.set(user.userId, new Set())
-    }
-    clients.get(user.userId)!.add(ws)
+      authenticated = true
 
-    updatePresence(user.userId, "online")
-    broadcast({ type: "presence:update", userId: user.userId, status: "online" })
+      if (!clients.has(user.userId)) {
+        clients.set(user.userId, new Set())
+      }
+      clients.get(user.userId)!.add(ws)
 
-    ws.send(JSON.stringify({ type: "connected", userId: user.userId }))
+      updatePresence(user.userId, "online")
+      broadcast({ type: "presence:update", userId: user.userId, status: "online" })
 
-    ws.on("message", async (data) => {
-      try {
-        const msg: IncomingMessage = JSON.parse(data.toString())
+      ws.send(JSON.stringify({ type: "connected", userId: user.userId }))
 
-        switch (msg.type) {
-          case "message:send":
-            await handleSendMessage(ws, msg as any, user.userId, user.username)
-            break
-          case "message:typing":
-            await handleTyping(ws, msg as any, user.userId)
-            break
-          case "presence:status":
-            await updatePresence(user.userId, (msg as any).status)
-            broadcast({ type: "presence:update", userId: user.userId, status: (msg as any).status })
-            break
-          case "call:offer": {
-            const evt = await handleCallOffer(msg as any, user.userId)
-            if (evt) ws.send(JSON.stringify(evt))
-            break
+      ws.on("message", async (data) => {
+        try {
+          const msg: IncomingMessage = JSON.parse(data.toString())
+
+          switch (msg.type) {
+            case "message:send":
+              await handleSendMessage(ws, msg as any, user.userId, user.username)
+              break
+            case "message:typing":
+              await handleTyping(ws, msg as any, user.userId)
+              break
+            case "presence:status":
+              await updatePresence(user.userId, (msg as any).status)
+              broadcast({ type: "presence:update", userId: user.userId, status: (msg as any).status })
+              break
+            case "call:offer": {
+              const evt = await handleCallOffer(msg as any, user.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "call:answer": {
+              const evt = await handleCallAnswer(msg as any, user.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "call:ice-candidate": {
+              const evt = await handleCallIceCandidate(msg as any, user.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "call:end": {
+              const evt = handleCallEnd(msg as any, user.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            default:
+              ws.send(JSON.stringify({ type: "error", error: `Unknown message type: ${msg.type}` }))
           }
-          case "call:answer": {
-            const evt = await handleCallAnswer(msg as any, user.userId)
-            if (evt) ws.send(JSON.stringify(evt))
-            break
-          }
-          case "call:ice-candidate": {
-            const evt = await handleCallIceCandidate(msg as any, user.userId)
-            if (evt) ws.send(JSON.stringify(evt))
-            break
-          }
-          case "call:end": {
-            const evt = handleCallEnd(msg as any, user.userId)
-            if (evt) ws.send(JSON.stringify(evt))
-            break
-          }
-          default:
-            ws.send(JSON.stringify({ type: "error", error: `Unknown message type: ${msg.type}` }))
+        } catch (parseErr) {
+          ws.send(JSON.stringify({ type: "error", error: "Invalid message format" }))
         }
-      } catch {
-        ws.send(JSON.stringify({ type: "error", error: "Invalid message format" }))
-      }
-    })
+      })
 
-    ws.on("close", () => {
-      const userSockets = clients.get(user.userId)
-      if (userSockets) {
-        userSockets.delete(ws)
-        if (userSockets.size === 0) {
-          clients.delete(user.userId)
-          updatePresence(user.userId, "offline")
-          broadcast({ type: "presence:update", userId: user.userId, status: "offline" })
+      ws.on("close", () => {
+        const userSockets = clients.get(user.userId)
+        if (userSockets) {
+          userSockets.delete(ws)
+          if (userSockets.size === 0) {
+            clients.delete(user.userId)
+            updatePresence(user.userId, "offline")
+            broadcast({ type: "presence:update", userId: user.userId, status: "offline" })
+          }
         }
-      }
-    })
+      })
 
-    const interval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.ping()
-      }
-    }, config.ws.heartbeatInterval)
+      const interval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.ping()
+        }
+      }, config.ws.heartbeatInterval)
 
-    ws.on("close", () => clearInterval(interval))
+      ws.on("close", () => clearInterval(interval))
+    } catch (err) {
+      console.error("WebSocket connection error:", err)
+      if (!authenticated) {
+        ws.close(1011, "Internal server error")
+      }
+    }
   })
 
   return wss

@@ -9,21 +9,26 @@ import { eq, and } from "drizzle-orm"
 const router: ReturnType<typeof Router> = Router()
 
 const adminGuard = async (req: Request, res: Response, next: () => void) => {
-  const convId = req.params.conversationId || req.body.conversationId
-  if (!convId) {
-    res.status(400).json({ error: "conversationId required" })
-    return
+  try {
+    const convId = req.params.conversationId || req.body.conversationId
+    if (!convId) {
+      res.status(400).json({ error: "conversationId required" })
+      return
+    }
+    const membership = await db
+      .select()
+      .from(participants)
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, req.user!.userId)))
+      .limit(1)
+    if (!membership.length || !["admin", "owner"].includes(membership[0].role)) {
+      res.status(403).json({ error: "Admin access required" })
+      return
+    }
+    next()
+  } catch (err) {
+    console.error("Admin guard error:", err)
+    res.status(500).json({ error: "Internal server error" })
   }
-  const membership = await db
-    .select()
-    .from(participants)
-    .where(and(eq(participants.conversationId, convId), eq(participants.userId, req.user!.userId)))
-    .limit(1)
-  if (!membership.length || !["admin", "owner"].includes(membership[0].role)) {
-    res.status(403).json({ error: "Admin access required" })
-    return
-  }
-  next()
 }
 
 // --- Reports ---

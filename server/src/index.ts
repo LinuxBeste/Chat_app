@@ -23,6 +23,15 @@ async function main() {
 
   process.on("SIGINT", shutdown)
   process.on("SIGTERM", shutdown)
+
+  process.on("uncaughtException", (err) => {
+    console.error("[uncaughtException]", err)
+    shutdown()
+  })
+
+  process.on("unhandledRejection", (reason) => {
+    console.error("[unhandledRejection]", reason)
+  })
 }
 
 main().catch((err) => {

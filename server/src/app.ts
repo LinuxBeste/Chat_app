@@ -13,6 +13,7 @@ import friendRoutes from "./routes/friends.js"
 import moderationRoutes from "./routes/moderation.js"
 import privacyRoutes from "./routes/privacy.js"
 import productivityRoutes from "./routes/productivity.js"
+import { errorHandler } from "./middleware/error-handler.js"
 import developerRoutes from "./routes/developer.js"
 import uploadRoutes from "./routes/uploads.js"
 
@@ -39,5 +40,7 @@ app.use(`${config.apiPrefix}/privacy`, privacyRoutes)
 app.use(`${config.apiPrefix}/productivity`, productivityRoutes)
 app.use(`${config.apiPrefix}/developer`, developerRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
+
+app.use(errorHandler)
 
 export default app
