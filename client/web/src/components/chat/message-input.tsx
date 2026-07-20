@@ -1,8 +1,19 @@
 import { useState } from "react"
 import { Send, Paperclip, Smile } from "lucide-react"
 
-export function MessageInput() {
+interface MessageInputProps {
+  conversationId: string
+  onSend: (content: string) => void
+}
+
+export function MessageInput({ conversationId: _conversationId, onSend }: MessageInputProps) {
   const [value, setValue] = useState("")
+
+  const handleSend = () => {
+    if (!value.trim()) return
+    onSend(value.trim())
+    setValue("")
+  }
 
   return (
     <div className="flex items-center gap-3 border-t border-border px-4 py-3">
@@ -15,10 +26,12 @@ export function MessageInput() {
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSend()}
         placeholder="Type a message..."
         className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
       />
       <button
+        onClick={handleSend}
         className="flex h-9 w-9 items-center justify-center rounded-2xl bg-accent text-white hover:bg-accent-hover transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         disabled={!value.trim()}
       >
