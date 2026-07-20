@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useAuth } from "../../lib/auth-context"
+import { Eye, EyeOff } from "lucide-react"
 
 export function LoginPage() {
   const { login, register } = useAuth()
@@ -7,6 +8,7 @@ export function LoginPage() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,17 +61,25 @@ export function LoginPage() {
               required
             />
           </div>
-          <div>
+          <div className="relative">
             <label htmlFor="password" className="sr-only">Password</label>
             <input
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
-              className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
+              className="w-full h-10 rounded-2xl border border-border bg-bg-primary pr-10 px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
           {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
           <button

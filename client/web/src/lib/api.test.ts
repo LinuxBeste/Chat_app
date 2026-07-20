@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { api, setTokens, clearTokens } from "./api"
+import { api, setTokens } from "./api"
 
 describe("api", () => {
   beforeEach(() => {
