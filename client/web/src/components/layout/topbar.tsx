@@ -1,6 +1,7 @@
-import { Search, ChevronDown, PanelLeftClose, PanelLeft } from "lucide-react"
+import { Search, ChevronDown, PanelLeftClose, PanelLeft, Moon, Sun } from "lucide-react"
 import { Avatar } from "../ui/avatar"
 import { Input } from "../ui/input"
+import { useTheme } from "../../lib/theme-context"
 
 interface TopbarProps {
   collapsed: boolean
@@ -8,6 +9,8 @@ interface TopbarProps {
 }
 
 export function Topbar({ collapsed, onToggle }: TopbarProps) {
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border bg-bg-secondary px-6">
       <button
@@ -22,7 +25,14 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
         <Input placeholder="Search messages, groups..." className="pl-10" />
       </div>
 
-      <div className="flex items-center gap-3 ml-auto">
+      <div className="flex items-center gap-2 ml-auto">
+        <button
+          onClick={toggleTheme}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 cursor-pointer"
+        >
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+
         <div className="flex items-center gap-2 cursor-pointer">
           <Avatar size="sm" fallback="JD" />
           <div className="hidden sm:block">
