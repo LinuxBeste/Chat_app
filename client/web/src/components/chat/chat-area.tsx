@@ -99,7 +99,10 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         {messages.map((msg) => {
           const isMe = msg.senderId === currentUserId
           return (
-            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+          <div
+              key={msg.id}
+              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+            >
               <div
                 className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
                   isMe
@@ -110,7 +113,16 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                 {!isMe && (
                   <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>
                 )}
-                <p className="text-sm leading-relaxed">{msg.content}</p>
+                {msg.type === "image" ? (
+                  <img
+                    src={msg.content}
+                    alt=""
+                    className="max-w-full rounded-2xl cursor-pointer"
+                    onClick={() => window.open(msg.content, "_blank")}
+                  />
+                ) : (
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                )}
                 <p className={`text-[11px] mt-1 ${isMe ? "text-white/60" : "text-text-muted"}`}>
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </p>
