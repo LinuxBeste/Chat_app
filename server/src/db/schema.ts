@@ -150,3 +150,21 @@ export const loginHistory = pgTable("login_history", {
   success: text("success").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const events = pgTable("events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const eventRsvps = pgTable("event_rsvps", {
+  eventId: uuid("event_id").references(() => events.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
