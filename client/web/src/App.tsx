@@ -2,7 +2,6 @@ import { AuthProvider, useAuth } from "./lib/auth-context"
 import { ThemeProvider } from "./lib/theme-context"
 import { NotificationProvider } from "./lib/notification-context"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
-import { ChatWindow } from "./components/chat/chat-window"
 import { LoginPage } from "./components/auth/login-page"
 
 function AppContent() {
@@ -19,9 +18,7 @@ function AppContent() {
   if (!user) return <LoginPage />
 
   return (
-    <DashboardLayout>
-      <ChatWindow />
-    </DashboardLayout>
+    <DashboardLayout />
   )
 }
 

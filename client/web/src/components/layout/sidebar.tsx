@@ -10,6 +10,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
+import { useNav } from "./dashboard-layout"
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", active: true },
@@ -32,6 +33,11 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const { unreadCount } = useNotificationCount()
+  const { setView } = useNav()
+
+  const handleBottomClick = (label: string) => {
+    if (label === "Profile") setView("profile")
+  }
 
   return (
     <aside
@@ -78,6 +84,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
         {bottomItems.map((item) => (
           <button
             key={item.label}
+            onClick={() => handleBottomClick(item.label)}
             aria-label={item.label}
             className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary"
           >

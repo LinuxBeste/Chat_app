@@ -21,6 +21,7 @@ router.get("/me", authGuard, async (req: Request, res: Response) => {
       email: users.email,
       displayName: users.displayName,
       avatar: users.avatar,
+      bio: users.bio,
       status: users.status,
       createdAt: users.createdAt,
     })
@@ -37,12 +38,13 @@ router.get("/me", authGuard, async (req: Request, res: Response) => {
 })
 
 router.put("/me", authGuard, async (req: Request, res: Response) => {
-  const { displayName, avatar } = req.body
+  const { displayName, avatar, bio } = req.body
   const [updated] = await db
     .update(users)
     .set({
       ...(displayName !== undefined && { displayName }),
       ...(avatar !== undefined && { avatar }),
+      ...(bio !== undefined && { bio }),
     })
     .where(eq(users.id, req.user!.userId))
     .returning()
@@ -52,6 +54,7 @@ router.put("/me", authGuard, async (req: Request, res: Response) => {
     username: updated.username,
     displayName: updated.displayName,
     avatar: updated.avatar,
+    bio: updated.bio,
     status: updated.status,
   })
 })
