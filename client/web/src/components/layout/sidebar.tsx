@@ -32,13 +32,14 @@ interface SidebarProps {
 export function Sidebar({ collapsed }: SidebarProps) {
   return (
     <aside
+      aria-label="Main navigation"
       className={cn(
         "flex flex-col bg-bg-secondary border-r border-border transition-all duration-300 rounded-tl-[32px]",
         collapsed ? "w-16" : "w-56",
       )}
     >
       <div className="flex h-16 items-center gap-3 px-4 border-b border-border">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white text-sm font-bold shrink-0">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white text-sm font-bold shrink-0" aria-hidden="true">
           C
         </div>
         {!collapsed && (
@@ -46,30 +47,33 @@ export function Sidebar({ collapsed }: SidebarProps) {
         )}
       </div>
 
-      <nav className="flex-1 flex flex-col gap-1 p-3">
+      <nav className="flex-1 flex flex-col gap-1 p-3" aria-label="Main menu">
         {navItems.map((item) => (
           <button
             key={item.label}
+            aria-current={item.active ? "page" : undefined}
+            aria-label={item.label}
             className={cn(
-              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer",
+              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary",
               item.active
                 ? "bg-accent/10 text-accent"
                 : "text-text-secondary hover:text-text-primary hover:bg-white/5",
             )}
           >
-            <item.icon className="h-5 w-5 shrink-0" />
+            <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             {!collapsed && <span>{item.label}</span>}
           </button>
         ))}
       </nav>
 
-      <div className="border-t border-border p-3 flex flex-col gap-1">
+      <div className="border-t border-border p-3 flex flex-col gap-1" role="group" aria-label="User menu">
         {bottomItems.map((item) => (
           <button
             key={item.label}
-            className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+            aria-label={item.label}
+            className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary"
           >
-            <item.icon className="h-5 w-5 shrink-0" />
+            <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             {!collapsed && <span>{item.label}</span>}
           </button>
         ))}

@@ -101,41 +101,47 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary">
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary" role="dialog" aria-label="Call controls" aria-live="polite">
       <div className="flex-1 relative">
-        <video ref={remoteRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
-        <video ref={localRef} autoPlay playsInline muted className="absolute bottom-6 right-6 w-40 h-28 rounded-2xl object-cover border-2 border-border" />
+        <video ref={remoteRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" aria-label="Remote video" />
+        <video ref={localRef} autoPlay playsInline muted className="absolute bottom-6 right-6 w-40 h-28 rounded-2xl object-cover border-2 border-border" aria-label="Your video" />
       </div>
 
       <div className="flex items-center justify-center gap-4 p-6 bg-bg-secondary">
-        <p className="text-sm text-text-muted mr-4">
+        <p className="text-sm text-text-muted mr-4" aria-live="polite">
           {direction === "incoming" ? "Incoming call" : connected ? formatTime(duration) : "Connecting..."}
         </p>
         <button
           onClick={() => setMuted(!muted)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all"
+          aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+          aria-pressed={muted}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+          {muted ? <MicOff className="h-5 w-5" aria-hidden="true" /> : <Mic className="h-5 w-5" aria-hidden="true" />}
         </button>
         <button
           onClick={() => setVideoOff(!videoOff)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all"
+          aria-label={videoOff ? "Turn on video" : "Turn off video"}
+          aria-pressed={videoOff}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {videoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+          {videoOff ? <VideoOff className="h-5 w-5" aria-hidden="true" /> : <Video className="h-5 w-5" aria-hidden="true" />}
         </button>
         {direction === "incoming" && !connected && (
           <button
             onClick={answerCall}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-all"
+            aria-label="Answer call"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <Phone className="h-6 w-6" />
+            <Phone className="h-6 w-6" aria-hidden="true" />
           </button>
         )}
         <button
           onClick={endCall}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-all"
+          aria-label="End call"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <PhoneOff className="h-6 w-6" />
+          <PhoneOff className="h-6 w-6" aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { MessageInput } from "./message-input"
 import { CallOverlay } from "./call-overlay"
 import { Avatar } from "../ui/avatar"
@@ -63,10 +63,11 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   )
 
   const otherSender = messages.find((m) => m.senderId !== currentUserId)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+    <div className="flex flex-col h-full" id="main-content">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border" role="toolbar" aria-label="Chat actions">
         <div className="relative">
           <Avatar fallback={otherSender?.sender?.username?.[0] ?? "?"} />
         </div>
@@ -78,23 +79,25 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => otherSender && setCallState({ targetUserId: otherSender.senderId, direction: "outgoing" })}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+            aria-label="Start voice call"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <Phone className="h-4 w-4" />
+            <Phone className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             onClick={() => otherSender && setCallState({ targetUserId: otherSender.senderId, direction: "outgoing" })}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+            aria-label="Start video call"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <Video className="h-4 w-4" />
+            <Video className="h-4 w-4" aria-hidden="true" />
           </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer">
+          <button aria-label="More options" className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" role="log" aria-live="polite" aria-label="Chat messages">
         {loading && <p className="text-sm text-text-muted text-center">Loading...</p>}
         {messages.map((msg) => {
           const isMe = msg.senderId === currentUserId
@@ -102,6 +105,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           <div
               key={msg.id}
               className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+              role="article"
             >
               <div
                 className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
@@ -116,7 +120,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                 {msg.type === "image" ? (
                   <img
                     src={msg.content}
-                    alt=""
+                    alt="Shared image"
                     className="max-w-full rounded-2xl cursor-pointer"
                     onClick={() => window.open(msg.content, "_blank")}
                   />
@@ -130,6 +134,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             </div>
           )
         })}
+        <div ref={messagesEndRef} />
       </div>
 
       <MessageInput conversationId={conversationId} onSend={handleSend} />

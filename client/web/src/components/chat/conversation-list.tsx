@@ -27,12 +27,15 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
         <h2 className="text-sm font-semibold text-text-primary">Conversations</h2>
         <p className="text-xs text-text-muted mt-0.5">{convs.length} total</p>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" role="listbox" aria-label="Conversations">
         {convs.map((conv) => (
           <button
             key={conv.id}
             onClick={() => onSelect(conv.id)}
-            className={`flex w-full items-start gap-3 px-4 py-3.5 transition-all duration-200 cursor-pointer text-left border-b border-border last:border-0 hover:bg-white/[0.02] ${activeId === conv.id ? "bg-accent/[0.03]" : ""}`}
+            role="option"
+            aria-selected={activeId === conv.id}
+            aria-label={`Open conversation ${conv.name ?? conv.type}`}
+            className={`flex w-full items-start gap-3 px-4 py-3.5 transition-all duration-200 cursor-pointer text-left border-b border-border last:border-0 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset ${activeId === conv.id ? "bg-accent/[0.03]" : ""}`}
           >
             <div className="relative shrink-0 mt-0.5">
               <Avatar fallback={conv.name?.[0] ?? "?"} />
