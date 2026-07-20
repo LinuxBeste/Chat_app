@@ -4,6 +4,7 @@ import { verifyToken } from "../lib/jwt.js"
 import { config } from "../config.js"
 import { handleSendMessage, handleTyping } from "./messages.js"
 import { updatePresence } from "./presence.js"
+import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
 import { getRedis } from "../lib/redis.js"
 
 const clients = new Map<string, Set<WebSocket>>()
@@ -31,7 +32,7 @@ export function createWSServer(server: import("http").Server) {
 
   const redis = getRedis()
   if (redis) {
-    redis.subscribe("chat:presence", (err) => {
+    redis.subscribe("chat:presence", "chat:user:*", (err) => {
       if (err) console.error("Redis subscribe error:", err)
     })
 
@@ -40,6 +41,10 @@ export function createWSServer(server: import("http").Server) {
         const event = JSON.parse(message)
         if (event.type === "presence:update") {
           broadcast(event)
+        }
+        if (["call:offer", "call:answer", "call:ice-candidate"].includes(event.type)) {
+          const userId = event.callerId ?? event.userId
+          if (userId) sendToUser(userId, event)
         }
       } catch { /* ignore malformed */ }
     })
@@ -78,6 +83,26 @@ export function createWSServer(server: import("http").Server) {
             await updatePresence(user.userId, (msg as any).status)
             broadcast({ type: "presence:update", userId: user.userId, status: (msg as any).status })
             break
+          case "call:offer": {
+            const evt = await handleCallOffer(msg as any, user.userId)
+            if (evt) ws.send(JSON.stringify(evt))
+            break
+          }
+          case "call:answer": {
+            const evt = await handleCallAnswer(msg as any, user.userId)
+            if (evt) ws.send(JSON.stringify(evt))
+            break
+          }
+          case "call:ice-candidate": {
+            const evt = await handleCallIceCandidate(msg as any, user.userId)
+            if (evt) ws.send(JSON.stringify(evt))
+            break
+          }
+          case "call:end": {
+            const evt = handleCallEnd(msg as any, user.userId)
+            if (evt) ws.send(JSON.stringify(evt))
+            break
+          }
           default:
             ws.send(JSON.stringify({ type: "error", error: `Unknown message type: ${msg.type}` }))
         }
@@ -117,6 +142,17 @@ function broadcast(event: object) {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(message)
       }
+    }
+  }
+}
+
+function sendToUser(userId: string, event: object) {
+  const sockets = clients.get(userId)
+  if (!sockets) return
+  const message = JSON.stringify(event)
+  for (const ws of sockets) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message)
     }
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { MessageInput } from "./message-input"
+import { CallOverlay } from "./call-overlay"
 import { Avatar } from "../ui/avatar"
 import { Phone, Video, MoreHorizontal } from "lucide-react"
 import { api } from "../../lib/api"
@@ -26,6 +27,7 @@ interface ChatAreaProps {
 export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
+  const [callState, setCallState] = useState<{ targetUserId: string; direction: "incoming" | "outgoing" } | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -39,6 +41,15 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     const unsub = wsClient.on("message:new", (data) => {
       if (data.conversationId === conversationId) {
         setMessages((prev) => [...prev, data as unknown as Message])
+      }
+    })
+    return () => { unsub() }
+  }, [conversationId])
+
+  useEffect(() => {
+    const unsub = wsClient.on("call:offer", (data) => {
+      if (data.conversationId === conversationId) {
+        setCallState({ targetUserId: data.callerId as string, direction: "incoming" })
       }
     })
     return () => { unsub() }
@@ -65,10 +76,16 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           </h3>
         </div>
         <div className="flex items-center gap-1">
-          <button className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer">
+          <button
+            onClick={() => otherSender && setCallState({ targetUserId: otherSender.senderId, direction: "outgoing" })}
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+          >
             <Phone className="h-4 w-4" />
           </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer">
+          <button
+            onClick={() => otherSender && setCallState({ targetUserId: otherSender.senderId, direction: "outgoing" })}
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+          >
             <Video className="h-4 w-4" />
           </button>
           <button className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer">
@@ -104,6 +121,15 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       </div>
 
       <MessageInput conversationId={conversationId} onSend={handleSend} />
+
+      {callState && (
+        <CallOverlay
+          conversationId={conversationId}
+          targetUserId={callState.targetUserId}
+          direction={callState.direction}
+          onEnd={() => setCallState(null)}
+        />
+      )}
     </div>
   )
 }
