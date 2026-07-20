@@ -3,6 +3,8 @@ import { Avatar } from "../ui/avatar"
 import { Input } from "../ui/input"
 import { useTheme } from "../../lib/theme-context"
 import { StatusSelector } from "../presence/status-selector"
+import { SearchPanel } from "../search/search-panel"
+import { useState } from "react"
 
 interface TopbarProps {
   collapsed: boolean
@@ -11,6 +13,7 @@ interface TopbarProps {
 
 export function Topbar({ collapsed, onToggle }: TopbarProps) {
   const { theme, toggleTheme } = useTheme()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border bg-bg-secondary px-6">
@@ -22,8 +25,14 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
       </button>
 
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-        <Input placeholder="Search messages, groups..." className="pl-10" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+        <Input
+          placeholder="Search messages, groups..."
+          className="pl-10 cursor-pointer"
+          onFocus={() => setSearchOpen(true)}
+          readOnly
+        />
+        {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
