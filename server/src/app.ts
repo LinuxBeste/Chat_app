@@ -2,6 +2,8 @@ import express, { type Express } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
+import compression from "compression"
+import rateLimit from "express-rate-limit"
 import { resolve, dirname } from "path"
 import { fileURLToPath } from "url"
 import { config } from "./config.js"
@@ -26,8 +28,18 @@ const app: Express = express()
 
 app.use(helmet())
 app.use(cors({ origin: config.cors.origin, credentials: true }))
+app.use(compression())
 app.use(morgan("dev"))
 app.use(express.json())
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+})
+app.use(limiter)
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 app.use("/uploads", express.static(resolve(__dirname, "..", config.uploads.dir)))
