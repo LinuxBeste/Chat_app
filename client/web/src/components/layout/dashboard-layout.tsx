@@ -6,8 +6,9 @@ import { ProfilePage } from "../profile/profile-page"
 import { FilesPage } from "../files/files-page"
 import { GroupsPage } from "../groups/groups-page"
 import { CommunitiesPage } from "../communities/communities-page"
+import { EventsPage } from "../events/events-page"
 
-export type View = "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities"
+export type View = "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events"
 
 interface NavContextValue {
   view: View
@@ -40,6 +41,7 @@ export function DashboardLayout() {
             {view === "files" && <FilesPage />}
             {view === "groups" && <GroupsPage />}
             {view === "communities" && <CommunitiesPage />}
+            {view === "events" && <EventsPage />}
             {view === "calls" && (
               <div className="flex h-full items-center justify-center">
                 <p className="text-sm text-text-muted">Calls history coming soon</p>
