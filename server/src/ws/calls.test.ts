@@ -72,7 +72,7 @@ describe("handleCallEnd", () => {
     vi.mocked(getRedis).mockReturnValue(null)
     const offer = await handleCallOffer(mockOfferPayload(), "user1")
 
-    const event = handleCallEnd({ sessionId: offer.sessionId }, "user1")
+    const event = await handleCallEnd({ sessionId: offer.sessionId }, "user1")
 
     expect(event).not.toBeNull()
     expect(event!.type).toBe("call:ended")
@@ -83,7 +83,7 @@ describe("handleCallEnd", () => {
     vi.mocked(getRedis).mockReturnValue(null)
     const offer = await handleCallOffer(mockOfferPayload(), "user1")
 
-    handleCallEnd({ sessionId: offer.sessionId }, "user1")
+    await handleCallEnd({ sessionId: offer.sessionId }, "user1")
 
     const answer = await handleCallAnswer({ sessionId: offer.sessionId, sdp: { type: "answer", sdp: "sdp2" } }, "user2")
     expect(answer).toBeNull()

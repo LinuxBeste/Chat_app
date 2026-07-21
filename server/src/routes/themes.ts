@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { userThemes } from "../db/schema.js"
 import { eq, and, desc } from "drizzle-orm"
 
@@ -30,25 +31,25 @@ const themeSchema = z.object({
   }),
 })
 
-router.get("/", authGuard, async (req: Request, res: Response) => {
+router.get("/", authGuard, catchAsync(async (req: Request, res: Response) => {
   const themes = await db
     .select()
     .from(userThemes)
     .where(eq(userThemes.userId, req.user!.userId))
     .orderBy(desc(userThemes.createdAt))
   res.json(themes)
-})
+}))
 
-router.get("/active", authGuard, async (req: Request, res: Response) => {
+router.get("/active", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [theme] = await db
     .select()
     .from(userThemes)
     .where(and(eq(userThemes.userId, req.user!.userId), eq(userThemes.isActive, "true")))
     .limit(1)
   res.json(theme ?? null)
-})
+}))
 
-router.post("/", authGuard, validate(themeSchema), async (req: Request, res: Response) => {
+router.post("/", authGuard, validate(themeSchema), catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId
 
   await db.update(userThemes).set({ isActive: "false" }).where(eq(userThemes.userId, userId))
@@ -64,9 +65,9 @@ router.post("/", authGuard, validate(themeSchema), async (req: Request, res: Res
     .returning()
 
   res.status(201).json(theme)
-})
+}))
 
-router.put("/:id", authGuard, validate(themeSchema), async (req: Request, res: Response) => {
+router.put("/:id", authGuard, validate(themeSchema), catchAsync(async (req: Request, res: Response) => {
   const [theme] = await db
     .update(userThemes)
     .set({
@@ -83,9 +84,9 @@ router.put("/:id", authGuard, validate(themeSchema), async (req: Request, res: R
   }
 
   res.json(theme)
-})
+}))
 
-router.delete("/:id", authGuard, async (req: Request, res: Response) => {
+router.delete("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [deleted] = await db
     .delete(userThemes)
     .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
@@ -97,9 +98,9 @@ router.delete("/:id", authGuard, async (req: Request, res: Response) => {
   }
 
   res.json({ message: "Theme deleted" })
-})
+}))
 
-router.post("/:id/activate", authGuard, async (req: Request, res: Response) => {
+router.post("/:id/activate", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [theme] = await db
     .select()
     .from(userThemes)
@@ -115,6 +116,6 @@ router.post("/:id/activate", authGuard, async (req: Request, res: Response) => {
   await db.update(userThemes).set({ isActive: "true" }).where(eq(userThemes.id, theme.id))
 
   res.json({ message: "Theme activated" })
-})
+}))
 
 export default router

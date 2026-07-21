@@ -3,6 +3,7 @@ import { verifyToken, type TokenPayload } from "../lib/jwt.js"
 import { db } from "../lib/db.js"
 import { refreshTokens } from "../db/schema.js"
 import { eq } from "drizzle-orm"
+import { logger } from "../lib/logger.js"
 
 declare global {
   namespace Express {
@@ -39,7 +40,7 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
       res.status(401).json({ error: "Invalid or expired token" })
     }
   } catch (err) {
-    console.error("Auth middleware error:", err)
+    logger.error({ err }, "Auth middleware error")
     res.status(500).json({ error: "Internal server error" })
   }
 }

@@ -15,13 +15,12 @@ export function MediaGallery() {
   const [items, setItems] = useState<MediaItem[]>([])
 
   useEffect(() => {
-    api<MediaItem[]>("/api/conversations")
-      .then(async (convs: any[]) => {
-        const all: MediaItem[] = []
-        for (const conv of convs) {
-          const msgs = await api<MediaItem[]>(`/api/conversations/${conv.id}/messages?limit=50`)
-          all.push(...msgs.filter((m) => m.type === "image"))
-        }
+    api<{ id: string }[]>("/api/conversations")
+      .then(async (convs) => {
+        const results = await Promise.all(
+          convs.map((conv) => api<MediaItem[]>(`/api/conversations/${conv.id}/messages?limit=50`)),
+        )
+        const all = results.flat().filter((m) => m.type === "image")
         setItems(all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
       })
       .catch(() => {})

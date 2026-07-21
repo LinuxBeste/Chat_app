@@ -1,5 +1,6 @@
 import { Redis } from "ioredis"
 import { config } from "../config.js"
+import { logger } from "./logger.js"
 
 let redis: Redis | null = null
 
@@ -12,8 +13,8 @@ if (config.redis.url) {
     },
   })
 
-  redis.on("connect", () => console.log("Redis connected"))
-  redis.on("error", (err) => console.error("Redis error:", err.message))
+  redis.on("connect", () => logger.info("Redis connected"))
+  redis.on("error", (err) => logger.error({ err }, "Redis error"))
 }
 
 export function getRedis() {

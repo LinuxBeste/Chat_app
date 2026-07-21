@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { events, eventRsvps } from "../db/schema.js"
 import { eq, and, desc } from "drizzle-orm"
 
@@ -16,7 +17,7 @@ const createSchema = z.object({
   endsAt: z.string().datetime().optional(),
 })
 
-router.post("/", authGuard, validate(createSchema), async (req: Request, res: Response) => {
+router.post("/", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
   const [event] = await db
     .insert(events)
     .values({
@@ -29,14 +30,14 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
     })
     .returning()
   res.status(201).json(event)
-})
+}))
 
-router.get("/", authGuard, async (_req: Request, res: Response) => {
+router.get("/", authGuard, catchAsync(async (_req: Request, res: Response) => {
   const list = await db.select().from(events).orderBy(desc(events.startsAt)).limit(50)
   res.json(list)
-})
+}))
 
-router.get("/:id", authGuard, async (req: Request, res: Response) => {
+router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [event] = await db
     .select()
     .from(events)
@@ -48,13 +49,13 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
   }
   const rsvps = await db.select().from(eventRsvps).where(eq(eventRsvps.eventId, event.id))
   res.json({ ...event, rsvps })
-})
+}))
 
 router.post(
   "/:id/rsvp",
   authGuard,
   validate(z.object({ status: z.enum(["going", "maybe", "declined"]) })),
-  async (req: Request, res: Response) => {
+  catchAsync(async (req: Request, res: Response) => {
     const existing = await db
       .select()
       .from(eventRsvps)
@@ -72,7 +73,7 @@ router.post(
         .values({ eventId: req.params.id as string, userId: req.user!.userId, status: req.body.status })
     }
     res.json({ message: "RSVP updated" })
-  },
+  }),
 )
 
 export default router

@@ -33,7 +33,9 @@ services:
       start_period: 10s
 
   server:
-    build: .
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
     ports:
       - "${PORT:-3000}:3000"
     restart: unless-stopped

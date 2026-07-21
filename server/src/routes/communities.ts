@@ -4,8 +4,9 @@ import crypto from "crypto"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { communities, communityMembers, communityChannels, communityInvites } from "../db/schema.js"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and, desc, sql } from "drizzle-orm"
 
 const router: ReturnType<typeof Router> = Router()
 
@@ -13,21 +14,21 @@ const router: ReturnType<typeof Router> = Router()
 
 const createSchema = z.object({ name: z.string().min(1).max(100), description: z.string().max(500).optional() })
 
-router.post("/", authGuard, validate(createSchema), async (req: Request, res: Response) => {
+router.post("/", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
   const [community] = await db
     .insert(communities)
     .values({ name: req.body.name, description: req.body.description, ownerId: req.user!.userId })
     .returning()
   await db.insert(communityMembers).values({ communityId: community.id, userId: req.user!.userId, role: "owner" })
   res.status(201).json(community)
-})
+}))
 
-router.get("/", authGuard, async (_req: Request, res: Response) => {
+router.get("/", authGuard, catchAsync(async (_req: Request, res: Response) => {
   const list = await db.select().from(communities).orderBy(desc(communities.createdAt))
   res.json(list)
-})
+}))
 
-router.get("/:id", authGuard, async (req: Request, res: Response) => {
+router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [community] = await db
     .select()
     .from(communities)
@@ -40,46 +41,46 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
   const members = await db.select().from(communityMembers).where(eq(communityMembers.communityId, community.id))
   const channels = await db.select().from(communityChannels).where(eq(communityChannels.communityId, community.id))
   res.json({ ...community, members, channels })
-})
+}))
 
-router.put("/:id", authGuard, validate(createSchema), async (req: Request, res: Response) => {
+router.put("/:id", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
   const [updated] = await db
     .update(communities)
     .set({ name: req.body.name, description: req.body.description })
     .where(eq(communities.id, req.params.id as string))
     .returning()
   res.json(updated)
-})
+}))
 
 // --- Channels ---
 
 const channelSchema = z.object({ name: z.string().min(1).max(100), topic: z.string().max(200).optional() })
 
-router.post("/:id/channels", authGuard, validate(channelSchema), async (req: Request, res: Response) => {
+router.post("/:id/channels", authGuard, validate(channelSchema), catchAsync(async (req: Request, res: Response) => {
   const [ch] = await db
     .insert(communityChannels)
     .values({ communityId: req.params.id as string, name: req.body.name, topic: req.body.topic })
     .returning()
   res.status(201).json(ch)
-})
+}))
 
-router.delete("/channels/:channelId", authGuard, async (req: Request, res: Response) => {
+router.delete("/channels/:channelId", authGuard, catchAsync(async (req: Request, res: Response) => {
   await db.delete(communityChannels).where(eq(communityChannels.id, req.params.channelId as string))
   res.json({ message: "Channel deleted" })
-})
+}))
 
 // --- Invites ---
 
-router.post("/:id/invites", authGuard, async (req: Request, res: Response) => {
+router.post("/:id/invites", authGuard, catchAsync(async (req: Request, res: Response) => {
   const code = crypto.randomBytes(4).toString("hex")
   const [invite] = await db
     .insert(communityInvites)
     .values({ communityId: req.params.id as string, createdBy: req.user!.userId, code })
     .returning()
   res.status(201).json(invite)
-})
+}))
 
-router.post("/join/:code", authGuard, async (req: Request, res: Response) => {
+router.post("/join/:code", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [invite] = await db
     .select()
     .from(communityInvites)
@@ -109,9 +110,9 @@ router.post("/join/:code", authGuard, async (req: Request, res: Response) => {
   await db.insert(communityMembers).values({ communityId: invite.communityId, userId: req.user!.userId })
   await db
     .update(communityInvites)
-    .set({ useCount: invite.useCount + 1 })
+    .set({ useCount: sql`${communityInvites.useCount} + 1` })
     .where(eq(communityInvites.id, invite.id))
   res.json({ message: "Joined community" })
-})
+}))
 
 export default router

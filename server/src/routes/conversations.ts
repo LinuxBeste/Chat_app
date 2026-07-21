@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { conversations, participants, messages, users, attachments } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
@@ -18,7 +19,7 @@ const createSchema = z.object({
   participantIds: z.array(z.string().uuid()).min(1),
 })
 
-router.post("/", authGuard, validate(createSchema), async (req: Request, res: Response) => {
+router.post("/", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
   try {
     const { type, name, participantIds } = req.body
     const allIds = [...new Set([req.user!.userId, ...participantIds])]
@@ -52,9 +53,9 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
     log.error({ err }, "Create conversation failed")
     res.status(500).json({ error: "Internal server error" })
   }
-})
+}))
 
-router.get("/", authGuard, async (req: Request, res: Response) => {
+router.get("/", authGuard, catchAsync(async (req: Request, res: Response) => {
   const convs = await db
     .select({
       id: conversations.id,
@@ -68,9 +69,9 @@ router.get("/", authGuard, async (req: Request, res: Response) => {
     .orderBy(desc(conversations.createdAt))
 
   res.json(convs)
-})
+}))
 
-router.get("/:id", authGuard, async (req: Request, res: Response) => {
+router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string
   const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
 
@@ -92,9 +93,9 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
     .where(eq(participants.conversationId, conv.id))
 
   res.json({ ...conv, members })
-})
+}))
 
-router.put("/:id", authGuard, async (req: Request, res: Response) => {
+router.put("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const { name } = req.body
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "Name is required" })
@@ -106,9 +107,9 @@ router.put("/:id", authGuard, async (req: Request, res: Response) => {
     .where(eq(conversations.id, req.params.id as string))
     .returning()
   res.json(updated)
-})
+}))
 
-router.get("/:id/messages", authGuard, async (req: Request, res: Response) => {
+router.get("/:id/messages", authGuard, catchAsync(async (req: Request, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100)
   const offset = parseInt(req.query.offset as string) || 0
 
@@ -134,9 +135,9 @@ router.get("/:id/messages", authGuard, async (req: Request, res: Response) => {
     .offset(offset)
 
   res.json(msgs.reverse())
-})
+}))
 
-router.get("/:id/files", authGuard, async (req: Request, res: Response) => {
+router.get("/:id/files", authGuard, catchAsync(async (req: Request, res: Response) => {
   const fileMsgs = await db
     .select({
       id: messages.id,
@@ -159,6 +160,6 @@ router.get("/:id/files", authGuard, async (req: Request, res: Response) => {
     .limit(50)
 
   res.json(fileMsgs.filter((m) => m.attachment))
-})
+}))
 
 export default router

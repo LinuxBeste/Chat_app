@@ -18,6 +18,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
   const remoteRef = useRef<HTMLVideoElement>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+  const sessionIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] })
@@ -25,7 +26,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        wsClient.send("call:ice-candidate", { sessionId: conversationId, candidate: e.candidate.toJSON() })
+        wsClient.send("call:ice-candidate", { sessionId: sessionIdRef.current, candidate: e.candidate.toJSON() })
       }
     }
 
@@ -67,24 +68,25 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
 
     const answer = await pcRef.current!.createAnswer()
     await pcRef.current!.setLocalDescription(answer)
-    wsClient.send("call:answer", { sessionId: conversationId, sdp: answer })
+    wsClient.send("call:answer", { sessionId: sessionIdRef.current, sdp: answer })
 
     timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
   }, [conversationId])
 
   useEffect(() => {
     const unsubOffer = wsClient.on("call:offer", async (data) => {
+      sessionIdRef.current = data.sessionId as string
       if (data.conversationId === conversationId) {
         await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit))
       }
     })
     const unsubAnswer = wsClient.on("call:answer", async (data) => {
-      if (data.sessionId === conversationId) {
+      if (data.sessionId === sessionIdRef.current) {
         await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit))
       }
     })
     const unsubIce = wsClient.on("call:ice-candidate", async (data) => {
-      if (data.sessionId === conversationId) {
+      if (data.sessionId === sessionIdRef.current) {
         await pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate as RTCIceCandidateInit))
       }
     })
@@ -98,7 +100,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
   const endCall = () => {
     pcRef.current?.close()
     clearInterval(timerRef.current)
-    wsClient.send("call:end", { sessionId: conversationId })
+    wsClient.send("call:end", { sessionId: sessionIdRef.current })
     onEnd()
   }
 

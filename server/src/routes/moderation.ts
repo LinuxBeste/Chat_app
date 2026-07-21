@@ -3,8 +3,10 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { reports, bans, mutes, participants } from "../db/schema.js"
 import { eq, and } from "drizzle-orm"
+import { logger } from "../lib/logger.js"
 
 const router: ReturnType<typeof Router> = Router()
 
@@ -26,7 +28,7 @@ const adminGuard = async (req: Request, res: Response, next: () => void) => {
     }
     next()
   } catch (err) {
-    console.error("Admin guard error:", err)
+    logger.error({ err }, "Admin guard error")
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -40,7 +42,7 @@ const reportSchema = z.object({
   conversationId: z.string().uuid().optional(),
 })
 
-router.post("/reports", authGuard, validate(reportSchema), async (req: Request, res: Response) => {
+router.post("/reports", authGuard, validate(reportSchema), catchAsync(async (req: Request, res: Response) => {
   await db.insert(reports).values({
     reportedBy: req.user!.userId,
     targetUserId: req.body.targetUserId,
@@ -48,12 +50,12 @@ router.post("/reports", authGuard, validate(reportSchema), async (req: Request, 
     reason: req.body.reason,
   })
   res.status(201).json({ message: "Report submitted" })
-})
+}))
 
-router.get("/reports", authGuard, async (_req: Request, res: Response) => {
+router.get("/reports", authGuard, catchAsync(async (_req: Request, res: Response) => {
   const list = await db.select().from(reports).orderBy(reports.createdAt)
   res.json(list)
-})
+}))
 
 // --- Bans ---
 
@@ -62,7 +64,7 @@ router.post(
   authGuard,
   validate(z.object({ conversationId: z.string().uuid(), userId: z.string().uuid(), reason: z.string().optional() })),
   adminGuard,
-  async (req: Request, res: Response) => {
+  catchAsync(async (req: Request, res: Response) => {
     await db.insert(bans).values({
       conversationId: req.body.conversationId,
       userId: req.body.userId,
@@ -73,25 +75,25 @@ router.post(
       .delete(participants)
       .where(and(eq(participants.conversationId, req.body.conversationId), eq(participants.userId, req.body.userId)))
     res.status(201).json({ message: "User banned" })
-  },
+  }),
 )
 
-router.delete("/bans/:conversationId/:userId", authGuard, adminGuard, async (req: Request, res: Response) => {
+router.delete("/bans/:conversationId/:userId", authGuard, adminGuard, catchAsync(async (req: Request, res: Response) => {
   await db
     .delete(bans)
     .where(
       and(eq(bans.conversationId, req.params.conversationId as string), eq(bans.userId, req.params.userId as string)),
     )
   res.json({ message: "User unbanned" })
-})
+}))
 
-router.get("/bans/:conversationId", authGuard, async (req: Request, res: Response) => {
+router.get("/bans/:conversationId", authGuard, catchAsync(async (req: Request, res: Response) => {
   const list = await db
     .select()
     .from(bans)
     .where(eq(bans.conversationId, req.params.conversationId as string))
   res.json(list)
-})
+}))
 
 // --- Mutes ---
 
@@ -99,21 +101,21 @@ router.post(
   "/mutes",
   authGuard,
   validate(z.object({ conversationId: z.string().uuid(), lengthHours: z.number().optional() })),
-  async (req: Request, res: Response) => {
+  catchAsync(async (req: Request, res: Response) => {
     const expiresAt = req.body.lengthHours ? new Date(Date.now() + req.body.lengthHours * 3600000) : null
     await db
       .insert(mutes)
       .values({ conversationId: req.body.conversationId, userId: req.user!.userId, expiresAt })
       .onConflictDoNothing()
     res.status(201).json({ message: "Conversation muted" })
-  },
+  }),
 )
 
-router.delete("/mutes/:conversationId", authGuard, async (req: Request, res: Response) => {
+router.delete("/mutes/:conversationId", authGuard, catchAsync(async (req: Request, res: Response) => {
   await db
     .delete(mutes)
     .where(and(eq(mutes.conversationId, req.params.conversationId as string), eq(mutes.userId, req.user!.userId)))
   res.json({ message: "Conversation unmuted" })
-})
+}))
 
 export default router

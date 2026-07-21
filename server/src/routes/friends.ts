@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { friends, users } from "../db/schema.js"
 import { eq, and, or } from "drizzle-orm"
 
@@ -13,7 +14,7 @@ const requestSchema = z.object({
   friendId: z.string().uuid(),
 })
 
-router.post("/requests", authGuard, validate(requestSchema), async (req: Request, res: Response) => {
+router.post("/requests", authGuard, validate(requestSchema), catchAsync(async (req: Request, res: Response) => {
   const { friendId } = req.body
   const userId = req.user!.userId
 
@@ -40,9 +41,9 @@ router.post("/requests", authGuard, validate(requestSchema), async (req: Request
 
   await db.insert(friends).values({ userId, friendId, status: "pending" })
   res.status(201).json({ message: "Friend request sent" })
-})
+}))
 
-router.post("/requests/:id/accept", authGuard, async (req: Request, res: Response) => {
+router.post("/requests/:id/accept", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [updated] = await db
     .update(friends)
     .set({ status: "accepted" })
@@ -61,9 +62,9 @@ router.post("/requests/:id/accept", authGuard, async (req: Request, res: Respons
   }
 
   res.json({ message: "Friend request accepted" })
-})
+}))
 
-router.get("/", authGuard, async (req: Request, res: Response) => {
+router.get("/", authGuard, catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId
 
   const result = await db
@@ -88,9 +89,9 @@ router.get("/", authGuard, async (req: Request, res: Response) => {
   const filtered = result.filter((r) => r.id !== userId)
 
   res.json(filtered)
-})
+}))
 
-router.delete("/:friendId", authGuard, async (req: Request, res: Response) => {
+router.delete("/:friendId", authGuard, catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId
   const friendId = req.params.friendId
 
@@ -104,6 +105,6 @@ router.delete("/:friendId", authGuard, async (req: Request, res: Response) => {
     )
 
   res.json({ message: "Friend removed" })
-})
+}))
 
 export default router

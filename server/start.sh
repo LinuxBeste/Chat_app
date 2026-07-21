@@ -9,6 +9,8 @@ WEB_PORT="${WEB_PORT:-5173}"
 USE_REDIS=false
 MODE="docker"
 REBUILD=false
+STOP_ONLY=false
+DETACH=false
 START_WEB=false
 START_MOBILE=false
 FOLLOW=false
@@ -25,6 +27,8 @@ Start the chat app (server + optional clients).
 Options:
   --native, -n        Run natively (pnpm dev) instead of Docker
   --rebuild, -r       Force full rebuild
+  --stop              Stop running Docker containers and exit
+  --detach            Run Docker in detached mode (no interactive prompt)
   --redis             Enable Redis
   --web, -w           Start web client alongside (Vite dev server)
   --mobile, -m        Start Expo mobile client alongside
@@ -46,6 +50,8 @@ Examples:
   $0 --dev                    # native server + web client
   $0 --all                    # Docker server + web + mobile
   $0 --native --migrate       # native with migrations
+  $0 --stop                   # Stop Docker containers and exit
+  $0 --detach                 # Docker detached mode (no interactive prompt)
   $0 --logs                   # Docker with logs attached
 EOF
   exit 0
@@ -55,6 +61,8 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --native|-n) MODE="native"; shift ;;
     --rebuild|-r) REBUILD=true; shift ;;
+    --stop) STOP_ONLY=true; shift ;;
+    --detach) DETACH=true; shift ;;
     --redis) USE_REDIS=true; shift ;;
     --web|-w) START_WEB=true; shift ;;
     --mobile|-m) START_MOBILE=true; shift ;;
@@ -72,6 +80,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 export PORT
+
+if "$STOP_ONLY"; then
+  echo "Stopping Docker containers ..."
+  docker compose "${COMPOSE_PROFILES[@]}" down 2>/dev/null || true
+  echo "Done."
+  exit 0
+fi
 
 load_env() {
   local file="${1:-.env}"
@@ -163,6 +178,7 @@ else
     docker compose "${COMPOSE_PROFILES[@]}" build --no-cache
   fi
 
+  echo >&2 "Press (q/p/e/s) to stop and remove containers"
   docker compose "${COMPOSE_PROFILES[@]}" up --build -d
 
   echo "Waiting for server to be ready ..."
@@ -183,12 +199,14 @@ else
   if "$FOLLOW"; then
     echo "Attaching logs (Ctrl+C to detach, containers keep running) ..."
     docker compose "${COMPOSE_PROFILES[@]}" logs -f
-  else
-    echo
-    echo "Press q to stop and remove containers"
+  fi
+
+  if ! "$DETACH" && ! "$FOLLOW"; then
+    echo >&2
+    echo >&2 "Press (q/p/e/s) to stop and remove containers"
     while true; do
       read -rsn 1 key
-      if [[ "$key" == "q" ]]; then
+      if [[ "$key" == "q" || "$key" == "p" || "$key" == "e" || "$key" == "s" ]]; then
         echo
         docker compose "${COMPOSE_PROFILES[@]}" down
         [[ -n "${WEB_PID:-}" ]] && kill "$WEB_PID" 2>/dev/null || true

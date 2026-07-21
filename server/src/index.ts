@@ -38,7 +38,8 @@ async function main() {
   })
 
   process.on("unhandledRejection", (reason) => {
-    logger.error({ reason }, "Unhandled promise rejection")
+    logger.fatal({ reason }, "Unhandled promise rejection")
+    shutdown("unhandledRejection")
   })
 }
 

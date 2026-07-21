@@ -4,6 +4,7 @@ import crypto from "crypto"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { totpSecrets, loginHistory } from "../db/schema.js"
 import { eq, desc } from "drizzle-orm"
 
@@ -11,20 +12,20 @@ const router: ReturnType<typeof Router> = Router()
 
 // --- TOTP Setup ---
 
-router.post("/totp/setup", authGuard, async (req: Request, res: Response) => {
+router.post("/totp/setup", authGuard, catchAsync(async (req: Request, res: Response) => {
   const secret = crypto.randomBytes(20).toString("hex")
   await db
     .insert(totpSecrets)
     .values({ userId: req.user!.userId, secret })
     .onConflictDoUpdate({ target: totpSecrets.userId, set: { secret, verified: "false" } })
   res.json({ secret, uri: `otpauth://totp/Chat:${req.user!.username}?secret=${secret}&issuer=Chat` })
-})
+}))
 
 router.post(
   "/totp/verify",
   authGuard,
   validate(z.object({ code: z.string().length(6) })),
-  async (req: Request, res: Response) => {
+  catchAsync(async (req: Request, res: Response) => {
     const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
 
     if (!record) {
@@ -41,22 +42,22 @@ router.post(
     await db.update(totpSecrets).set({ verified: "true" }).where(eq(totpSecrets.userId, req.user!.userId))
 
     res.json({ message: "2FA enabled" })
-  },
+  }),
 )
 
-router.post("/totp/disable", authGuard, async (req: Request, res: Response) => {
+router.post("/totp/disable", authGuard, catchAsync(async (req: Request, res: Response) => {
   await db.delete(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId))
   res.json({ message: "2FA disabled" })
-})
+}))
 
-router.get("/totp/status", authGuard, async (req: Request, res: Response) => {
+router.get("/totp/status", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
   res.json({ enabled: record?.verified === "true" })
-})
+}))
 
 // --- Login History ---
 
-router.get("/history", authGuard, async (req: Request, res: Response) => {
+router.get("/history", authGuard, catchAsync(async (req: Request, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
   const history = await db
     .select()
@@ -65,7 +66,7 @@ router.get("/history", authGuard, async (req: Request, res: Response) => {
     .orderBy(desc(loginHistory.createdAt))
     .limit(limit)
   res.json(history)
-})
+}))
 
 // Simple TOTP implementation (RFC 6238)
 function totp(secret: string): string {

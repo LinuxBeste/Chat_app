@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { users } from "../db/schema.js"
 import { eq, ilike, or, and, ne } from "drizzle-orm"
 
@@ -13,7 +14,7 @@ const searchSchema = z.object({
   q: z.string().min(1).max(50),
 })
 
-router.get("/me", authGuard, async (req: Request, res: Response) => {
+router.get("/me", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [user] = await db
     .select({
       id: users.id,
@@ -36,9 +37,9 @@ router.get("/me", authGuard, async (req: Request, res: Response) => {
   }
 
   res.json(user)
-})
+}))
 
-router.put("/me", authGuard, async (req: Request, res: Response) => {
+router.put("/me", authGuard, catchAsync(async (req: Request, res: Response) => {
   const { displayName, avatar, bio, customStatus } = req.body
   const [updated] = await db
     .update(users)
@@ -60,9 +61,9 @@ router.put("/me", authGuard, async (req: Request, res: Response) => {
     customStatus: updated.customStatus,
     status: updated.status,
   })
-})
+}))
 
-router.get("/search", authGuard, validate(searchSchema, "query"), async (req: Request, res: Response) => {
+router.get("/search", authGuard, validate(searchSchema, "query"), catchAsync(async (req: Request, res: Response) => {
   const { q } = req.query as { q: string }
   const results = await db
     .select({
@@ -82,9 +83,9 @@ router.get("/search", authGuard, validate(searchSchema, "query"), async (req: Re
     .limit(20)
 
   res.json(results)
-})
+}))
 
-router.get("/:id", authGuard, async (req: Request, res: Response) => {
+router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
   const [user] = await db
     .select({
       id: users.id,
@@ -103,6 +104,6 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
   }
 
   res.json(user)
-})
+}))
 
 export default router

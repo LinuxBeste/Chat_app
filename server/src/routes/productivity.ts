@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
+import { catchAsync } from "../middleware/error-handler.js"
 import { pinnedMessages, messages, users } from "../db/schema.js"
 import { eq, and, like, desc } from "drizzle-orm"
 
@@ -14,7 +15,7 @@ router.post(
   "/pins",
   authGuard,
   validate(z.object({ conversationId: z.string().uuid(), messageId: z.string().uuid() })),
-  async (req: Request, res: Response) => {
+  catchAsync(async (req: Request, res: Response) => {
     await db
       .insert(pinnedMessages)
       .values({
@@ -24,10 +25,10 @@ router.post(
       })
       .onConflictDoNothing()
     res.status(201).json({ message: "Message pinned" })
-  },
+  }),
 )
 
-router.delete("/pins/:conversationId/:messageId", authGuard, async (req: Request, res: Response) => {
+router.delete("/pins/:conversationId/:messageId", authGuard, catchAsync(async (req: Request, res: Response) => {
   await db
     .delete(pinnedMessages)
     .where(
@@ -37,9 +38,9 @@ router.delete("/pins/:conversationId/:messageId", authGuard, async (req: Request
       ),
     )
   res.json({ message: "Message unpinned" })
-})
+}))
 
-router.get("/pins/:conversationId", authGuard, async (req: Request, res: Response) => {
+router.get("/pins/:conversationId", authGuard, catchAsync(async (req: Request, res: Response) => {
   const pins = await db
     .select({
       id: pinnedMessages.id,
@@ -55,11 +56,11 @@ router.get("/pins/:conversationId", authGuard, async (req: Request, res: Respons
     .where(eq(pinnedMessages.conversationId, req.params.conversationId as string))
     .orderBy(desc(pinnedMessages.createdAt))
   res.json(pins)
-})
+}))
 
 // --- Search ---
 
-router.get("/search", authGuard, async (req: Request, res: Response) => {
+router.get("/search", authGuard, catchAsync(async (req: Request, res: Response) => {
   const query = req.query.q as string | undefined
   if (!query || query.length < 2) {
     res.status(400).json({ error: "Query must be at least 2 characters" })
@@ -80,6 +81,6 @@ router.get("/search", authGuard, async (req: Request, res: Response) => {
     .orderBy(desc(messages.createdAt))
     .limit(50)
   res.json(results)
-})
+}))
 
 export default router

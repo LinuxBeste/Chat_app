@@ -62,7 +62,7 @@ export async function handleCallIceCandidate(payload: { sessionId: string; candi
   return event
 }
 
-export function handleCallEnd(payload: { sessionId: string }, userId: string) {
+export async function handleCallEnd(payload: { sessionId: string }, userId: string) {
   const session = callSessions.get(payload.sessionId)
   if (!session) return null
 
