@@ -2,6 +2,6 @@ packages:
   - "server"
   - "client/*"
 
-allowBuilds:
+onlyBuiltDependencies:
   - bcrypt
   - esbuild

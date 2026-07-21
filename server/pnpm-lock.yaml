@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       bcrypt:
-        specifier: ^5.1.1
+        specifier: 5.1.1
         version: 5.1.1
       compression:
         specifier: ^1.8.1
