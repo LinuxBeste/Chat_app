@@ -3,6 +3,9 @@ import { messages, participants, users } from "../db/schema.js"
 import { eq, and } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
+import { createContextLogger } from "../lib/logger.js"
+
+const log = createContextLogger("ws:messages")
 
 interface SendMessagePayload {
   type: "message:send"
@@ -71,8 +74,9 @@ export async function handleSendMessage(
     }
 
     ws.send(JSON.stringify(event))
+    log.info({ conversationId: payload.conversationId, messageType: msg.type }, "Message sent")
   } catch (err) {
-    console.error("Send message error:", err)
+    log.error({ err, conversationId: payload.conversationId }, "Send message failed")
     ws.send(JSON.stringify({ type: "error", error: "Failed to send message" }))
   }
 }

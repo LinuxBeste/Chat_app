@@ -7,6 +7,9 @@ import { signAccessToken, signRefreshToken, verifyToken } from "../lib/jwt.js"
 import { validate } from "../middleware/validate.js"
 import { users } from "../db/schema.js"
 import { eq } from "drizzle-orm"
+import { createContextLogger } from "../lib/logger.js"
+
+const log = createContextLogger("auth")
 
 const router: RouterType = Router()
 
@@ -43,8 +46,9 @@ router.post("/register", validate(registerSchema), async (req: Request, res: Res
       accessToken,
       refreshToken,
     })
+    log.info({ userId: user.id, username: user.username }, "User registered")
   } catch (err) {
-    console.error("Register error:", err)
+    log.error({ err, email: req.body.email }, "Register failed")
     res.status(500).json({ error: "Internal server error" })
   }
 })
@@ -74,8 +78,9 @@ router.post("/login", validate(loginSchema), async (req: Request, res: Response)
       accessToken,
       refreshToken,
     })
+    log.info({ userId: user.id }, "User logged in")
   } catch (err) {
-    console.error("Login error:", err)
+    log.error({ err, email: req.body.email }, "Login failed")
     res.status(500).json({ error: "Internal server error" })
   }
 })
@@ -93,7 +98,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
     const newRefresh = signRefreshToken({ userId: payload.userId, username: payload.username })
 
     res.json({ accessToken: newAccess, refreshToken: newRefresh })
-  } catch {
+  } catch (err) {
+    log.warn({ err }, "Token refresh failed")
     res.status(401).json({ error: "Invalid or expired refresh token" })
   }
 })

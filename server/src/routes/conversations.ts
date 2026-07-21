@@ -6,6 +6,9 @@ import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { conversations, participants, messages, users, attachments } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
+import { createContextLogger } from "../lib/logger.js"
+
+const log = createContextLogger("routes:conversations")
 
 const router: RouterType = Router()
 
@@ -45,7 +48,7 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
 
     res.status(201).json(conv)
   } catch (err) {
-    console.error("Create conversation error:", err)
+    log.error({ err }, "Create conversation failed")
     res.status(500).json({ error: "Internal server error" })
   }
 })

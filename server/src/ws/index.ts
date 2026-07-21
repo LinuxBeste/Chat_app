@@ -6,6 +6,7 @@ import { handleSendMessage, handleTyping } from "./messages.js"
 import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
 import { getRedis } from "../lib/redis.js"
+import { createContextLogger } from "../lib/logger.js"
 
 const clients = new Map<string, Set<WebSocket>>()
 
@@ -30,10 +31,12 @@ function authenticate(req: HttpMessage): { userId: string; username: string } | 
 export function createWSServer(server: import("http").Server) {
   const wss = new WebSocketServer({ server })
 
+  const wsLogger = createContextLogger("ws")
   const redis = getRedis()
   if (redis) {
+    wsLogger.info("Redis pub/sub enabled")
     redis.subscribe("chat:presence", "chat:user:*", (err) => {
-      if (err) console.error("Redis subscribe error:", err)
+      if (err) wsLogger.error({ err }, "Redis subscribe error")
     })
 
     redis.on("message", (_channel, message) => {
@@ -47,9 +50,11 @@ export function createWSServer(server: import("http").Server) {
           if (userId) sendToUser(userId, event)
         }
       } catch (redisErr) {
-        console.error("Redis message handler error:", redisErr)
+        wsLogger.error({ redisErr }, "Redis message handler error")
       }
     })
+  } else {
+    wsLogger.warn("Redis not available, running without pub/sub")
   }
 
   wss.on("connection", (ws: WebSocket, req: HttpMessage) => {
@@ -69,6 +74,8 @@ export function createWSServer(server: import("http").Server) {
       }
       clients.get(user.userId)!.add(ws)
 
+      wsLogger.info({ userId: user.userId }, "WS connected")
+
       updatePresence(user.userId, "online")
       broadcast({ type: "presence:update", userId: user.userId, status: "online" })
 
@@ -77,6 +84,7 @@ export function createWSServer(server: import("http").Server) {
       ws.on("message", async (data) => {
         try {
           const msg: IncomingMessage = JSON.parse(data.toString())
+          wsLogger.debug({ userId: user.userId, type: msg.type }, "WS message received")
 
           switch (msg.type) {
             case "message:send":
@@ -85,16 +93,21 @@ export function createWSServer(server: import("http").Server) {
             case "message:typing":
               await handleTyping(ws, msg as any, user.userId)
               break
-            case "presence:status":
-              await updatePresence(user.userId, (msg as any).status)
-              broadcast({ type: "presence:update", userId: user.userId, status: (msg as any).status })
+            case "presence:status": {
+              const status = (msg as any).status
+              wsLogger.debug({ userId: user.userId, status }, "Presence update")
+              await updatePresence(user.userId, status)
+              broadcast({ type: "presence:update", userId: user.userId, status })
               break
+            }
             case "call:offer": {
+              wsLogger.info({ userId: user.userId }, "Call offer")
               const evt = await handleCallOffer(msg as any, user.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
             case "call:answer": {
+              wsLogger.info({ userId: user.userId }, "Call answer")
               const evt = await handleCallAnswer(msg as any, user.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
@@ -105,14 +118,17 @@ export function createWSServer(server: import("http").Server) {
               break
             }
             case "call:end": {
+              wsLogger.info({ userId: user.userId }, "Call ended")
               const evt = handleCallEnd(msg as any, user.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
             default:
+              wsLogger.warn({ userId: user.userId, type: msg.type }, "Unknown WS message type")
               ws.send(JSON.stringify({ type: "error", error: `Unknown message type: ${msg.type}` }))
           }
         } catch (parseErr) {
+          wsLogger.error({ parseErr }, "Invalid WS message format")
           ws.send(JSON.stringify({ type: "error", error: "Invalid message format" }))
         }
       })
@@ -123,6 +139,7 @@ export function createWSServer(server: import("http").Server) {
           userSockets.delete(ws)
           if (userSockets.size === 0) {
             clients.delete(user.userId)
+            wsLogger.info({ userId: user.userId }, "WS disconnected")
             updatePresence(user.userId, "offline")
             broadcast({ type: "presence:update", userId: user.userId, status: "offline" })
           }
@@ -137,7 +154,7 @@ export function createWSServer(server: import("http").Server) {
 
       ws.on("close", () => clearInterval(interval))
     } catch (err) {
-      console.error("WebSocket connection error:", err)
+      wsLogger.error({ err }, "WS connection error")
       if (!authenticated) {
         ws.close(1011, "Internal server error")
       }
