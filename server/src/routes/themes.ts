@@ -31,91 +31,117 @@ const themeSchema = z.object({
   }),
 })
 
-router.get("/", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const themes = await db
-    .select()
-    .from(userThemes)
-    .where(eq(userThemes.userId, req.user!.userId))
-    .orderBy(desc(userThemes.createdAt))
-  res.json(themes)
-}))
+router.get(
+  "/",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const themes = await db
+      .select()
+      .from(userThemes)
+      .where(eq(userThemes.userId, req.user!.userId))
+      .orderBy(desc(userThemes.createdAt))
+    res.json(themes)
+  }),
+)
 
-router.get("/active", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [theme] = await db
-    .select()
-    .from(userThemes)
-    .where(and(eq(userThemes.userId, req.user!.userId), eq(userThemes.isActive, "true")))
-    .limit(1)
-  res.json(theme ?? null)
-}))
+router.get(
+  "/active",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [theme] = await db
+      .select()
+      .from(userThemes)
+      .where(and(eq(userThemes.userId, req.user!.userId), eq(userThemes.isActive, "true")))
+      .limit(1)
+    res.json(theme ?? null)
+  }),
+)
 
-router.post("/", authGuard, validate(themeSchema), catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user!.userId
+router.post(
+  "/",
+  authGuard,
+  validate(themeSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.userId
 
-  await db.update(userThemes).set({ isActive: "false" }).where(eq(userThemes.userId, userId))
+    await db.update(userThemes).set({ isActive: "false" }).where(eq(userThemes.userId, userId))
 
-  const [theme] = await db
-    .insert(userThemes)
-    .values({
-      userId,
-      name: req.body.name,
-      theme: JSON.stringify(req.body.theme),
-      isActive: "true",
-    })
-    .returning()
+    const [theme] = await db
+      .insert(userThemes)
+      .values({
+        userId,
+        name: req.body.name,
+        theme: JSON.stringify(req.body.theme),
+        isActive: "true",
+      })
+      .returning()
 
-  res.status(201).json(theme)
-}))
+    res.status(201).json(theme)
+  }),
+)
 
-router.put("/:id", authGuard, validate(themeSchema), catchAsync(async (req: Request, res: Response) => {
-  const [theme] = await db
-    .update(userThemes)
-    .set({
-      name: req.body.name,
-      theme: JSON.stringify(req.body.theme),
-      updatedAt: new Date(),
-    })
-    .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
-    .returning()
+router.put(
+  "/:id",
+  authGuard,
+  validate(themeSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    const [theme] = await db
+      .update(userThemes)
+      .set({
+        name: req.body.name,
+        theme: JSON.stringify(req.body.theme),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
+      .returning()
 
-  if (!theme) {
-    res.status(404).json({ error: "Theme not found" })
-    return
-  }
+    if (!theme) {
+      res.status(404).json({ error: "Theme not found" })
+      return
+    }
 
-  res.json(theme)
-}))
+    res.json(theme)
+  }),
+)
 
-router.delete("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [deleted] = await db
-    .delete(userThemes)
-    .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
-    .returning()
+router.delete(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [deleted] = await db
+      .delete(userThemes)
+      .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
+      .returning()
 
-  if (!deleted) {
-    res.status(404).json({ error: "Theme not found" })
-    return
-  }
+    if (!deleted) {
+      res.status(404).json({ error: "Theme not found" })
+      return
+    }
 
-  res.json({ message: "Theme deleted" })
-}))
+    res.json({ message: "Theme deleted" })
+  }),
+)
 
-router.post("/:id/activate", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [theme] = await db
-    .select()
-    .from(userThemes)
-    .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
-    .limit(1)
+router.post(
+  "/:id/activate",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [theme] = await db
+      .select()
+      .from(userThemes)
+      .where(and(eq(userThemes.id, req.params.id as string), eq(userThemes.userId, req.user!.userId)))
+      .limit(1)
 
-  if (!theme) {
-    res.status(404).json({ error: "Theme not found" })
-    return
-  }
+    if (!theme) {
+      res.status(404).json({ error: "Theme not found" })
+      return
+    }
 
-  await db.update(userThemes).set({ isActive: "false" }).where(eq(userThemes.userId, req.user!.userId))
-  await db.update(userThemes).set({ isActive: "true" }).where(eq(userThemes.id, theme.id))
+    await db.update(userThemes).set({ isActive: "false" }).where(eq(userThemes.userId, req.user!.userId))
+    await db.update(userThemes).set({ isActive: "true" }).where(eq(userThemes.id, theme.id))
 
-  res.json({ message: "Theme activated" })
-}))
+    res.json({ message: "Theme activated" })
+  }),
+)
 
 export default router

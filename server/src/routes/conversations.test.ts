@@ -68,7 +68,13 @@ describe("POST /api/conversations", () => {
   })
 
   it("reuses existing DM", async () => {
-    vi.mocked(db.query.conversations.findFirst).mockResolvedValueOnce({ id: "existing-dm", name: null, createdAt: new Date(), type: "dm", createdBy: "u1" } as any)
+    vi.mocked(db.query.conversations.findFirst).mockResolvedValueOnce({
+      id: "existing-dm",
+      name: null,
+      createdAt: new Date(),
+      type: "dm",
+      createdBy: "u1",
+    } as any)
     const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody)
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("id", "existing-dm")
@@ -152,7 +158,16 @@ describe("DELETE /api/conversations/:id", () => {
 
 describe("PUT /api/conversations/:id/messages/:msgId", () => {
   it("edits own message", async () => {
-    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", content: "updated", deletedAt: null, editedAt: new Date().toISOString() }]
+    mockData.current = [
+      {
+        id: "m1",
+        conversationId: "c1",
+        senderId: "00000000-0000-0000-0000-000000000001",
+        content: "updated",
+        deletedAt: null,
+        editedAt: new Date().toISOString(),
+      },
+    ]
     const res = await request(app)
       .put("/api/conversations/c1/messages/m1")
       .set("Authorization", "Bearer token")
@@ -187,27 +202,23 @@ describe("PUT /api/conversations/:id/messages/:msgId", () => {
 
 describe("DELETE /api/conversations/:id/messages/:msgId", () => {
   it("deletes own message", async () => {
-    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", deletedAt: null }]
-    const res = await request(app)
-      .delete("/api/conversations/c1/messages/m1")
-      .set("Authorization", "Bearer token")
+    mockData.current = [
+      { id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", deletedAt: null },
+    ]
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("message", "Message deleted")
   })
 
   it("returns 404 for unknown message", async () => {
     mockData.current = []
-    const res = await request(app)
-      .delete("/api/conversations/c1/messages/unknown")
-      .set("Authorization", "Bearer token")
+    const res = await request(app).delete("/api/conversations/c1/messages/unknown").set("Authorization", "Bearer token")
     expect(res.status).toBe(404)
   })
 
   it("returns 403 for other's message", async () => {
     mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", deletedAt: null }]
-    const res = await request(app)
-      .delete("/api/conversations/c1/messages/m1")
-      .set("Authorization", "Bearer token")
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
     expect(res.status).toBe(403)
   })
 

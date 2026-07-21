@@ -50,9 +50,7 @@ describe("GET /api/themes", () => {
   })
 
   it("returns the list of themes", async () => {
-    mockData.current = [
-      { id: "t1", userId: "user-1", name: "Dark", theme: "{}", isActive: "true" },
-    ]
+    mockData.current = [{ id: "t1", userId: "user-1", name: "Dark", theme: "{}", isActive: "true" }]
     const res = await request(app).get("/api/themes").set(authHeader())
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(1)
@@ -78,7 +76,13 @@ describe("GET /api/themes/active", () => {
 describe("POST /api/themes", () => {
   it("creates a new theme", async () => {
     mockData.current = [
-      { id: "t1", userId: "user-1", name: "Forest", theme: JSON.stringify({ colors: { accent: "#228B22" } }), isActive: "true" },
+      {
+        id: "t1",
+        userId: "user-1",
+        name: "Forest",
+        theme: JSON.stringify({ colors: { accent: "#228B22" } }),
+        isActive: "true",
+      },
     ]
     const res = await request(app)
       .post("/api/themes")
@@ -106,10 +110,7 @@ describe("PUT /api/themes/:id", () => {
   })
 
   it("returns 404 for non-existent theme", async () => {
-    const res = await request(app)
-      .put("/api/themes/nonexistent")
-      .set(authHeader())
-      .send({ name: "X", theme: {} })
+    const res = await request(app).put("/api/themes/nonexistent").set(authHeader()).send({ name: "X", theme: {} })
     expect(res.status).toBe(404)
   })
 })

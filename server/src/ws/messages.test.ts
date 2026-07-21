@@ -72,7 +72,17 @@ describe("handleSendMessage", () => {
 
   it("sends message for members", async () => {
     mockChain.current = [
-      { userId: "user1", id: "msg1", conversationId: "conv1", content: "hello", type: "text", createdAt: new Date("2024-01-01"), username: "testuser", displayName: "Test", avatar: null },
+      {
+        userId: "user1",
+        id: "msg1",
+        conversationId: "conv1",
+        content: "hello",
+        type: "text",
+        createdAt: new Date("2024-01-01"),
+        username: "testuser",
+        displayName: "Test",
+        avatar: null,
+      },
     ]
 
     await handleSendMessage(
@@ -87,14 +97,28 @@ describe("handleSendMessage", () => {
     expect(sent.type).toBe("message:new")
     expect(sent.content).toBe("hello")
 
-    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
+    expect(mockSendToConversation).toHaveBeenCalledWith(
+      "conv1",
+      expect.objectContaining({ type: "message:new" }),
+      "user1",
+    )
   })
 
   it("publishes to redis when available", async () => {
     const mockRedis = { publish: mockRedisPublish }
     vi.mocked(getRedis).mockReturnValue(mockRedis as any)
     mockChain.current = [
-      { userId: "user1", id: "msg1", conversationId: "conv1", content: "hello", type: "text", createdAt: new Date("2024-01-01"), username: "test", displayName: "Test", avatar: null },
+      {
+        userId: "user1",
+        id: "msg1",
+        conversationId: "conv1",
+        content: "hello",
+        type: "text",
+        createdAt: new Date("2024-01-01"),
+        username: "test",
+        displayName: "Test",
+        avatar: null,
+      },
     ]
 
     await handleSendMessage(
@@ -105,13 +129,27 @@ describe("handleSendMessage", () => {
     )
 
     expect(mockRedisPublish).toHaveBeenCalledWith("chat:conversation:conv1", expect.any(String))
-    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
+    expect(mockSendToConversation).toHaveBeenCalledWith(
+      "conv1",
+      expect.objectContaining({ type: "message:new" }),
+      "user1",
+    )
   })
 
   it("works without redis", async () => {
     vi.mocked(getRedis).mockReturnValue(null)
     mockChain.current = [
-      { userId: "user1", id: "msg1", conversationId: "conv1", content: "hello", type: "text", createdAt: new Date("2024-01-01"), username: "test", displayName: "Test", avatar: null },
+      {
+        userId: "user1",
+        id: "msg1",
+        conversationId: "conv1",
+        content: "hello",
+        type: "text",
+        createdAt: new Date("2024-01-01"),
+        username: "test",
+        displayName: "Test",
+        avatar: null,
+      },
     ]
 
     await handleSendMessage(
@@ -123,7 +161,11 @@ describe("handleSendMessage", () => {
 
     expect(mockWs.send).toHaveBeenCalled()
     expect(mockRedisPublish).not.toHaveBeenCalled()
-    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
+    expect(mockSendToConversation).toHaveBeenCalledWith(
+      "conv1",
+      expect.objectContaining({ type: "message:new" }),
+      "user1",
+    )
   })
 
   it("handles db errors gracefully", async () => {
@@ -185,10 +227,21 @@ describe("handleTyping", () => {
 describe("handleEditMessage", () => {
   it("edits own message", async () => {
     mockChain.current = [
-      { id: "msg1", conversationId: "conv1", senderId: "user1", content: "updated", deletedAt: null, editedAt: new Date() },
+      {
+        id: "msg1",
+        conversationId: "conv1",
+        senderId: "user1",
+        content: "updated",
+        deletedAt: null,
+        editedAt: new Date(),
+      },
     ]
 
-    await handleEditMessage(mockWs, { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" }, "user1")
+    await handleEditMessage(
+      mockWs,
+      { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalled()
     const sent = JSON.parse(mockWs.send.mock.calls[0][0])
@@ -200,7 +253,11 @@ describe("handleEditMessage", () => {
   it("rejects edit of other's message", async () => {
     mockChain.current = [{ id: "msg1", conversationId: "conv1", senderId: "other", deletedAt: null }]
 
-    await handleEditMessage(mockWs, { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" }, "user1")
+    await handleEditMessage(
+      mockWs,
+      { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "error", error: "Not your message" }))
   })
@@ -208,7 +265,11 @@ describe("handleEditMessage", () => {
   it("rejects edit of deleted message", async () => {
     mockChain.current = [{ id: "msg1", conversationId: "conv1", senderId: "user1", deletedAt: new Date() }]
 
-    await handleEditMessage(mockWs, { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" }, "user1")
+    await handleEditMessage(
+      mockWs,
+      { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "error", error: "Cannot edit deleted message" }))
   })
@@ -216,7 +277,11 @@ describe("handleEditMessage", () => {
   it("returns error for missing message", async () => {
     mockChain.current = []
 
-    await handleEditMessage(mockWs, { type: "message:edit", messageId: "unknown", conversationId: "conv1", content: "updated" }, "user1")
+    await handleEditMessage(
+      mockWs,
+      { type: "message:edit", messageId: "unknown", conversationId: "conv1", content: "updated" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "error", error: "Message not found" }))
   })
@@ -224,7 +289,11 @@ describe("handleEditMessage", () => {
   it("handles db errors gracefully", async () => {
     mockLimit.mockRejectedValueOnce(new Error("db down"))
 
-    await handleEditMessage(mockWs, { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" }, "user1")
+    await handleEditMessage(
+      mockWs,
+      { type: "message:edit", messageId: "msg1", conversationId: "conv1", content: "updated" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "error", error: "Failed to edit message" }))
   })
@@ -261,7 +330,11 @@ describe("handleDeleteMessage", () => {
   it("returns error for missing message", async () => {
     mockChain.current = []
 
-    await handleDeleteMessage(mockWs, { type: "message:delete", messageId: "unknown", conversationId: "conv1" }, "user1")
+    await handleDeleteMessage(
+      mockWs,
+      { type: "message:delete", messageId: "unknown", conversationId: "conv1" },
+      "user1",
+    )
 
     expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "error", error: "Message not found" }))
   })

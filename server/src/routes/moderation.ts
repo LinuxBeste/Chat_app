@@ -42,20 +42,29 @@ const reportSchema = z.object({
   conversationId: z.string().uuid().optional(),
 })
 
-router.post("/reports", authGuard, validate(reportSchema), catchAsync(async (req: Request, res: Response) => {
-  await db.insert(reports).values({
-    reportedBy: req.user!.userId,
-    targetUserId: req.body.targetUserId,
-    targetMessageId: req.body.targetMessageId,
-    reason: req.body.reason,
-  })
-  res.status(201).json({ message: "Report submitted" })
-}))
+router.post(
+  "/reports",
+  authGuard,
+  validate(reportSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    await db.insert(reports).values({
+      reportedBy: req.user!.userId,
+      targetUserId: req.body.targetUserId,
+      targetMessageId: req.body.targetMessageId,
+      reason: req.body.reason,
+    })
+    res.status(201).json({ message: "Report submitted" })
+  }),
+)
 
-router.get("/reports", authGuard, catchAsync(async (_req: Request, res: Response) => {
-  const list = await db.select().from(reports).orderBy(reports.createdAt)
-  res.json(list)
-}))
+router.get(
+  "/reports",
+  authGuard,
+  catchAsync(async (_req: Request, res: Response) => {
+    const list = await db.select().from(reports).orderBy(reports.createdAt)
+    res.json(list)
+  }),
+)
 
 // --- Bans ---
 
@@ -78,22 +87,31 @@ router.post(
   }),
 )
 
-router.delete("/bans/:conversationId/:userId", authGuard, adminGuard, catchAsync(async (req: Request, res: Response) => {
-  await db
-    .delete(bans)
-    .where(
-      and(eq(bans.conversationId, req.params.conversationId as string), eq(bans.userId, req.params.userId as string)),
-    )
-  res.json({ message: "User unbanned" })
-}))
+router.delete(
+  "/bans/:conversationId/:userId",
+  authGuard,
+  adminGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    await db
+      .delete(bans)
+      .where(
+        and(eq(bans.conversationId, req.params.conversationId as string), eq(bans.userId, req.params.userId as string)),
+      )
+    res.json({ message: "User unbanned" })
+  }),
+)
 
-router.get("/bans/:conversationId", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const list = await db
-    .select()
-    .from(bans)
-    .where(eq(bans.conversationId, req.params.conversationId as string))
-  res.json(list)
-}))
+router.get(
+  "/bans/:conversationId",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const list = await db
+      .select()
+      .from(bans)
+      .where(eq(bans.conversationId, req.params.conversationId as string))
+    res.json(list)
+  }),
+)
 
 // --- Mutes ---
 
@@ -111,11 +129,15 @@ router.post(
   }),
 )
 
-router.delete("/mutes/:conversationId", authGuard, catchAsync(async (req: Request, res: Response) => {
-  await db
-    .delete(mutes)
-    .where(and(eq(mutes.conversationId, req.params.conversationId as string), eq(mutes.userId, req.user!.userId)))
-  res.json({ message: "Conversation unmuted" })
-}))
+router.delete(
+  "/mutes/:conversationId",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    await db
+      .delete(mutes)
+      .where(and(eq(mutes.conversationId, req.params.conversationId as string), eq(mutes.userId, req.user!.userId)))
+    res.json({ message: "Conversation unmuted" })
+  }),
+)
 
 export default router

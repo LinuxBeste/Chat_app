@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import { Request, Response, NextFunction } from "express"
 import { verifyToken, type TokenPayload } from "../lib/jwt.js"
 import { db } from "../lib/db.js"
@@ -17,7 +18,8 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
   try {
     const apiKey = req.headers["x-api-key"] as string | undefined
     if (apiKey) {
-      const token = await db.select().from(refreshTokens).where(eq(refreshTokens.token, apiKey)).limit(1)
+      const apiKeyHash = crypto.createHash("sha256").update(apiKey).digest("hex")
+      const token = await db.select().from(refreshTokens).where(eq(refreshTokens.token, apiKeyHash)).limit(1)
       if (!token.length || token[0].expiresAt < new Date()) {
         res.status(401).json({ error: "Invalid or expired API key" })
         return

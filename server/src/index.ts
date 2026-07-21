@@ -6,6 +6,11 @@ import { createWSServer } from "./ws/index.js"
 import { logger } from "./lib/logger.js"
 
 async function main() {
+  if (config.nodeEnv === "production" && config.jwt.secret === "dev-secret-change-me") {
+    logger.fatal("JWT_SECRET must be changed in production")
+    process.exit(1)
+  }
+
   logger.info({ nodeEnv: process.env.NODE_ENV, port: config.port, host: config.host }, "Starting server")
   await testConnection()
 

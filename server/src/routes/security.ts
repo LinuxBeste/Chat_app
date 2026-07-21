@@ -12,14 +12,18 @@ const router: ReturnType<typeof Router> = Router()
 
 // --- TOTP Setup ---
 
-router.post("/totp/setup", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const secret = crypto.randomBytes(20).toString("hex")
-  await db
-    .insert(totpSecrets)
-    .values({ userId: req.user!.userId, secret })
-    .onConflictDoUpdate({ target: totpSecrets.userId, set: { secret, verified: "false" } })
-  res.json({ secret, uri: `otpauth://totp/Chat:${req.user!.username}?secret=${secret}&issuer=Chat` })
-}))
+router.post(
+  "/totp/setup",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const secret = crypto.randomBytes(20).toString("hex")
+    await db
+      .insert(totpSecrets)
+      .values({ userId: req.user!.userId, secret })
+      .onConflictDoUpdate({ target: totpSecrets.userId, set: { secret, verified: "false" } })
+    res.json({ secret, uri: `otpauth://totp/Chat:${req.user!.username}?secret=${secret}&issuer=Chat` })
+  }),
+)
 
 router.post(
   "/totp/verify",
@@ -45,28 +49,40 @@ router.post(
   }),
 )
 
-router.post("/totp/disable", authGuard, catchAsync(async (req: Request, res: Response) => {
-  await db.delete(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId))
-  res.json({ message: "2FA disabled" })
-}))
+router.post(
+  "/totp/disable",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    await db.delete(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId))
+    res.json({ message: "2FA disabled" })
+  }),
+)
 
-router.get("/totp/status", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
-  res.json({ enabled: record?.verified === "true" })
-}))
+router.get(
+  "/totp/status",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
+    res.json({ enabled: record?.verified === "true" })
+  }),
+)
 
 // --- Login History ---
 
-router.get("/history", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
-  const history = await db
-    .select()
-    .from(loginHistory)
-    .where(eq(loginHistory.userId, req.user!.userId))
-    .orderBy(desc(loginHistory.createdAt))
-    .limit(limit)
-  res.json(history)
-}))
+router.get(
+  "/history",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
+    const history = await db
+      .select()
+      .from(loginHistory)
+      .where(eq(loginHistory.userId, req.user!.userId))
+      .orderBy(desc(loginHistory.createdAt))
+      .limit(limit)
+    res.json(history)
+  }),
+)
 
 // Simple TOTP implementation (RFC 6238)
 function totp(secret: string): string {

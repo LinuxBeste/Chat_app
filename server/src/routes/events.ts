@@ -17,39 +17,52 @@ const createSchema = z.object({
   endsAt: z.string().datetime().optional(),
 })
 
-router.post("/", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
-  const [event] = await db
-    .insert(events)
-    .values({
-      conversationId: req.body.conversationId,
-      createdBy: req.user!.userId,
-      title: req.body.title,
-      description: req.body.description,
-      startsAt: new Date(req.body.startsAt),
-      endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null,
-    })
-    .returning()
-  res.status(201).json(event)
-}))
+router.post(
+  "/",
+  authGuard,
+  validate(createSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    const [event] = await db
+      .insert(events)
+      .values({
+        conversationId: req.body.conversationId,
+        createdBy: req.user!.userId,
+        title: req.body.title,
+        description: req.body.description,
+        startsAt: new Date(req.body.startsAt),
+        endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null,
+      })
+      .returning()
+    res.status(201).json(event)
+  }),
+)
 
-router.get("/", authGuard, catchAsync(async (_req: Request, res: Response) => {
-  const list = await db.select().from(events).orderBy(desc(events.startsAt)).limit(50)
-  res.json(list)
-}))
+router.get(
+  "/",
+  authGuard,
+  catchAsync(async (_req: Request, res: Response) => {
+    const list = await db.select().from(events).orderBy(desc(events.startsAt)).limit(50)
+    res.json(list)
+  }),
+)
 
-router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [event] = await db
-    .select()
-    .from(events)
-    .where(eq(events.id, req.params.id as string))
-    .limit(1)
-  if (!event) {
-    res.status(404).json({ error: "Event not found" })
-    return
-  }
-  const rsvps = await db.select().from(eventRsvps).where(eq(eventRsvps.eventId, event.id))
-  res.json({ ...event, rsvps })
-}))
+router.get(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, req.params.id as string))
+      .limit(1)
+    if (!event) {
+      res.status(404).json({ error: "Event not found" })
+      return
+    }
+    const rsvps = await db.select().from(eventRsvps).where(eq(eventRsvps.eventId, event.id))
+    res.json({ ...event, rsvps })
+  }),
+)
 
 router.post(
   "/:id/rsvp",

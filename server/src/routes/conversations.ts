@@ -19,204 +19,235 @@ const createSchema = z.object({
   participantIds: z.array(z.string().uuid()).min(1),
 })
 
-router.post("/", authGuard, validate(createSchema), catchAsync(async (req: Request, res: Response) => {
-  try {
-    const { type, name, participantIds } = req.body
-    const allIds = [...new Set([req.user!.userId, ...participantIds])]
+router.post(
+  "/",
+  authGuard,
+  validate(createSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    try {
+      const { type, name, participantIds } = req.body
+      const allIds = [...new Set([req.user!.userId, ...participantIds])]
 
-    if (type === "dm") {
-      const existing = await db.query.conversations.findFirst({
-        where: and(
-          eq(conversations.type, "dm"),
-          sql`(SELECT COUNT(*) FROM ${participants} WHERE ${participants.conversationId} = ${conversations.id} AND ${participants.userId} = ANY(${sql.join(
-            allIds.map((id) => sql`${id}::uuid`),
-            sql`, `,
-          )})) = ${allIds.length}`,
-        ),
-      })
+      if (type === "dm") {
+        const existing = await db.query.conversations.findFirst({
+          where: and(
+            eq(conversations.type, "dm"),
+            sql`(SELECT COUNT(*) FROM ${participants} WHERE ${participants.conversationId} = ${conversations.id} AND ${participants.userId} = ANY(${sql.join(
+              allIds.map((id) => sql`${id}::uuid`),
+              sql`, `,
+            )})) = ${allIds.length}`,
+          ),
+        })
 
-      if (existing) {
-        res.json({ id: existing.id })
-        return
+        if (existing) {
+          res.json({ id: existing.id })
+          return
+        }
       }
+
+      const [conv] = await db
+        .insert(conversations)
+        .values({ type, name: name ?? null, createdBy: req.user!.userId })
+        .returning()
+
+      await db.insert(participants).values(allIds.map((userId) => ({ conversationId: conv.id, userId })))
+
+      res.status(201).json(conv)
+    } catch (err) {
+      log.error({ err }, "Create conversation failed")
+      res.status(500).json({ error: "Internal server error" })
+    }
+  }),
+)
+
+router.get(
+  "/",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const convs = await db
+      .select({
+        id: conversations.id,
+        type: conversations.type,
+        name: conversations.name,
+        createdAt: conversations.createdAt,
+      })
+      .from(conversations)
+      .innerJoin(participants, eq(participants.conversationId, conversations.id))
+      .where(eq(participants.userId, req.user!.userId))
+      .orderBy(desc(conversations.createdAt))
+
+    res.json(convs)
+  }),
+)
+
+router.get(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const id = req.params.id as string
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
+
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" })
+      return
     }
 
-    const [conv] = await db
-      .insert(conversations)
-      .values({ type, name: name ?? null, createdBy: req.user!.userId })
-      .returning()
-
-    await db.insert(participants).values(allIds.map((userId) => ({ conversationId: conv.id, userId })))
-
-    res.status(201).json(conv)
-  } catch (err) {
-    log.error({ err }, "Create conversation failed")
-    res.status(500).json({ error: "Internal server error" })
-  }
-}))
-
-router.get("/", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const convs = await db
-    .select({
-      id: conversations.id,
-      type: conversations.type,
-      name: conversations.name,
-      createdAt: conversations.createdAt,
-    })
-    .from(conversations)
-    .innerJoin(participants, eq(participants.conversationId, conversations.id))
-    .where(eq(participants.userId, req.user!.userId))
-    .orderBy(desc(conversations.createdAt))
-
-  res.json(convs)
-}))
-
-router.get("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const id = req.params.id as string
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
-
-  if (!conv) {
-    res.status(404).json({ error: "Conversation not found" })
-    return
-  }
-
-  const members = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      avatar: users.avatar,
-      status: users.status,
-    })
-    .from(participants)
-    .innerJoin(users, eq(users.id, participants.userId))
-    .where(eq(participants.conversationId, conv.id))
-
-  res.json({ ...conv, members })
-}))
-
-router.put("/:id", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const { name } = req.body
-  if (!name || typeof name !== "string") {
-    res.status(400).json({ error: "Name is required" })
-    return
-  }
-  const [updated] = await db
-    .update(conversations)
-    .set({ name })
-    .where(eq(conversations.id, req.params.id as string))
-    .returning()
-  res.json(updated)
-}))
-
-router.get("/:id/messages", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const limit = Math.min(parseInt(req.query.limit as string) || 50, 100)
-  const offset = parseInt(req.query.offset as string) || 0
-
-  const msgs = await db
-    .select({
-      id: messages.id,
-      content: messages.content,
-      type: messages.type,
-      senderId: messages.senderId,
-      createdAt: messages.createdAt,
-      editedAt: messages.editedAt,
-      sender: {
+    const members = await db
+      .select({
+        id: users.id,
         username: users.username,
         displayName: users.displayName,
         avatar: users.avatar,
-      },
-    })
-    .from(messages)
-    .innerJoin(users, eq(users.id, messages.senderId))
-    .where(eq(messages.conversationId, req.params.id as string))
-    .orderBy(desc(messages.createdAt))
-    .limit(limit)
-    .offset(offset)
+        status: users.status,
+      })
+      .from(participants)
+      .innerJoin(users, eq(users.id, participants.userId))
+      .where(eq(participants.conversationId, conv.id))
 
-  res.json(msgs.reverse())
-}))
+    res.json({ ...conv, members })
+  }),
+)
 
-router.put("/:id/messages/:msgId", authGuard, validate(z.object({ content: z.string().min(1).max(5000) })), catchAsync(async (req: Request, res: Response) => {
-  const [msg] = await db
-    .select()
-    .from(messages)
-    .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
-    .limit(1)
+router.put(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const { name } = req.body
+    if (!name || typeof name !== "string") {
+      res.status(400).json({ error: "Name is required" })
+      return
+    }
+    const [updated] = await db
+      .update(conversations)
+      .set({ name })
+      .where(eq(conversations.id, req.params.id as string))
+      .returning()
+    res.json(updated)
+  }),
+)
 
-  if (!msg) {
-    res.status(404).json({ error: "Message not found" })
-    return
-  }
-  if (msg.senderId !== req.user!.userId) {
-    res.status(403).json({ error: "Not your message" })
-    return
-  }
-  if (msg.deletedAt) {
-    res.status(400).json({ error: "Cannot edit deleted message" })
-    return
-  }
+router.get(
+  "/:id/messages",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100)
+    const offset = parseInt(req.query.offset as string) || 0
 
-  const [updated] = await db
-    .update(messages)
-    .set({ content: req.body.content, editedAt: new Date() })
-    .where(eq(messages.id, msg.id))
-    .returning()
+    const msgs = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        type: messages.type,
+        senderId: messages.senderId,
+        createdAt: messages.createdAt,
+        editedAt: messages.editedAt,
+        sender: {
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+        },
+      })
+      .from(messages)
+      .innerJoin(users, eq(users.id, messages.senderId))
+      .where(eq(messages.conversationId, req.params.id as string))
+      .orderBy(desc(messages.createdAt))
+      .limit(limit)
+      .offset(offset)
 
-  res.json(updated)
-}))
+    res.json(msgs.reverse())
+  }),
+)
 
-router.delete("/:id/messages/:msgId", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const [msg] = await db
-    .select()
-    .from(messages)
-    .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
-    .limit(1)
+router.put(
+  "/:id/messages/:msgId",
+  authGuard,
+  validate(z.object({ content: z.string().min(1).max(5000) })),
+  catchAsync(async (req: Request, res: Response) => {
+    const [msg] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
+      .limit(1)
 
-  if (!msg) {
-    res.status(404).json({ error: "Message not found" })
-    return
-  }
-  if (msg.senderId !== req.user!.userId) {
-    res.status(403).json({ error: "Not your message" })
-    return
-  }
-  if (msg.deletedAt) {
-    res.status(400).json({ error: "Message already deleted" })
-    return
-  }
+    if (!msg) {
+      res.status(404).json({ error: "Message not found" })
+      return
+    }
+    if (msg.senderId !== req.user!.userId) {
+      res.status(403).json({ error: "Not your message" })
+      return
+    }
+    if (msg.deletedAt) {
+      res.status(400).json({ error: "Cannot edit deleted message" })
+      return
+    }
 
-  await db
-    .update(messages)
-    .set({ deletedAt: new Date() })
-    .where(eq(messages.id, msg.id))
+    const [updated] = await db
+      .update(messages)
+      .set({ content: req.body.content, editedAt: new Date() })
+      .where(eq(messages.id, msg.id))
+      .returning()
 
-  res.json({ message: "Message deleted" })
-}))
+    res.json(updated)
+  }),
+)
 
-router.get("/:id/files", authGuard, catchAsync(async (req: Request, res: Response) => {
-  const fileMsgs = await db
-    .select({
-      id: messages.id,
-      content: messages.content,
-      type: messages.type,
-      createdAt: messages.createdAt,
-      sender: { username: users.username },
-      attachment: {
-        url: attachments.url,
-        filename: attachments.filename,
-        mimeType: attachments.mimeType,
-        size: attachments.size,
-      },
-    })
-    .from(messages)
-    .innerJoin(users, eq(users.id, messages.senderId))
-    .leftJoin(attachments, eq(attachments.messageId, messages.id))
-    .where(and(eq(messages.conversationId, req.params.id as string), eq(messages.type, "file")))
-    .orderBy(desc(messages.createdAt))
-    .limit(50)
+router.delete(
+  "/:id/messages/:msgId",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [msg] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
+      .limit(1)
 
-  res.json(fileMsgs.filter((m) => m.attachment))
-}))
+    if (!msg) {
+      res.status(404).json({ error: "Message not found" })
+      return
+    }
+    if (msg.senderId !== req.user!.userId) {
+      res.status(403).json({ error: "Not your message" })
+      return
+    }
+    if (msg.deletedAt) {
+      res.status(400).json({ error: "Message already deleted" })
+      return
+    }
+
+    await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, msg.id))
+
+    res.json({ message: "Message deleted" })
+  }),
+)
+
+router.get(
+  "/:id/files",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const fileMsgs = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        type: messages.type,
+        createdAt: messages.createdAt,
+        sender: { username: users.username },
+        attachment: {
+          url: attachments.url,
+          filename: attachments.filename,
+          mimeType: attachments.mimeType,
+          size: attachments.size,
+        },
+      })
+      .from(messages)
+      .innerJoin(users, eq(users.id, messages.senderId))
+      .leftJoin(attachments, eq(attachments.messageId, messages.id))
+      .where(and(eq(messages.conversationId, req.params.id as string), eq(messages.type, "file")))
+      .orderBy(desc(messages.createdAt))
+      .limit(50)
+
+    res.json(fileMsgs.filter((m) => m.attachment))
+  }),
+)
 
 export default router

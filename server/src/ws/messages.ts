@@ -167,10 +167,7 @@ export async function handleDeleteMessage(ws: WebSocket, payload: DeleteMessageP
       return
     }
 
-    await db
-      .update(messages)
-      .set({ deletedAt: new Date() })
-      .where(eq(messages.id, payload.messageId))
+    await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, payload.messageId))
 
     const event = {
       type: "message:deleted",
