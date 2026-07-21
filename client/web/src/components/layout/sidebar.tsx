@@ -43,6 +43,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const handleNavClick = (v: View) => setView(v)
   const handleBottomClick = (label: string) => {
     if (label === "Profile") setView("profile")
+    if (label === "Settings") setView("settings")
   }
 
   return (
