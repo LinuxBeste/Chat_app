@@ -8,6 +8,7 @@ import {
   User,
   Settings,
   LogOut,
+  Globe,
 } from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
 import { useNav } from "./dashboard-layout"
@@ -15,6 +16,7 @@ import type { View } from "./dashboard-layout"
 
 const navItems: { icon: any; label: string; view: View }[] = [
   { icon: MessageSquare, label: "Messages", view: "chat" },
+  { icon: Globe, label: "Communities", view: "communities" },
   { icon: Users, label: "Groups", view: "groups" },
   { icon: Phone, label: "Calls", view: "calls" },
   { icon: FileText, label: "Files", view: "files" },
