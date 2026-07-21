@@ -30,8 +30,9 @@ describe("App", () => {
   })
 
   it("sets CORS headers", async () => {
-    const res = await request(app).get("/health")
-    expect(res.headers["access-control-allow-origin"]).toBe("*")
+    const res = await request(app).get("/health").set("Origin", "http://localhost:5173")
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5173")
+    expect(res.headers["access-control-allow-credentials"]).toBe("true")
   })
 
   it("parses JSON body", async () => {

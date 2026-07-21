@@ -1,6 +1,6 @@
 import { db } from "../lib/db.js"
 import { messages, participants, users, attachments } from "../db/schema.js"
-import { eq, and, sql } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
 import { createContextLogger } from "../lib/logger.js"

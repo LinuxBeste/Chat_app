@@ -28,7 +28,14 @@ import themeRoutes from "./routes/themes.js"
 const app: Express = express()
 
 app.use(helmet())
-app.use(cors({ origin: config.cors.origin, credentials: true }))
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      callback(null, origin || true)
+    },
+    credentials: true,
+  }),
+)
 app.use(compression())
 app.use(morgan("dev"))
 app.use(express.json())

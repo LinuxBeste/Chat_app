@@ -8,7 +8,7 @@ import { signAccessToken, signRefreshToken, signSessionToken, verifyToken } from
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { users, totpSecrets, loginHistory, refreshTokens } from "../db/schema.js"
-import { eq, and, desc, lt } from "drizzle-orm"
+import { eq, and, desc, gt } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 
 const log = createContextLogger("auth")
@@ -53,7 +53,7 @@ async function isLockedOut(email: string): Promise<boolean> {
   const recent = await db
     .select()
     .from(loginHistory)
-    .where(and(eq(loginHistory.userId, user.id), eq(loginHistory.success, "false"), lt(cutoff, loginHistory.createdAt)))
+    .where(and(eq(loginHistory.userId, user.id), eq(loginHistory.success, "false"), gt(loginHistory.createdAt, cutoff)))
     .limit(LOCKOUT_THRESHOLD)
 
   return recent.length >= LOCKOUT_THRESHOLD
