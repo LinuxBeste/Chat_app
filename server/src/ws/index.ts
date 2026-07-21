@@ -7,8 +7,7 @@ import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
 import { getRedis } from "../lib/redis.js"
 import { createContextLogger } from "../lib/logger.js"
-
-const clients = new Map<string, Set<WebSocket>>()
+import { clients, sendToUser, broadcast, sendToConversation } from "./clients.js"
 
 export interface IncomingMessage {
   type: string
@@ -39,6 +38,10 @@ export function createWSServer(server: import("http").Server) {
       if (err) wsLogger.error({ err }, "Redis subscribe error")
     })
 
+    redis.psubscribe("chat:conversation:*", (err) => {
+      if (err) wsLogger.error({ err }, "Redis psubscribe error")
+    })
+
     redis.on("message", (_channel, message) => {
       try {
         const event = JSON.parse(message)
@@ -51,6 +54,19 @@ export function createWSServer(server: import("http").Server) {
         }
       } catch (redisErr) {
         wsLogger.error({ redisErr }, "Redis message handler error")
+      }
+    })
+
+    redis.on("pmessage", (pattern, channel, message) => {
+      if (pattern === "chat:conversation:*") {
+        try {
+          const event = JSON.parse(message) as Record<string, unknown>
+          const conversationId = channel.replace("chat:conversation:", "")
+          const senderId = (event.sender as { id?: string })?.id
+          sendToConversation(conversationId, event, senderId)
+        } catch (redisErr) {
+          wsLogger.error({ redisErr }, "Redis pmessage handler error")
+        }
       }
     })
   } else {
@@ -164,24 +180,4 @@ export function createWSServer(server: import("http").Server) {
   return wss
 }
 
-function broadcast(event: object) {
-  const message = JSON.stringify(event)
-  for (const sockets of clients.values()) {
-    for (const ws of sockets) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(message)
-      }
-    }
-  }
-}
 
-function sendToUser(userId: string, event: object) {
-  const sockets = clients.get(userId)
-  if (!sockets) return
-  const message = JSON.stringify(event)
-  for (const ws of sockets) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(message)
-    }
-  }
-}

@@ -29,6 +29,15 @@ vi.mock("../lib/redis.js", () => ({
   getRedis: vi.fn(),
 }))
 
+const { mockSendToConversation } = vi.hoisted(() => {
+  const mSendToConversation = vi.fn()
+  return { mockSendToConversation: mSendToConversation }
+})
+
+vi.mock("./clients.js", () => ({
+  sendToConversation: mockSendToConversation,
+}))
+
 import { getRedis } from "../lib/redis.js"
 import { handleSendMessage, handleTyping } from "./messages.js"
 
@@ -79,6 +88,8 @@ describe("handleSendMessage", () => {
     const sent = JSON.parse(mockWs.send.mock.calls[0][0])
     expect(sent.type).toBe("message:new")
     expect(sent.content).toBe("hello")
+
+    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
   })
 
   it("publishes to redis when available", async () => {
@@ -105,6 +116,7 @@ describe("handleSendMessage", () => {
     )
 
     expect(mockRedisPublish).toHaveBeenCalledWith("chat:conversation:conv1", expect.any(String))
+    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
   })
 
   it("works without redis", async () => {
@@ -131,6 +143,7 @@ describe("handleSendMessage", () => {
 
     expect(mockWs.send).toHaveBeenCalled()
     expect(mockRedisPublish).not.toHaveBeenCalled()
+    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", expect.objectContaining({ type: "message:new" }), "user1")
   })
 
   it("handles db errors gracefully", async () => {
@@ -148,7 +161,7 @@ describe("handleSendMessage", () => {
 })
 
 describe("handleTyping", () => {
-  it("publishes to redis", async () => {
+  it("publishes to redis and delivers to conversation", async () => {
     const mockRedis = { publish: mockRedisPublish }
     vi.mocked(getRedis).mockReturnValue(mockRedis as any)
 
@@ -158,22 +171,33 @@ describe("handleTyping", () => {
       "chat:conversation:conv1",
       JSON.stringify({ type: "message:typing", conversationId: "conv1", userId: "user1" }),
     )
+    expect(mockSendToConversation).toHaveBeenCalledWith(
+      "conv1",
+      { type: "message:typing", conversationId: "conv1", userId: "user1" },
+      "user1",
+    )
   })
 
-  it("works without redis", async () => {
+  it("delivers locally without redis", async () => {
     vi.mocked(getRedis).mockReturnValue(null)
 
     await handleTyping(mockWs, { type: "message:typing", conversationId: "conv1" }, "user1")
 
     expect(mockRedisPublish).not.toHaveBeenCalled()
+    expect(mockSendToConversation).toHaveBeenCalledWith(
+      "conv1",
+      { type: "message:typing", conversationId: "conv1", userId: "user1" },
+      "user1",
+    )
   })
 
-  it("doesn't crash on error", async () => {
+  it("doesn't crash on redis error", async () => {
     const mockRedis = { publish: vi.fn().mockRejectedValue(new Error("publish failed")) }
     vi.mocked(getRedis).mockReturnValue(mockRedis as any)
 
     await expect(
       handleTyping(mockWs, { type: "message:typing", conversationId: "conv1" }, "user1"),
     ).resolves.toBeUndefined()
+    expect(mockSendToConversation).toHaveBeenCalled()
   })
 })

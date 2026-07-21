@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
 import { createContextLogger } from "../lib/logger.js"
+import { sendToConversation } from "./clients.js"
 
 const log = createContextLogger("ws:messages")
 
@@ -63,7 +64,9 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       redis.publish(`chat:conversation:${payload.conversationId}`, JSON.stringify(event))
     }
 
+    // Confirm to sender, then deliver to other participants
     ws.send(JSON.stringify(event))
+    sendToConversation(payload.conversationId, event, userId)
     log.info({ conversationId: payload.conversationId, messageType: msg.type }, "Message sent")
   } catch (err) {
     log.error({ err, conversationId: payload.conversationId }, "Send message failed")
@@ -72,11 +75,10 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
 }
 
 export async function handleTyping(_ws: WebSocket, payload: TypingPayload, userId: string) {
+  const event = { type: "message:typing" as const, conversationId: payload.conversationId, userId }
   const redis = getRedis()
   if (redis) {
-    redis.publish(
-      `chat:conversation:${payload.conversationId}`,
-      JSON.stringify({ type: "message:typing", conversationId: payload.conversationId, userId }),
-    )
+    redis.publish(`chat:conversation:${payload.conversationId}`, JSON.stringify(event))
   }
+  sendToConversation(payload.conversationId, event, userId)
 }
