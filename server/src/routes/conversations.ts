@@ -137,6 +137,63 @@ router.get("/:id/messages", authGuard, catchAsync(async (req: Request, res: Resp
   res.json(msgs.reverse())
 }))
 
+router.put("/:id/messages/:msgId", authGuard, validate(z.object({ content: z.string().min(1).max(5000) })), catchAsync(async (req: Request, res: Response) => {
+  const [msg] = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
+    .limit(1)
+
+  if (!msg) {
+    res.status(404).json({ error: "Message not found" })
+    return
+  }
+  if (msg.senderId !== req.user!.userId) {
+    res.status(403).json({ error: "Not your message" })
+    return
+  }
+  if (msg.deletedAt) {
+    res.status(400).json({ error: "Cannot edit deleted message" })
+    return
+  }
+
+  const [updated] = await db
+    .update(messages)
+    .set({ content: req.body.content, editedAt: new Date() })
+    .where(eq(messages.id, msg.id))
+    .returning()
+
+  res.json(updated)
+}))
+
+router.delete("/:id/messages/:msgId", authGuard, catchAsync(async (req: Request, res: Response) => {
+  const [msg] = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
+    .limit(1)
+
+  if (!msg) {
+    res.status(404).json({ error: "Message not found" })
+    return
+  }
+  if (msg.senderId !== req.user!.userId) {
+    res.status(403).json({ error: "Not your message" })
+    return
+  }
+  if (msg.deletedAt) {
+    res.status(400).json({ error: "Message already deleted" })
+    return
+  }
+
+  await db
+    .update(messages)
+    .set({ deletedAt: new Date() })
+    .where(eq(messages.id, msg.id))
+
+  res.json({ message: "Message deleted" })
+}))
+
 router.get("/:id/files", authGuard, catchAsync(async (req: Request, res: Response) => {
   const fileMsgs = await db
     .select({

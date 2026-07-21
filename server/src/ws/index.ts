@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws"
 import { IncomingMessage as HttpMessage } from "http"
 import { verifyToken } from "../lib/jwt.js"
 import { config } from "../config.js"
-import { handleSendMessage, handleTyping } from "./messages.js"
+import { handleSendMessage, handleTyping, handleEditMessage, handleDeleteMessage } from "./messages.js"
 import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
 import { getRedis } from "../lib/redis.js"
@@ -108,6 +108,12 @@ export function createWSServer(server: import("http").Server) {
               break
             case "message:typing":
               await handleTyping(ws, msg as any, user.userId)
+              break
+            case "message:edit":
+              await handleEditMessage(ws, msg as any, user.userId)
+              break
+            case "message:delete":
+              await handleDeleteMessage(ws, msg as any, user.userId)
               break
             case "presence:status": {
               const status = (msg as any).status

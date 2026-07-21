@@ -150,6 +150,73 @@ describe("DELETE /api/conversations/:id", () => {
   })
 })
 
+describe("PUT /api/conversations/:id/messages/:msgId", () => {
+  it("edits own message", async () => {
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", content: "updated", deletedAt: null, editedAt: new Date().toISOString() }]
+    const res = await request(app)
+      .put("/api/conversations/c1/messages/m1")
+      .set("Authorization", "Bearer token")
+      .send({ content: "updated" })
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("content", "updated")
+  })
+
+  it("returns 404 for unknown message", async () => {
+    mockData.current = []
+    const res = await request(app)
+      .put("/api/conversations/c1/messages/unknown")
+      .set("Authorization", "Bearer token")
+      .send({ content: "updated" })
+    expect(res.status).toBe(404)
+  })
+
+  it("returns 403 for other's message", async () => {
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", content: "old", deletedAt: null }]
+    const res = await request(app)
+      .put("/api/conversations/c1/messages/m1")
+      .set("Authorization", "Bearer token")
+      .send({ content: "updated" })
+    expect(res.status).toBe(403)
+  })
+
+  it("returns 401 without auth", async () => {
+    const res = await request(app).put("/api/conversations/c1/messages/m1").send({ content: "updated" })
+    expect(res.status).toBe(401)
+  })
+})
+
+describe("DELETE /api/conversations/:id/messages/:msgId", () => {
+  it("deletes own message", async () => {
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", deletedAt: null }]
+    const res = await request(app)
+      .delete("/api/conversations/c1/messages/m1")
+      .set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("message", "Message deleted")
+  })
+
+  it("returns 404 for unknown message", async () => {
+    mockData.current = []
+    const res = await request(app)
+      .delete("/api/conversations/c1/messages/unknown")
+      .set("Authorization", "Bearer token")
+    expect(res.status).toBe(404)
+  })
+
+  it("returns 403 for other's message", async () => {
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", deletedAt: null }]
+    const res = await request(app)
+      .delete("/api/conversations/c1/messages/m1")
+      .set("Authorization", "Bearer token")
+    expect(res.status).toBe(403)
+  })
+
+  it("returns 401 without auth", async () => {
+    const res = await request(app).delete("/api/conversations/c1/messages/m1")
+    expect(res.status).toBe(401)
+  })
+})
+
 describe("GET /api/conversations/:id/messages", () => {
   it("returns messages", async () => {
     mockData.current = [

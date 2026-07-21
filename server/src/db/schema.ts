@@ -69,6 +69,7 @@ export const messages = pgTable(
     type: messageTypeEnum("type").default("text").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
+    deletedAt: timestamp("deleted_at"),
   },
   (table) => ({
     conversationIdIdx: index("messages_conversation_id_idx").on(table.conversationId),
