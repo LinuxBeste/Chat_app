@@ -57,5 +57,8 @@ coverage/
 # Misc
 *.ts.js
 
+# Drizzle migration files (generated at dev time)
+server/drizzle/
+
 # Notes
 notes.md
