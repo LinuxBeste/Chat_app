@@ -1,5 +1,5 @@
 import { db } from "../lib/db.js"
-import { messages, participants, users } from "../db/schema.js"
+import { messages, participants, users, attachments } from "../db/schema.js"
 import { eq, and, sql } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
@@ -8,11 +8,19 @@ import { sendToConversation } from "./clients.js"
 
 const log = createContextLogger("ws:messages")
 
+interface AttachmentPayload {
+  url: string
+  filename: string
+  mimeType: string
+  size: number
+}
+
 interface SendMessagePayload {
   type: "message:send"
   conversationId: string
   content: string
   messageType?: "text" | "image" | "file"
+  attachment?: AttachmentPayload
 }
 
 interface EditMessagePayload {
@@ -56,13 +64,24 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       })
       .returning()
 
+    let attachment = payload.attachment
+    if (attachment) {
+      await db.insert(attachments).values({
+        messageId: msg.id,
+        url: attachment.url,
+        filename: attachment.filename,
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+      })
+    }
+
     const [user] = await db
       .select({ username: users.username, displayName: users.displayName, avatar: users.avatar })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1)
 
-    const event = {
+    const event: Record<string, unknown> = {
       type: "message:new",
       id: msg.id,
       conversationId: msg.conversationId,
@@ -70,6 +89,9 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       content: msg.content,
       messageType: msg.type,
       createdAt: msg.createdAt,
+    }
+    if (attachment) {
+      event.attachment = attachment
     }
 
     const redis = getRedis()

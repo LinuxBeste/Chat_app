@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react"
-import { MessageInput } from "./message-input"
+import { MessageInput, type AttachmentData } from "./message-input"
 import { CallOverlay } from "./call-overlay"
 import { Avatar } from "../ui/avatar"
-import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check } from "lucide-react"
+import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download } from "lucide-react"
 import { api } from "../../lib/api"
 import { wsClient } from "../../lib/ws"
 
@@ -90,8 +90,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   }, [editingMessageId])
 
   const handleSend = useCallback(
-    (content: string) => {
-      wsClient.send("message:send", { conversationId, content })
+    (content: string, messageType?: string, attachment?: AttachmentData) => {
+      wsClient.send("message:send", { conversationId, content, messageType, attachment })
     },
     [conversationId],
   )
@@ -217,6 +217,22 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                     className="max-w-full rounded-2xl cursor-pointer"
                     onClick={() => window.open(msg.content, "_blank")}
                   />
+                ) : msg.type === "file" ? (
+                  <a
+                    href={msg.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors no-underline"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20">
+                      <FileText className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{msg.content.split("/").pop()}</p>
+                      <p className="text-xs text-text-muted">{msg.content.split(".").pop()?.toUpperCase()} file</p>
+                    </div>
+                    <Download className="h-4 w-4 text-text-muted shrink-0" />
+                  </a>
                 ) : (
                   <p className="text-sm leading-relaxed">{msg.content}</p>
                 )}
