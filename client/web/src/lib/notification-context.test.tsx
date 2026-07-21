@@ -13,7 +13,9 @@ function TestComponent() {
   return (
     <div>
       <span data-testid="count">{unreadCount}</span>
-      <button data-testid="refresh" onClick={refresh}>Refresh</button>
+      <button data-testid="refresh" onClick={refresh}>
+        Refresh
+      </button>
     </div>
   )
 }

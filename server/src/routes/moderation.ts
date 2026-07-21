@@ -71,32 +71,19 @@ router.post(
     })
     await db
       .delete(participants)
-      .where(
-        and(
-          eq(participants.conversationId, req.body.conversationId),
-          eq(participants.userId, req.body.userId),
-        ),
-      )
+      .where(and(eq(participants.conversationId, req.body.conversationId), eq(participants.userId, req.body.userId)))
     res.status(201).json({ message: "User banned" })
   },
 )
 
-router.delete(
-  "/bans/:conversationId/:userId",
-  authGuard,
-  adminGuard,
-  async (req: Request, res: Response) => {
-    await db
-      .delete(bans)
-      .where(
-        and(
-          eq(bans.conversationId, req.params.conversationId as string),
-          eq(bans.userId, req.params.userId as string),
-        ),
-      )
-    res.json({ message: "User unbanned" })
-  },
-)
+router.delete("/bans/:conversationId/:userId", authGuard, adminGuard, async (req: Request, res: Response) => {
+  await db
+    .delete(bans)
+    .where(
+      and(eq(bans.conversationId, req.params.conversationId as string), eq(bans.userId, req.params.userId as string)),
+    )
+  res.json({ message: "User unbanned" })
+})
 
 router.get("/bans/:conversationId", authGuard, async (req: Request, res: Response) => {
   const list = await db
@@ -113,9 +100,7 @@ router.post(
   authGuard,
   validate(z.object({ conversationId: z.string().uuid(), lengthHours: z.number().optional() })),
   async (req: Request, res: Response) => {
-    const expiresAt = req.body.lengthHours
-      ? new Date(Date.now() + req.body.lengthHours * 3600000)
-      : null
+    const expiresAt = req.body.lengthHours ? new Date(Date.now() + req.body.lengthHours * 3600000) : null
     await db
       .insert(mutes)
       .values({ conversationId: req.body.conversationId, userId: req.user!.userId, expiresAt })
@@ -127,12 +112,7 @@ router.post(
 router.delete("/mutes/:conversationId", authGuard, async (req: Request, res: Response) => {
   await db
     .delete(mutes)
-    .where(
-      and(
-        eq(mutes.conversationId, req.params.conversationId as string),
-        eq(mutes.userId, req.user!.userId),
-      ),
-    )
+    .where(and(eq(mutes.conversationId, req.params.conversationId as string), eq(mutes.userId, req.user!.userId)))
   res.json({ message: "Conversation unmuted" })
 })
 

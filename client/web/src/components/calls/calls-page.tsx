@@ -15,7 +15,9 @@ export function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([])
 
   useEffect(() => {
-    api<Call[]>("/api/calls").then(setCalls).catch(() => {})
+    api<Call[]>("/api/calls")
+      .then(setCalls)
+      .catch(() => {})
   }, [])
 
   const myId = localStorage.getItem("userId")
@@ -52,24 +54,16 @@ export function CallsPage() {
             const incoming = call.calleeId === myId
             const missed = call.status !== "ended"
             return (
-              <div
-                key={call.id}
-                className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50"
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl shrink-0 ${
-                  missed && incoming
-                    ? "bg-danger/10 text-danger"
-                    : "bg-accent/10 text-accent"
-                }`}>
-                  {incoming
-                    ? <PhoneIncoming className="h-4 w-4" />
-                    : <PhoneOutgoing className="h-4 w-4" />
-                  }
+              <div key={call.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50">
+                <div
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl shrink-0 ${
+                    missed && incoming ? "bg-danger/10 text-danger" : "bg-accent/10 text-accent"
+                  }`}
+                >
+                  {incoming ? <PhoneIncoming className="h-4 w-4" /> : <PhoneOutgoing className="h-4 w-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary">
-                    {incoming ? "Incoming" : "Outgoing"}
-                  </p>
+                  <p className="text-sm font-medium text-text-primary">{incoming ? "Incoming" : "Outgoing"}</p>
                   <div className="flex items-center gap-2 text-xs text-text-muted">
                     <span>{formatTime(call.createdAt)}</span>
                     {call.duration && (
@@ -81,9 +75,7 @@ export function CallsPage() {
                     )}
                   </div>
                 </div>
-                {missed && incoming && (
-                  <span className="text-xs text-danger font-medium">Missed</span>
-                )}
+                {missed && incoming && <span className="text-xs text-danger font-medium">Missed</span>}
               </div>
             )
           })}

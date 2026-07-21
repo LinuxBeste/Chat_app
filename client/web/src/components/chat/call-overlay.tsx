@@ -88,7 +88,11 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
         await pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate as RTCIceCandidateInit))
       }
     })
-    return () => { unsubOffer(); unsubAnswer(); unsubIce() }
+    return () => {
+      unsubOffer()
+      unsubAnswer()
+      unsubIce()
+    }
   }, [conversationId])
 
   const endCall = () => {
@@ -101,10 +105,28 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary" role="dialog" aria-label="Call controls" aria-live="polite">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-bg-primary"
+      role="dialog"
+      aria-label="Call controls"
+      aria-live="polite"
+    >
       <div className="flex-1 relative">
-        <video ref={remoteRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" aria-label="Remote video" />
-        <video ref={localRef} autoPlay playsInline muted className="absolute bottom-6 right-6 w-40 h-28 rounded-2xl object-cover border-2 border-border" aria-label="Your video" />
+        <video
+          ref={remoteRef}
+          autoPlay
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          aria-label="Remote video"
+        />
+        <video
+          ref={localRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute bottom-6 right-6 w-40 h-28 rounded-2xl object-cover border-2 border-border"
+          aria-label="Your video"
+        />
       </div>
 
       <div className="flex items-center justify-center gap-4 p-6 bg-bg-secondary">
@@ -125,7 +147,11 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
           aria-pressed={videoOff}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {videoOff ? <VideoOff className="h-5 w-5" aria-hidden="true" /> : <Video className="h-5 w-5" aria-hidden="true" />}
+          {videoOff ? (
+            <VideoOff className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <Video className="h-5 w-5" aria-hidden="true" />
+          )}
         </button>
         {direction === "incoming" && !connected && (
           <button

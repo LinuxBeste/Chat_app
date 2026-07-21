@@ -46,20 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchMe])
 
   const login = useCallback(async (email: string, password: string) => {
-    const data = await api<{ user: User; accessToken: string; refreshToken: string }>(
-      "/api/auth/login",
-      { method: "POST", body: JSON.stringify({ email, password }) },
-    )
+    const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    })
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)
     wsClient.connect()
   }, [])
 
   const register = useCallback(async (username: string, email: string, password: string) => {
-    const data = await api<{ user: User; accessToken: string; refreshToken: string }>(
-      "/api/auth/register",
-      { method: "POST", body: JSON.stringify({ username, email, password }) },
-    )
+    const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ username, email, password }),
+    })
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)
     wsClient.connect()
@@ -71,11 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

@@ -43,7 +43,9 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         setMessages((prev) => [...prev, data as unknown as Message])
       }
     })
-    return () => { unsub() }
+    return () => {
+      unsub()
+    }
   }, [conversationId])
 
   useEffect(() => {
@@ -52,7 +54,9 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         setCallState({ targetUserId: data.callerId as string, direction: "incoming" })
       }
     })
-    return () => { unsub() }
+    return () => {
+      unsub()
+    }
   }, [conversationId])
 
   const handleSend = useCallback(
@@ -67,14 +71,16 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
 
   return (
     <div className="flex flex-col h-full" id="main-content">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border" role="toolbar" aria-label="Chat actions">
+      <div
+        className="flex items-center gap-3 px-4 py-3 border-b border-border"
+        role="toolbar"
+        aria-label="Chat actions"
+      >
         <div className="relative">
           <Avatar fallback={otherSender?.sender?.username?.[0] ?? "?"} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-text-primary">
-            {otherSender?.sender?.username ?? "Chat"}
-          </h3>
+          <h3 className="text-sm font-semibold text-text-primary">{otherSender?.sender?.username ?? "Chat"}</h3>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -91,22 +97,26 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           >
             <Video className="h-4 w-4" aria-hidden="true" />
           </button>
-          <button aria-label="More options" className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+          <button
+            aria-label="More options"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" role="log" aria-live="polite" aria-label="Chat messages">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        role="log"
+        aria-live="polite"
+        aria-label="Chat messages"
+      >
         {loading && <p className="text-sm text-text-muted text-center">Loading...</p>}
         {messages.map((msg) => {
           const isMe = msg.senderId === currentUserId
           return (
-          <div
-              key={msg.id}
-              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-              role="article"
-            >
+            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`} role="article">
               <div
                 className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
                   isMe
@@ -114,9 +124,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                     : "bg-surface text-text-primary border border-border rounded-bl-lg"
                 }`}
               >
-                {!isMe && (
-                  <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>
-                )}
+                {!isMe && <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>}
                 {msg.type === "image" ? (
                   <img
                     src={msg.content}

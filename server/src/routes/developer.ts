@@ -17,10 +17,7 @@ const webhookSchema = z.object({
 })
 
 router.get("/webhooks", authGuard, async (_req: Request, res: Response) => {
-  const list = await db
-    .select()
-    .from(webhooks)
-    .where(eq(webhooks.userId, _req.user!.userId))
+  const list = await db.select().from(webhooks).where(eq(webhooks.userId, _req.user!.userId))
   res.json(list)
 })
 
@@ -33,11 +30,7 @@ router.post("/webhooks", authGuard, validate(webhookSchema), async (req: Request
 })
 
 router.delete("/webhooks/:id", authGuard, async (req: Request, res: Response) => {
-  await db
-    .delete(webhooks)
-    .where(
-      and(eq(webhooks.id, req.params.id as string), eq(webhooks.userId, req.user!.userId)),
-    )
+  await db.delete(webhooks).where(and(eq(webhooks.id, req.params.id as string), eq(webhooks.userId, req.user!.userId)))
   res.json({ message: "Webhook deleted" })
 })
 
@@ -65,9 +58,7 @@ router.get("/api-keys", authGuard, async (req: Request, res: Response) => {
 router.delete("/api-keys/:id", authGuard, async (req: Request, res: Response) => {
   await db
     .delete(refreshTokens)
-    .where(
-      and(eq(refreshTokens.id, req.params.id as string), eq(refreshTokens.userId, req.user!.userId)),
-    )
+    .where(and(eq(refreshTokens.id, req.params.id as string), eq(refreshTokens.userId, req.user!.userId)))
   res.json({ message: "API key revoked" })
 })
 

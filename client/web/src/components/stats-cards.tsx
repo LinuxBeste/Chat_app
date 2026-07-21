@@ -17,9 +17,7 @@ export function StatsCards() {
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/10">
               <stat.icon className="h-5 w-5 text-accent" />
             </div>
-            <span className={`text-xs font-medium ${stat.up ? "text-green-400" : "text-red-400"}`}>
-              {stat.change}
-            </span>
+            <span className={`text-xs font-medium ${stat.up ? "text-green-400" : "text-red-400"}`}>{stat.change}</span>
           </div>
           <p className="text-2xl font-semibold text-text-primary">{stat.value}</p>
           <p className="text-sm text-text-muted mt-0.5">{stat.label}</p>

@@ -18,11 +18,13 @@ export function StatusSelector() {
   const [displayStatus, setDisplayStatus] = useState("Online")
 
   useEffect(() => {
-    api<{ status: string; customStatus: string | null }>("/api/users/me").then((u) => {
-      setCurrentStatus(u.status)
-      setCustomStatus(u.customStatus ?? "")
-      setDisplayStatus(u.customStatus || (statuses.find((s) => s.value === u.status)?.label ?? "Online"))
-    }).catch(() => {})
+    api<{ status: string; customStatus: string | null }>("/api/users/me")
+      .then((u) => {
+        setCurrentStatus(u.status)
+        setCustomStatus(u.customStatus ?? "")
+        setDisplayStatus(u.customStatus || (statuses.find((s) => s.value === u.status)?.label ?? "Online"))
+      })
+      .catch(() => {})
   }, [])
 
   const setStatus = async (value: string) => {

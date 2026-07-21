@@ -46,7 +46,9 @@ export function CommunitiesPage() {
   const [copied, setCopied] = useState<string | null>(null)
 
   useEffect(() => {
-    api<Community[]>("/api/communities").then(setCommunities).catch(() => {})
+    api<Community[]>("/api/communities")
+      .then(setCommunities)
+      .catch(() => {})
   }, [])
 
   const selectCommunity = async (c: Community) => {
@@ -80,7 +82,9 @@ export function CommunitiesPage() {
     await api(`/api/communities/join/${joinCode.trim()}`, { method: "POST" }).catch(() => null)
     setJoinCode("")
     setShowJoin(false)
-    api<Community[]>("/api/communities").then(setCommunities).catch(() => {})
+    api<Community[]>("/api/communities")
+      .then(setCommunities)
+      .catch(() => {})
   }
 
   const createChannel = async () => {
@@ -153,9 +157,7 @@ export function CommunitiesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {!selected && (
-          <p className="text-sm text-text-muted">Select a community or create one</p>
-        )}
+        {!selected && <p className="text-sm text-text-muted">Select a community or create one</p>}
         {selected && (
           <div className="max-w-lg space-y-6">
             <h1 className="text-lg font-semibold text-text-primary">{selected.name}</h1>
@@ -165,7 +167,10 @@ export function CommunitiesPage() {
               <h3 className="text-sm font-medium text-text-primary mb-2">Channels</h3>
               <div className="space-y-1.5">
                 {channels.map((ch) => (
-                  <div key={ch.id} className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5">
+                  <div
+                    key={ch.id}
+                    className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5"
+                  >
                     <Hash className="h-4 w-4 text-text-muted shrink-0" />
                     <span className="text-sm text-text-primary">{ch.name}</span>
                     {ch.topic && <span className="text-xs text-text-muted ml-2">— {ch.topic}</span>}
@@ -194,10 +199,15 @@ export function CommunitiesPage() {
               <h3 className="text-sm font-medium text-text-primary mb-2">Members ({members.length})</h3>
               <div className="space-y-1.5">
                 {members.map((m) => (
-                  <div key={m.userId} className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5">
+                  <div
+                    key={m.userId}
+                    className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5"
+                  >
                     <Users className="h-4 w-4 text-text-muted shrink-0" />
                     <span className="text-sm text-text-primary truncate">{m.userId.slice(0, 8)}...</span>
-                    <span className="text-xs text-text-muted capitalize ml-auto bg-bg-primary rounded-xl px-2.5 py-1">{m.role}</span>
+                    <span className="text-xs text-text-muted capitalize ml-auto bg-bg-primary rounded-xl px-2.5 py-1">
+                      {m.role}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -217,16 +227,26 @@ export function CommunitiesPage() {
               </div>
               <div className="space-y-1.5">
                 {invites.map((inv) => (
-                  <div key={inv.id} className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5">
+                  <div
+                    key={inv.id}
+                    className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5"
+                  >
                     <Link className="h-4 w-4 text-text-muted shrink-0" />
                     <code className="text-sm text-accent flex-1">{inv.code}</code>
-                    <span className="text-xs text-text-muted">{inv.useCount}{inv.maxUses ? `/${inv.maxUses}` : ""} used</span>
+                    <span className="text-xs text-text-muted">
+                      {inv.useCount}
+                      {inv.maxUses ? `/${inv.maxUses}` : ""} used
+                    </span>
                     <button
                       onClick={() => copyInvite(inv.code)}
                       className="p-1 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
                       aria-label="Copy invite code"
                     >
-                      {copied === inv.code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied === inv.code ? (
+                        <Check className="h-3.5 w-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                 ))}
@@ -242,7 +262,10 @@ export function CommunitiesPage() {
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Create Community</h3>
-              <button onClick={() => setShowCreate(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -274,7 +297,10 @@ export function CommunitiesPage() {
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Join Community</h3>
-              <button onClick={() => setShowJoin(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => setShowJoin(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>

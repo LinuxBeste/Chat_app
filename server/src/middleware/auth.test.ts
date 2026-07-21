@@ -59,7 +59,9 @@ describe("authGuard", () => {
   })
 
   it("returns 401 when token is invalid", async () => {
-    vi.mocked(verifyToken).mockImplementation(() => { throw new Error("jwt error") })
+    vi.mocked(verifyToken).mockImplementation(() => {
+      throw new Error("jwt error")
+    })
     const { req, res, next } = createReqRes("Bearer bad-token")
     await authGuard(req, res, next)
     expect(res.status).toHaveBeenCalledWith(401)

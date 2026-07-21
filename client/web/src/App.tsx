@@ -17,9 +17,7 @@ function AppContent() {
 
   if (!user) return <LoginPage />
 
-  return (
-    <DashboardLayout />
-  )
+  return <DashboardLayout />
 }
 
 export default function App() {

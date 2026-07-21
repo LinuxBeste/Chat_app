@@ -39,10 +39,7 @@ export async function refreshAccess(): Promise<string | null> {
   }
 }
 
-export async function api<T = unknown>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function api<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const { accessToken } = getTokens()
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

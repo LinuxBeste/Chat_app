@@ -68,7 +68,9 @@ export function MessageList() {
             <div className="flex items-center justify-between mt-0.5">
               <span className="text-sm text-text-secondary truncate">{msg.message}</span>
               {msg.unread > 0 && (
-                <Badge variant="default" className="ml-2 shrink-0">{msg.unread}</Badge>
+                <Badge variant="default" className="ml-2 shrink-0">
+                  {msg.unread}
+                </Badge>
               )}
             </div>
           </div>

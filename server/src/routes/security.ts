@@ -25,11 +25,7 @@ router.post(
   authGuard,
   validate(z.object({ code: z.string().length(6) })),
   async (req: Request, res: Response) => {
-    const [record] = await db
-      .select()
-      .from(totpSecrets)
-      .where(eq(totpSecrets.userId, req.user!.userId))
-      .limit(1)
+    const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
 
     if (!record) {
       res.status(400).json({ error: "TOTP not set up" })
@@ -42,10 +38,7 @@ router.post(
       return
     }
 
-    await db
-      .update(totpSecrets)
-      .set({ verified: "true" })
-      .where(eq(totpSecrets.userId, req.user!.userId))
+    await db.update(totpSecrets).set({ verified: "true" }).where(eq(totpSecrets.userId, req.user!.userId))
 
     res.json({ message: "2FA enabled" })
   },
@@ -57,11 +50,7 @@ router.post("/totp/disable", authGuard, async (req: Request, res: Response) => {
 })
 
 router.get("/totp/status", authGuard, async (req: Request, res: Response) => {
-  const [record] = await db
-    .select()
-    .from(totpSecrets)
-    .where(eq(totpSecrets.userId, req.user!.userId))
-    .limit(1)
+  const [record] = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, req.user!.userId)).limit(1)
   res.json({ enabled: record?.verified === "true" })
 })
 

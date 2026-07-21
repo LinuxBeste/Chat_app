@@ -25,9 +25,7 @@ describe("errorHandler", () => {
     const { req, res, next } = createReqRes()
     const err = new AppError(400, "VALIDATION", "Invalid input", { field: "email" })
     errorHandler(err, req, res, next)
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ details: { field: "email" } }),
-    )
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ details: { field: "email" } }))
   })
 
   it("handles JSON parse errors", () => {

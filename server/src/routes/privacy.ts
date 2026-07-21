@@ -24,12 +24,7 @@ router.post("/blocks", authGuard, validate(blockSchema), async (req: Request, re
 router.delete("/blocks/:userId", authGuard, async (req: Request, res: Response) => {
   await db
     .delete(blocks)
-    .where(
-      and(
-        eq(blocks.userId, req.user!.userId),
-        eq(blocks.blockedUserId, req.params.userId as string),
-      ),
-    )
+    .where(and(eq(blocks.userId, req.user!.userId), eq(blocks.blockedUserId, req.params.userId as string)))
   res.json({ message: "User unblocked" })
 })
 

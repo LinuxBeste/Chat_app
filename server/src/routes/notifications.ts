@@ -21,12 +21,7 @@ router.get("/unread-count", authGuard, async (req: Request, res: Response) => {
   const [result] = await db
     .select({ count: sql`count(*)::int` })
     .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, req.user!.userId),
-        eq(notifications.isRead, "false"),
-      ),
-    )
+    .where(and(eq(notifications.userId, req.user!.userId), eq(notifications.isRead, "false")))
   res.json({ count: Number(result?.count ?? 0) })
 })
 
@@ -34,12 +29,7 @@ router.post("/:id/read", authGuard, async (req: Request, res: Response) => {
   await db
     .update(notifications)
     .set({ isRead: "true" })
-    .where(
-      and(
-        eq(notifications.id, req.params.id as string),
-        eq(notifications.userId, req.user!.userId),
-      ),
-    )
+    .where(and(eq(notifications.id, req.params.id as string), eq(notifications.userId, req.user!.userId)))
   res.json({ message: "Marked as read" })
 })
 
@@ -47,12 +37,7 @@ router.post("/read-all", authGuard, async (req: Request, res: Response) => {
   await db
     .update(notifications)
     .set({ isRead: "true" })
-    .where(
-      and(
-        eq(notifications.userId, req.user!.userId),
-        eq(notifications.isRead, "false"),
-      ),
-    )
+    .where(and(eq(notifications.userId, req.user!.userId), eq(notifications.isRead, "false")))
   res.json({ message: "All marked as read" })
 })
 

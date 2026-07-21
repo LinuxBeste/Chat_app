@@ -23,10 +23,7 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
 })
 
 router.get("/", authGuard, async (_req: Request, res: Response) => {
-  const list = await db
-    .select()
-    .from(communities)
-    .orderBy(desc(communities.createdAt))
+  const list = await db.select().from(communities).orderBy(desc(communities.createdAt))
   res.json(list)
 })
 
@@ -40,14 +37,8 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
     res.status(404).json({ error: "Community not found" })
     return
   }
-  const members = await db
-    .select()
-    .from(communityMembers)
-    .where(eq(communityMembers.communityId, community.id))
-  const channels = await db
-    .select()
-    .from(communityChannels)
-    .where(eq(communityChannels.communityId, community.id))
+  const members = await db.select().from(communityMembers).where(eq(communityMembers.communityId, community.id))
+  const channels = await db.select().from(communityChannels).where(eq(communityChannels.communityId, community.id))
   res.json({ ...community, members, channels })
 })
 
@@ -73,9 +64,7 @@ router.post("/:id/channels", authGuard, validate(channelSchema), async (req: Req
 })
 
 router.delete("/channels/:channelId", authGuard, async (req: Request, res: Response) => {
-  await db
-    .delete(communityChannels)
-    .where(eq(communityChannels.id, req.params.channelId as string))
+  await db.delete(communityChannels).where(eq(communityChannels.id, req.params.channelId as string))
   res.json({ message: "Channel deleted" })
 })
 
@@ -111,12 +100,7 @@ router.post("/join/:code", authGuard, async (req: Request, res: Response) => {
   const existing = await db
     .select()
     .from(communityMembers)
-    .where(
-      and(
-        eq(communityMembers.communityId, invite.communityId),
-        eq(communityMembers.userId, req.user!.userId),
-      ),
-    )
+    .where(and(eq(communityMembers.communityId, invite.communityId), eq(communityMembers.userId, req.user!.userId)))
     .limit(1)
   if (existing.length > 0) {
     res.status(409).json({ error: "Already a member" })

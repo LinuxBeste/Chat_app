@@ -27,16 +27,24 @@ export const conversations = pgTable("conversations", {
 })
 
 export const participants = pgTable("participants", {
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   role: text("role").default("member").notNull(),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 })
 
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  senderId: uuid("sender_id").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  senderId: uuid("sender_id")
+    .references(() => users.id)
+    .notNull(),
   content: text("content").notNull(),
   type: messageTypeEnum("type").default("text").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -44,15 +52,21 @@ export const messages = pgTable("messages", {
 })
 
 export const friends = pgTable("friends", {
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  friendId: uuid("friend_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  friendId: uuid("friend_id")
+    .references(() => users.id)
+    .notNull(),
   status: friendStatusEnum("status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const attachments = pgTable("attachments", {
   id: uuid("id").primaryKey().defaultRandom(),
-  messageId: uuid("message_id").references(() => messages.id).notNull(),
+  messageId: uuid("message_id")
+    .references(() => messages.id)
+    .notNull(),
   url: text("url").notNull(),
   mimeType: text("mime_type").notNull(),
   size: integer("size").notNull(),
@@ -61,27 +75,39 @@ export const attachments = pgTable("attachments", {
 
 export const refreshTokens = pgTable("refresh_tokens", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   token: text("token").unique().notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const blocks = pgTable("blocks", {
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  blockedUserId: uuid("blocked_user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  blockedUserId: uuid("blocked_user_id")
+    .references(() => users.id)
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const messageReads = pgTable("message_reads", {
-  messageId: uuid("message_id").references(() => messages.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  messageId: uuid("message_id")
+    .references(() => messages.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   readAt: timestamp("read_at").defaultNow().notNull(),
 })
 
 export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().defaultRandom(),
-  reportedBy: uuid("reported_by").references(() => users.id).notNull(),
+  reportedBy: uuid("reported_by")
+    .references(() => users.id)
+    .notNull(),
   targetUserId: uuid("target_user_id").references(() => users.id),
   targetMessageId: uuid("target_message_id").references(() => messages.id),
   reason: text("reason").notNull(),
@@ -91,9 +117,15 @@ export const reports = pgTable("reports", {
 
 export const bans = pgTable("bans", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  bannedBy: uuid("banned_by").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  bannedBy: uuid("banned_by")
+    .references(() => users.id)
+    .notNull(),
   reason: text("reason"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -101,23 +133,35 @@ export const bans = pgTable("bans", {
 
 export const mutes = pgTable("mutes", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const pinnedMessages = pgTable("pinned_messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  messageId: uuid("message_id").references(() => messages.id).notNull(),
-  pinnedBy: uuid("pinned_by").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  messageId: uuid("message_id")
+    .references(() => messages.id)
+    .notNull(),
+  pinnedBy: uuid("pinned_by")
+    .references(() => users.id)
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const webhooks = pgTable("webhooks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   url: text("url").notNull(),
   events: text("events").array().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -125,7 +169,9 @@ export const webhooks = pgTable("webhooks", {
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   type: text("type").notNull(),
   title: text("title").notNull(),
   body: text("body"),
@@ -136,7 +182,10 @@ export const notifications = pgTable("notifications", {
 
 export const totpSecrets = pgTable("totp_secrets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull().unique(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull()
+    .unique(),
   secret: text("secret").notNull(),
   verified: text("verified").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -144,7 +193,9 @@ export const totpSecrets = pgTable("totp_secrets", {
 
 export const loginHistory = pgTable("login_history", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   ip: text("ip"),
   userAgent: text("user_agent"),
   success: text("success").notNull(),
@@ -153,8 +204,12 @@ export const loginHistory = pgTable("login_history", {
 
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id)
+    .notNull(),
+  createdBy: uuid("created_by")
+    .references(() => users.id)
+    .notNull(),
   title: text("title").notNull(),
   description: text("description"),
   startsAt: timestamp("starts_at").notNull(),
@@ -163,8 +218,12 @@ export const events = pgTable("events", {
 })
 
 export const eventRsvps = pgTable("event_rsvps", {
-  eventId: uuid("event_id").references(() => events.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  eventId: uuid("event_id")
+    .references(() => events.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   status: text("status").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
@@ -173,20 +232,28 @@ export const communities = pgTable("communities", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
-  ownerId: uuid("owner_id").references(() => users.id).notNull(),
+  ownerId: uuid("owner_id")
+    .references(() => users.id)
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const communityMembers = pgTable("community_members", {
-  communityId: uuid("community_id").references(() => communities.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  communityId: uuid("community_id")
+    .references(() => communities.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   role: text("role").default("member").notNull(),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 })
 
 export const communityChannels = pgTable("community_channels", {
   id: uuid("id").primaryKey().defaultRandom(),
-  communityId: uuid("community_id").references(() => communities.id).notNull(),
+  communityId: uuid("community_id")
+    .references(() => communities.id)
+    .notNull(),
   name: text("name").notNull(),
   topic: text("topic"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -194,9 +261,13 @@ export const communityChannels = pgTable("community_channels", {
 
 export const communityInvites = pgTable("community_invites", {
   id: uuid("id").primaryKey().defaultRandom(),
-  communityId: uuid("community_id").references(() => communities.id).notNull(),
+  communityId: uuid("community_id")
+    .references(() => communities.id)
+    .notNull(),
   code: text("code").unique().notNull(),
-  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdBy: uuid("created_by")
+    .references(() => users.id)
+    .notNull(),
   maxUses: integer("max_uses"),
   useCount: integer("use_count").default(0).notNull(),
   expiresAt: timestamp("expires_at"),
@@ -205,8 +276,12 @@ export const communityInvites = pgTable("community_invites", {
 
 export const calls = pgTable("calls", {
   id: uuid("id").primaryKey().defaultRandom(),
-  callerId: uuid("caller_id").references(() => users.id).notNull(),
-  calleeId: uuid("callee_id").references(() => users.id).notNull(),
+  callerId: uuid("caller_id")
+    .references(() => users.id)
+    .notNull(),
+  calleeId: uuid("callee_id")
+    .references(() => users.id)
+    .notNull(),
   status: text("status").notNull().default("ended"),
   duration: integer("duration"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

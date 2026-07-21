@@ -5,28 +5,24 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hover?: boolean
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, hover = false, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "rounded-3xl border border-border bg-surface p-6",
-        hover && "transition-all duration-200 hover:scale-[1.01] hover:border-text-muted/30",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  ),
-)
+const Card = forwardRef<HTMLDivElement, CardProps>(({ className, hover = false, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-3xl border border-border bg-surface p-6",
+      hover && "transition-all duration-200 hover:scale-[1.01] hover:border-text-muted/30",
+      className,
+    )}
+    {...props}
+  >
+    {children}
+  </div>
+))
 Card.displayName = "Card"
 
-const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("mb-5 flex items-center justify-between", className)} {...props} />
-  ),
-)
+const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("mb-5 flex items-center justify-between", className)} {...props} />
+))
 CardHeader.displayName = "CardHeader"
 
 const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(

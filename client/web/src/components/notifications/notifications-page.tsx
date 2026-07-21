@@ -24,12 +24,14 @@ export function NotificationsPage() {
   const { refresh } = useNotificationCount()
 
   useEffect(() => {
-    api<Notification[]>("/api/notifications").then(setNotifications).catch(() => {})
+    api<Notification[]>("/api/notifications")
+      .then(setNotifications)
+      .catch(() => {})
   }, [])
 
   const markRead = async (id: string) => {
     await api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: "true" } : n))
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
     refresh()
   }
 
@@ -92,10 +94,7 @@ export function NotificationsPage() {
             <div className="px-4 py-2 mt-2 text-xs font-medium text-text-muted uppercase tracking-wider">Earlier</div>
           )}
           {read.map((n) => (
-            <div
-              key={n.id}
-              className="flex items-start gap-3 px-4 py-3.5 border-b border-border/50 opacity-60"
-            >
+            <div key={n.id} className="flex items-start gap-3 px-4 py-3.5 border-b border-border/50 opacity-60">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-text-muted shrink-0 mt-0.5">
                 {(iconMap[n.type] ?? Bell)({ className: "h-4 w-4" })}
               </div>

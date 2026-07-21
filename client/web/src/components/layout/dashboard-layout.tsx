@@ -11,7 +11,8 @@ import { NotificationsPage } from "../notifications/notifications-page"
 import { SettingsPage } from "../settings/settings-page"
 import { CallsPage } from "../calls/calls-page"
 
-export type View = "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings"
+export type View =
+  "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings"
 
 interface NavContextValue {
   view: View

@@ -9,10 +9,12 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    api<{ displayName: string | null; bio?: string }>("/api/users/me").then((u) => {
-      setDisplayName(u.displayName ?? "")
-      setBio(u.bio ?? "")
-    }).catch(() => {})
+    api<{ displayName: string | null; bio?: string }>("/api/users/me")
+      .then((u) => {
+        setDisplayName(u.displayName ?? "")
+        setBio(u.bio ?? "")
+      })
+      .catch(() => {})
   }, [])
 
   const handleSave = async () => {

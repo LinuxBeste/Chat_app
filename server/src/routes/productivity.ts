@@ -76,12 +76,7 @@ router.get("/search", authGuard, async (req: Request, res: Response) => {
     })
     .from(messages)
     .innerJoin(users, eq(messages.senderId, users.id))
-    .where(
-      and(
-        like(messages.content, `%${query}%`),
-        eq(messages.type, "text"),
-      ),
-    )
+    .where(and(like(messages.content, `%${query}%`), eq(messages.type, "text")))
     .orderBy(desc(messages.createdAt))
     .limit(50)
   res.json(results)

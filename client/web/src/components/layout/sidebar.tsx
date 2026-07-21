@@ -1,16 +1,5 @@
 import { cn } from "../../lib/utils"
-import {
-  MessageSquare,
-  Users,
-  Phone,
-  Bell,
-  FileText,
-  User,
-  Settings,
-  LogOut,
-  Globe,
-  Calendar,
-} from "lucide-react"
+import { MessageSquare, Users, Phone, Bell, FileText, User, Settings, LogOut, Globe, Calendar } from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
 import { useNav } from "./dashboard-layout"
 import type { View } from "./dashboard-layout"
@@ -55,12 +44,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
       )}
     >
       <div className="flex h-16 items-center gap-3 px-4 border-b border-border">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white text-sm font-bold shrink-0" aria-hidden="true">
+        <div
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white text-sm font-bold shrink-0"
+          aria-hidden="true"
+        >
           C
         </div>
-        {!collapsed && (
-          <span className="text-sm font-semibold text-text-primary">Chat App</span>
-        )}
+        {!collapsed && <span className="text-sm font-semibold text-text-primary">Chat App</span>}
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 p-3" aria-label="Main menu">

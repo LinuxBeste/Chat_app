@@ -27,7 +27,10 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
       const existing = await db.query.conversations.findFirst({
         where: and(
           eq(conversations.type, "dm"),
-          sql`(SELECT COUNT(*) FROM ${participants} WHERE ${participants.conversationId} = ${conversations.id} AND ${participants.userId} = ANY(${sql.join(allIds.map(id => sql`${id}::uuid`), sql`, `)})) = ${allIds.length}`,
+          sql`(SELECT COUNT(*) FROM ${participants} WHERE ${participants.conversationId} = ${conversations.id} AND ${participants.userId} = ANY(${sql.join(
+            allIds.map((id) => sql`${id}::uuid`),
+            sql`, `,
+          )})) = ${allIds.length}`,
         ),
       })
 
@@ -42,9 +45,7 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
       .values({ type, name: name ?? null, createdBy: req.user!.userId })
       .returning()
 
-    await db.insert(participants).values(
-      allIds.map((userId) => ({ conversationId: conv.id, userId })),
-    )
+    await db.insert(participants).values(allIds.map((userId) => ({ conversationId: conv.id, userId })))
 
     res.status(201).json(conv)
   } catch (err) {
@@ -71,11 +72,7 @@ router.get("/", authGuard, async (req: Request, res: Response) => {
 
 router.get("/:id", authGuard, async (req: Request, res: Response) => {
   const id = req.params.id as string
-  const [conv] = await db
-    .select()
-    .from(conversations)
-    .where(eq(conversations.id, id))
-    .limit(1)
+  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
 
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" })
@@ -157,12 +154,7 @@ router.get("/:id/files", authGuard, async (req: Request, res: Response) => {
     .from(messages)
     .innerJoin(users, eq(users.id, messages.senderId))
     .leftJoin(attachments, eq(attachments.messageId, messages.id))
-    .where(
-      and(
-        eq(messages.conversationId, req.params.id as string),
-        eq(messages.type, "file"),
-      ),
-    )
+    .where(and(eq(messages.conversationId, req.params.id as string), eq(messages.type, "file")))
     .orderBy(desc(messages.createdAt))
     .limit(50)
 

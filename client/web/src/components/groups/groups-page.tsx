@@ -25,9 +25,11 @@ export function GroupsPage() {
   const [createName, setCreateName] = useState("")
 
   useEffect(() => {
-    api<Group[]>("/api/conversations").then((convs) => {
-      setGroups(convs.filter((c) => c.type === "group"))
-    }).catch(() => {})
+    api<Group[]>("/api/conversations")
+      .then((convs) => {
+        setGroups(convs.filter((c) => c.type === "group"))
+      })
+      .catch(() => {})
   }, [])
 
   const selectGroup = async (g: Group) => {
@@ -43,8 +45,8 @@ export function GroupsPage() {
       method: "PUT",
       body: JSON.stringify({ name: newName.trim() }),
     }).catch(() => {})
-    setGroups((prev) => prev.map((g) => g.id === selected.id ? { ...g, name: newName.trim() } : g))
-    setSelected((prev) => prev ? { ...prev, name: newName.trim() } : null)
+    setGroups((prev) => prev.map((g) => (g.id === selected.id ? { ...g, name: newName.trim() } : g)))
+    setSelected((prev) => (prev ? { ...prev, name: newName.trim() } : null))
   }
 
   const createGroup = async () => {
@@ -93,9 +95,7 @@ export function GroupsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {!selected && (
-          <p className="text-sm text-text-muted">Select a group to manage</p>
-        )}
+        {!selected && <p className="text-sm text-text-muted">Select a group to manage</p>}
         {selected && (
           <div className="max-w-lg space-y-6">
             <h1 className="text-lg font-semibold text-text-primary">Group Settings</h1>
@@ -122,7 +122,10 @@ export function GroupsPage() {
               <h3 className="text-sm font-medium text-text-primary mb-2">Members ({members.length})</h3>
               <div className="space-y-2">
                 {members.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5"
+                  >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
                       {(m.displayName || m.username)[0].toUpperCase()}
                     </div>
@@ -130,7 +133,9 @@ export function GroupsPage() {
                       <p className="text-sm text-text-primary truncate">{m.displayName || m.username}</p>
                       <p className="text-xs text-text-muted">@{m.username}</p>
                     </div>
-                    <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">{m.role}</span>
+                    <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">
+                      {m.role}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -144,7 +149,10 @@ export function GroupsPage() {
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Create Group</h3>
-              <button onClick={() => setShowCreate(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>

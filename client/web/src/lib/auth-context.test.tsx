@@ -22,9 +22,15 @@ function TestComponent() {
     <div>
       <span data-testid="loading">{loading ? "loading" : "loaded"}</span>
       <span data-testid="user">{user ? user.username : "null"}</span>
-      <button data-testid="login" onClick={() => login("a@b.com", "pass")}>Login</button>
-      <button data-testid="register" onClick={() => register("u", "a@b.com", "pass")}>Register</button>
-      <button data-testid="logout" onClick={logout}>Logout</button>
+      <button data-testid="login" onClick={() => login("a@b.com", "pass")}>
+        Login
+      </button>
+      <button data-testid="register" onClick={() => register("u", "a@b.com", "pass")}>
+        Register
+      </button>
+      <button data-testid="logout" onClick={logout}>
+        Logout
+      </button>
     </div>
   )
 }

@@ -30,7 +30,9 @@ class WSClient {
         if (data.type) {
           this.emit(data.type as string, data)
         }
-      } catch { /* ignore malformed */ }
+      } catch {
+        /* ignore malformed */
+      }
     }
 
     this.ws.onclose = () => {
@@ -60,7 +62,9 @@ class WSClient {
   on(type: string, handler: MessageHandler) {
     if (!this.handlers.has(type)) this.handlers.set(type, new Set())
     this.handlers.get(type)!.add(handler)
-    return () => { this.handlers.get(type)?.delete(handler) }
+    return () => {
+      this.handlers.get(type)?.delete(handler)
+    }
   }
 
   private emit(type: string, data: Record<string, unknown>) {

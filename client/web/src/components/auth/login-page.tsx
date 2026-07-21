@@ -38,7 +38,9 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
             <div>
-              <label htmlFor="username" className="sr-only">Username</label>
+              <label htmlFor="username" className="sr-only">
+                Username
+              </label>
               <input
                 id="username"
                 value={username}
@@ -50,7 +52,9 @@ export function LoginPage() {
             </div>
           )}
           <div>
-            <label htmlFor="email" className="sr-only">Email</label>
+            <label htmlFor="email" className="sr-only">
+              Email
+            </label>
             <input
               id="email"
               value={email}
@@ -62,7 +66,9 @@ export function LoginPage() {
             />
           </div>
           <div className="relative">
-            <label htmlFor="password" className="sr-only">Password</label>
+            <label htmlFor="password" className="sr-only">
+              Password
+            </label>
             <input
               id="password"
               value={password}
@@ -81,7 +87,11 @@ export function LoginPage() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer"

@@ -53,7 +53,10 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
             <p className="text-sm text-text-muted p-4 text-center">No results found</p>
           )}
           {results.map((r) => (
-            <div key={r.id} className="px-4 py-3 border-b border-border last:border-0 hover:bg-white/[0.02] transition-colors">
+            <div
+              key={r.id}
+              className="px-4 py-3 border-b border-border last:border-0 hover:bg-white/[0.02] transition-colors"
+            >
               <div className="flex items-start gap-3">
                 <MessageSquare className="h-4 w-4 text-text-muted mt-0.5 shrink-0" />
                 <div className="min-w-0">

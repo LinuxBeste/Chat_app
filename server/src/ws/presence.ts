@@ -4,10 +4,7 @@ import { eq } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 
 export async function updatePresence(userId: string, status: "online" | "away" | "busy" | "offline") {
-  await db
-    .update(users)
-    .set({ status })
-    .where(eq(users.id, userId))
+  await db.update(users).set({ status }).where(eq(users.id, userId))
 
   const redis = getRedis()
   if (redis) {

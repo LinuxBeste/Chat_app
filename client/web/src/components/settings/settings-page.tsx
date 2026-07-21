@@ -26,12 +26,18 @@ export function SettingsPage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    api<TOTPStatus>("/api/security/totp/status").then(setTotpStatus).catch(() => {})
-    api<LoginEntry[]>("/api/security/history").then(setLoginHistory).catch(() => {})
+    api<TOTPStatus>("/api/security/totp/status")
+      .then(setTotpStatus)
+      .catch(() => {})
+    api<LoginEntry[]>("/api/security/history")
+      .then(setLoginHistory)
+      .catch(() => {})
   }, [])
 
   const setupTOTP = async () => {
-    const data = await api<{ secret: string; uri: string }>("/api/security/totp/setup", { method: "POST" }).catch(() => null)
+    const data = await api<{ secret: string; uri: string }>("/api/security/totp/setup", { method: "POST" }).catch(
+      () => null,
+    )
     if (data) {
       setSecret(data.secret)
       setSetupUri(data.uri)
@@ -111,7 +117,9 @@ export function SettingsPage() {
             {totpStatus === null && <p className="text-sm text-text-muted">Loading...</p>}
             {totpStatus && !totpStatus.enabled && !showVerify && (
               <div className="space-y-3">
-                <p className="text-sm text-text-muted">2FA is not enabled. Add an extra layer of security to your account.</p>
+                <p className="text-sm text-text-muted">
+                  2FA is not enabled. Add an extra layer of security to your account.
+                </p>
                 <button
                   onClick={setupTOTP}
                   className="h-10 rounded-2xl bg-accent text-white text-sm px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer"
@@ -148,7 +156,9 @@ export function SettingsPage() {
                     {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-text-muted">Or use URI: <code className="text-xs text-accent">{setupUri}</code></p>
+                <p className="text-xs text-text-muted">
+                  Or use URI: <code className="text-xs text-accent">{setupUri}</code>
+                </p>
                 <input
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value)}
@@ -188,19 +198,23 @@ export function SettingsPage() {
                 key={entry.id}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3"
               >
-                <div className={`h-2 w-2 rounded-full shrink-0 ${entry.success === "true" ? "bg-green-500" : "bg-danger"}`} />
+                <div
+                  className={`h-2 w-2 rounded-full shrink-0 ${entry.success === "true" ? "bg-green-500" : "bg-danger"}`}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-text-primary">{formatUA(entry.userAgent)}</p>
-                  <p className="text-xs text-text-muted">{entry.ip ?? "Unknown IP"} · {formatDate(entry.createdAt)}</p>
+                  <p className="text-xs text-text-muted">
+                    {entry.ip ?? "Unknown IP"} · {formatDate(entry.createdAt)}
+                  </p>
                 </div>
-                <span className={`text-xs font-medium capitalize ${entry.success === "true" ? "text-green-500" : "text-danger"}`}>
+                <span
+                  className={`text-xs font-medium capitalize ${entry.success === "true" ? "text-green-500" : "text-danger"}`}
+                >
                   {entry.success === "true" ? "Success" : "Failed"}
                 </span>
               </div>
             ))}
-            {loginHistory.length === 0 && (
-              <p className="text-sm text-text-muted">No login history</p>
-            )}
+            {loginHistory.length === 0 && <p className="text-sm text-text-muted">No login history</p>}
           </div>
         </section>
 

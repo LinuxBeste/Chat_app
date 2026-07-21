@@ -3,12 +3,9 @@ import { Slot } from "@radix-ui/react-slot"
 import { cn } from "../../lib/utils"
 
 const variantStyles = {
-  default:
-    "bg-accent text-white hover:bg-accent-hover",
-  ghost:
-    "text-text-secondary hover:text-text-primary hover:bg-white/5",
-  outline:
-    "border border-border text-text-secondary hover:text-text-primary hover:border-text-muted",
+  default: "bg-accent text-white hover:bg-accent-hover",
+  ghost: "text-text-secondary hover:text-text-primary hover:bg-white/5",
+  outline: "border border-border text-text-secondary hover:text-text-primary hover:border-text-muted",
 }
 
 const sizeStyles = {

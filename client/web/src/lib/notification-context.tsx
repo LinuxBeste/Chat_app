@@ -23,11 +23,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [refresh])
 
-  return (
-    <NotificationContext.Provider value={{ unreadCount, refresh }}>
-      {children}
-    </NotificationContext.Provider>
-  )
+  return <NotificationContext.Provider value={{ unreadCount, refresh }}>{children}</NotificationContext.Provider>
 }
 
 export function useNotificationCount() {

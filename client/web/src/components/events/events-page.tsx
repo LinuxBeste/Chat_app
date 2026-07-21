@@ -25,7 +25,9 @@ export function EventsPage() {
   const [myRsvp, setMyRsvp] = useState<string | null>(null)
 
   useEffect(() => {
-    api<Event[]>("/api/events").then(setEvents).catch(() => {})
+    api<Event[]>("/api/events")
+      .then(setEvents)
+      .catch(() => {})
   }, [])
 
   const selectEvent = async (e: Event) => {
@@ -73,7 +75,11 @@ export function EventsPage() {
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString("en-US", {
-      weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
@@ -136,9 +142,7 @@ export function EventsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {!selected && (
-          <p className="text-sm text-text-muted">Select an event or create one</p>
-        )}
+        {!selected && <p className="text-sm text-text-muted">Select an event or create one</p>}
         {selected && (
           <div className="max-w-lg space-y-6">
             <h1 className="text-lg font-semibold text-text-primary">{selected.title}</h1>
@@ -182,16 +186,16 @@ export function EventsPage() {
 
             {selected.rsvps && selected.rsvps.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-text-primary mb-2">
-                  Responses ({selected.rsvps.length})
-                </h3>
+                <h3 className="text-sm font-medium text-text-primary mb-2">Responses ({selected.rsvps.length})</h3>
                 <div className="space-y-1.5">
                   {["going", "maybe", "declined"].map((s) => {
                     const filtered = selected.rsvps!.filter((r) => r.status === s)
                     if (filtered.length === 0) return null
                     return (
                       <div key={s} className="rounded-2xl border border-border bg-surface px-4 py-2.5">
-                        <span className="text-xs text-text-muted capitalize">{s} — {filtered.length}</span>
+                        <span className="text-xs text-text-muted capitalize">
+                          {s} — {filtered.length}
+                        </span>
                       </div>
                     )
                   })}
@@ -207,7 +211,10 @@ export function EventsPage() {
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Create Event</h3>
-              <button onClick={() => setShowCreate(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>

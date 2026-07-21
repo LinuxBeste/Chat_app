@@ -32,11 +32,7 @@ router.post("/", authGuard, validate(createSchema), async (req: Request, res: Re
 })
 
 router.get("/", authGuard, async (_req: Request, res: Response) => {
-  const list = await db
-    .select()
-    .from(events)
-    .orderBy(desc(events.startsAt))
-    .limit(50)
+  const list = await db.select().from(events).orderBy(desc(events.startsAt)).limit(50)
   res.json(list)
 })
 
@@ -50,10 +46,7 @@ router.get("/:id", authGuard, async (req: Request, res: Response) => {
     res.status(404).json({ error: "Event not found" })
     return
   }
-  const rsvps = await db
-    .select()
-    .from(eventRsvps)
-    .where(eq(eventRsvps.eventId, event.id))
+  const rsvps = await db.select().from(eventRsvps).where(eq(eventRsvps.eventId, event.id))
   res.json({ ...event, rsvps })
 })
 
@@ -65,24 +58,14 @@ router.post(
     const existing = await db
       .select()
       .from(eventRsvps)
-      .where(
-        and(
-          eq(eventRsvps.eventId, req.params.id as string),
-          eq(eventRsvps.userId, req.user!.userId),
-        ),
-      )
+      .where(and(eq(eventRsvps.eventId, req.params.id as string), eq(eventRsvps.userId, req.user!.userId)))
       .limit(1)
 
     if (existing.length > 0) {
       await db
         .update(eventRsvps)
         .set({ status: req.body.status })
-        .where(
-          and(
-            eq(eventRsvps.eventId, req.params.id as string),
-            eq(eventRsvps.userId, req.user!.userId),
-          ),
-        )
+        .where(and(eq(eventRsvps.eventId, req.params.id as string), eq(eventRsvps.userId, req.user!.userId)))
     } else {
       await db
         .insert(eventRsvps)

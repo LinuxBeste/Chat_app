@@ -25,10 +25,7 @@ export async function handleCallOffer(
   return event
 }
 
-export async function handleCallAnswer(
-  payload: { sessionId: string; sdp: unknown },
-  userId: string,
-) {
+export async function handleCallAnswer(payload: { sessionId: string; sdp: unknown }, userId: string) {
   const session = callSessions.get(payload.sessionId)
   if (!session || session.calleeId !== userId) return null
 
@@ -46,10 +43,7 @@ export async function handleCallAnswer(
   return event
 }
 
-export async function handleCallIceCandidate(
-  payload: { sessionId: string; candidate: unknown },
-  userId: string,
-) {
+export async function handleCallIceCandidate(payload: { sessionId: string; candidate: unknown }, userId: string) {
   const session = callSessions.get(payload.sessionId)
   if (!session) return null
 

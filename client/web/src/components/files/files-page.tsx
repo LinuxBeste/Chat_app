@@ -14,8 +14,7 @@ function fileIcon(mime: string) {
   if (mime.startsWith("image/")) return <Image className="h-5 w-5" />
   if (mime.startsWith("video/")) return <Film className="h-5 w-5" />
   if (mime.startsWith("audio/")) return <Music className="h-5 w-5" />
-  if (mime.includes("zip") || mime.includes("rar") || mime.includes("tar"))
-    return <Archive className="h-5 w-5" />
+  if (mime.includes("zip") || mime.includes("rar") || mime.includes("tar")) return <Archive className="h-5 w-5" />
   return <FileText className="h-5 w-5" />
 }
 
@@ -29,11 +28,15 @@ export function FilesPage() {
   const [files, setFiles] = useState<FileItem[]>([])
 
   useEffect(() => {
-    api<{ id: string }[]>("/api/conversations").then((convs) => {
-      if (convs.length > 0) {
-        api<FileItem[]>(`/api/conversations/${convs[0].id}/files`).then(setFiles).catch(() => {})
-      }
-    }).catch(() => {})
+    api<{ id: string }[]>("/api/conversations")
+      .then((convs) => {
+        if (convs.length > 0) {
+          api<FileItem[]>(`/api/conversations/${convs[0].id}/files`)
+            .then(setFiles)
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
   }, [])
 
   return (
@@ -44,17 +47,12 @@ export function FilesPage() {
       ) : (
         <div className="space-y-2">
           {files.map((f) => (
-            <div
-              key={f.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
-            >
+            <div key={f.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0">
                 {fileIcon(f.attachment.mimeType)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">
-                  {f.attachment.filename}
-                </p>
+                <p className="text-sm font-medium text-text-primary truncate">{f.attachment.filename}</p>
                 <p className="text-xs text-text-muted">
                   {f.sender.username} · {formatSize(f.attachment.size)}
                 </p>

@@ -28,18 +28,14 @@ describe("validate middleware", () => {
     validate(schema)(req, res, next)
     expect(next).not.toHaveBeenCalled()
     expect(res.status).toHaveBeenCalledWith(400)
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: "Validation failed" }),
-    )
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: "Validation failed" }))
   })
 
   it("rejects missing fields", () => {
     const { req, res, next } = createReqRes({ name: "Bob" })
     validate(schema)(req, res, next)
     expect(res.status).toHaveBeenCalledWith(400)
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: "Validation failed" }),
-    )
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: "Validation failed" }))
   })
 
   it("uses specified source (query)", () => {

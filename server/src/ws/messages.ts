@@ -19,22 +19,12 @@ interface TypingPayload {
   conversationId: string
 }
 
-export async function handleSendMessage(
-  ws: WebSocket,
-  payload: SendMessagePayload,
-  userId: string,
-  _username: string,
-) {
+export async function handleSendMessage(ws: WebSocket, payload: SendMessagePayload, userId: string, _username: string) {
   try {
     const isMember = await db
       .select()
       .from(participants)
-      .where(
-        and(
-          eq(participants.conversationId, payload.conversationId),
-          eq(participants.userId, userId),
-        ),
-      )
+      .where(and(eq(participants.conversationId, payload.conversationId), eq(participants.userId, userId)))
       .limit(1)
 
     if (isMember.length === 0) {
@@ -81,11 +71,7 @@ export async function handleSendMessage(
   }
 }
 
-export async function handleTyping(
-  _ws: WebSocket,
-  payload: TypingPayload,
-  userId: string,
-) {
+export async function handleTyping(_ws: WebSocket, payload: TypingPayload, userId: string) {
   const redis = getRedis()
   if (redis) {
     redis.publish(

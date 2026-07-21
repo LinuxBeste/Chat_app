@@ -18,7 +18,9 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
   const [convs, setConvs] = useState<Conversation[]>([])
 
   useEffect(() => {
-    api<Conversation[]>("/api/conversations").then(setConvs).catch(() => {})
+    api<Conversation[]>("/api/conversations")
+      .then(setConvs)
+      .catch(() => {})
   }, [])
 
   return (
@@ -42,13 +44,9 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-primary">
-                  {conv.name ?? conv.type}
-                </span>
+                <span className="text-sm font-medium text-text-primary">{conv.name ?? conv.type}</span>
               </div>
-              <p className="text-sm text-text-secondary truncate mt-0.5">
-                {conv.type} conversation
-              </p>
+              <p className="text-sm text-text-secondary truncate mt-0.5">{conv.type} conversation</p>
             </div>
           </button>
         ))}

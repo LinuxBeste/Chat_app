@@ -16,11 +16,7 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
   try {
     const apiKey = req.headers["x-api-key"] as string | undefined
     if (apiKey) {
-      const token = await db
-        .select()
-        .from(refreshTokens)
-        .where(eq(refreshTokens.token, apiKey))
-        .limit(1)
+      const token = await db.select().from(refreshTokens).where(eq(refreshTokens.token, apiKey)).limit(1)
       if (!token.length || token[0].expiresAt < new Date()) {
         res.status(401).json({ error: "Invalid or expired API key" })
         return
