@@ -12,6 +12,18 @@ vi.mock("../../lib/auth-context", () => ({
   useAuth: vi.fn(() => ({ user: mockUser })),
 }))
 
+vi.mock("../../lib/theme-context", () => ({
+  useTheme: vi.fn(() => ({
+    theme: "light",
+    toggleTheme: vi.fn(),
+    customTheme: null,
+    themeConfig: null,
+    applyTheme: vi.fn(),
+    clearCustomTheme: vi.fn(),
+    refreshCustomTheme: vi.fn(),
+  })),
+}))
+
 import { api } from "../../lib/api"
 
 describe("SettingsPage", () => {
@@ -20,6 +32,7 @@ describe("SettingsPage", () => {
   })
 
   it("shows account info with username and email", async () => {
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: false })
     vi.mocked(api).mockResolvedValueOnce([])
     render(<SettingsPage />)
@@ -28,6 +41,7 @@ describe("SettingsPage", () => {
   })
 
   it("shows 2FA section", async () => {
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: false })
     vi.mocked(api).mockResolvedValueOnce([])
     render(<SettingsPage />)
@@ -38,6 +52,7 @@ describe("SettingsPage", () => {
     const loginEntries = [
       { id: "log-1", ip: "192.168.1.1", userAgent: "Chrome 120", success: "true", createdAt: new Date().toISOString() },
     ]
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: false })
     vi.mocked(api).mockResolvedValueOnce(loginEntries)
     render(<SettingsPage />)
@@ -47,6 +62,7 @@ describe("SettingsPage", () => {
   })
 
   it("shows Enable 2FA button when 2FA is disabled", async () => {
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: false })
     vi.mocked(api).mockResolvedValueOnce([])
     render(<SettingsPage />)
@@ -56,6 +72,7 @@ describe("SettingsPage", () => {
   })
 
   it("shows Disable 2FA button when 2FA is enabled", async () => {
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: true })
     vi.mocked(api).mockResolvedValueOnce([])
     render(<SettingsPage />)
@@ -65,6 +82,7 @@ describe("SettingsPage", () => {
   })
 
   it("shows active sessions placeholder", async () => {
+    vi.mocked(api).mockResolvedValueOnce([]) // themes list
     vi.mocked(api).mockResolvedValueOnce({ enabled: false })
     vi.mocked(api).mockResolvedValueOnce([])
     render(<SettingsPage />)

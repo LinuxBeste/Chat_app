@@ -274,6 +274,18 @@ export const communityInvites = pgTable("community_invites", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
+export const userThemes = pgTable("user_themes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  name: text("name").notNull(),
+  theme: text("theme").notNull(), // JSON blob with colors, bubbleStyle, borderRadius, statusEmoji
+  isActive: text("is_active").default("false").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
 export const calls = pgTable("calls", {
   id: uuid("id").primaryKey().defaultRandom(),
   callerId: uuid("caller_id")

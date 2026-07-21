@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
-import { Shield, Key, History, Smartphone, Check, Copy } from "lucide-react"
+import { Shield, Key, History, Smartphone, Check, Copy, Palette } from "lucide-react"
+import { ThemeEditor } from "./theme-editor"
 
 interface TOTPStatus {
   enabled: boolean
@@ -106,6 +107,9 @@ export function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Custom Themes */}
+        <ThemeEditor />
 
         {/* 2FA */}
         <section className="space-y-3">
