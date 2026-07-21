@@ -168,3 +168,37 @@ export const eventRsvps = pgTable("event_rsvps", {
   status: text("status").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const communities = pgTable("communities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: uuid("owner_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const communityMembers = pgTable("community_members", {
+  communityId: uuid("community_id").references(() => communities.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  role: text("role").default("member").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+})
+
+export const communityChannels = pgTable("community_channels", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  communityId: uuid("community_id").references(() => communities.id).notNull(),
+  name: text("name").notNull(),
+  topic: text("topic"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const communityInvites = pgTable("community_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  communityId: uuid("community_id").references(() => communities.id).notNull(),
+  code: text("code").unique().notNull(),
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  maxUses: integer("max_uses"),
+  useCount: integer("use_count").default(0).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

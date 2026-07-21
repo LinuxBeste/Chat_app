@@ -19,6 +19,7 @@ import securityRoutes from "./routes/security.js"
 import uploadRoutes from "./routes/uploads.js"
 import notificationRoutes from "./routes/notifications.js"
 import eventRoutes from "./routes/events.js"
+import communityRoutes from "./routes/communities.js"
 
 const app: Express = express()
 
@@ -45,6 +46,7 @@ app.use(`${config.apiPrefix}/developer`, developerRoutes)
 app.use(`${config.apiPrefix}/notifications`, notificationRoutes)
 app.use(`${config.apiPrefix}/security`, securityRoutes)
 app.use(`${config.apiPrefix}/events`, eventRoutes)
+app.use(`${config.apiPrefix}/communities`, communityRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 
 app.use(errorHandler)
