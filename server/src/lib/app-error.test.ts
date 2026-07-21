@@ -21,4 +21,15 @@ describe("AppError", () => {
     const err = new AppError(500, "ERR", "test")
     expect(err.stack).toBeTruthy()
   })
+
+  it("AppError without details works", () => {
+    const err = new AppError(400, "VALIDATION", "Invalid input")
+    expect(err.details).toBeUndefined()
+  })
+
+  it("AppError with status 500 has correct code", () => {
+    const err = new AppError(500, "SERVER_ERROR", "Something went wrong")
+    expect(err.statusCode).toBe(500)
+    expect(err.code).toBe("SERVER_ERROR")
+  })
 })

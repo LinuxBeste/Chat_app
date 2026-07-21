@@ -47,4 +47,29 @@ describe("validate middleware", () => {
     expect(next).toHaveBeenCalled()
     expect(req.query.q).toBe("test")
   })
+
+  it("validate with array schema", () => {
+    const { req, res, next } = createReqRes(["item1", "item2"])
+    const arraySchema = z.array(z.string())
+    validate(arraySchema)(req, res, next)
+    expect(next).toHaveBeenCalled()
+    expect(req.body).toEqual(["item1", "item2"])
+  })
+
+  it("strips unknown fields", () => {
+    const { req, res, next } = createReqRes({ name: "Alice", age: 25, extra: "should be stripped" })
+    const schema = z.object({ name: z.string(), age: z.number() })
+    validate(schema)(req, res, next)
+    expect(next).toHaveBeenCalled()
+    expect(req.body).toEqual({ name: "Alice", age: 25 })
+    expect(req.body).not.toHaveProperty("extra")
+  })
+
+  it("handles nested objects", () => {
+    const { req, res, next } = createReqRes({ user: { name: "Alice", age: 25 } })
+    const nestedSchema = z.object({ user: z.object({ name: z.string(), age: z.number() }) })
+    validate(nestedSchema)(req, res, next)
+    expect(next).toHaveBeenCalled()
+    expect(req.body).toEqual({ user: { name: "Alice", age: 25 } })
+  })
 })

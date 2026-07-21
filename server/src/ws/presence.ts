@@ -11,3 +11,12 @@ export async function updatePresence(userId: string, status: "online" | "away" |
     redis.publish("chat:presence", JSON.stringify({ type: "presence:update", userId, status }))
   }
 }
+
+export async function getPresence(userId: string): Promise<string> {
+  try {
+    const [user] = await db.select({ status: users.status }).from(users).where(eq(users.id, userId)).limit(1)
+    return user?.status ?? "offline"
+  } catch {
+    return "offline"
+  }
+}

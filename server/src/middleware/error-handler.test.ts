@@ -1,6 +1,16 @@
-import { describe, it, expect, vi } from "vitest"
-import { errorHandler } from "./error-handler.js"
+import { describe, it, expect, vi, beforeEach } from "vitest"
+import { errorHandler, catchAsync } from "./error-handler.js"
 import { AppError } from "../lib/app-error.js"
+
+vi.mock("../lib/logger.js", () => ({
+  logger: { warn: vi.fn(), error: vi.fn() },
+}))
+
+import { logger } from "../lib/logger.js"
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 function createReqRes() {
   const req = {} as any
@@ -43,5 +53,36 @@ describe("errorHandler", () => {
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(500)
     expect(res.json).toHaveBeenCalledWith({ error: "INTERNAL_ERROR", message: "Internal server error" })
+  })
+
+  it("catchAsync catches errors and passes to next", async () => {
+    const req = {} as any
+    const res = {} as any
+    const next = vi.fn()
+    const error = new Error("async error")
+    const asyncFn = async () => {
+      throw error
+    }
+
+    catchAsync(asyncFn)(req, res, next)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(next).toHaveBeenCalledWith(error)
+  })
+
+  it("handles errors with no stack", () => {
+    const { req, res, next } = createReqRes()
+    const err = new Error("No stack")
+    err.stack = null as any
+    errorHandler(err, req, res, next)
+    expect(res.status).toHaveBeenCalledWith(500)
+    expect(res.json).toHaveBeenCalledWith({ error: "INTERNAL_ERROR", message: "Internal server error" })
+  })
+
+  it("logs with logger", () => {
+    const { req, res, next } = createReqRes()
+    const err = new AppError(403, "FORBIDDEN", "Access denied")
+    errorHandler(err, req, res, next)
+    expect(logger.warn).toHaveBeenCalled()
   })
 })
