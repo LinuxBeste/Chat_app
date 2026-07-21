@@ -202,3 +202,12 @@ export const communityInvites = pgTable("community_invites", {
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const calls = pgTable("calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  callerId: uuid("caller_id").references(() => users.id).notNull(),
+  calleeId: uuid("callee_id").references(() => users.id).notNull(),
+  status: text("status").notNull().default("ended"),
+  duration: integer("duration"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

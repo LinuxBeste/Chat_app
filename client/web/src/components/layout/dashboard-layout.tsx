@@ -9,6 +9,7 @@ import { CommunitiesPage } from "../communities/communities-page"
 import { EventsPage } from "../events/events-page"
 import { NotificationsPage } from "../notifications/notifications-page"
 import { SettingsPage } from "../settings/settings-page"
+import { CallsPage } from "../calls/calls-page"
 
 export type View = "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings"
 
@@ -46,11 +47,7 @@ export function DashboardLayout() {
             {view === "events" && <EventsPage />}
             {view === "notifications" && <NotificationsPage />}
             {view === "settings" && <SettingsPage />}
-            {view === "calls" && (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-text-muted">Calls history coming soon</p>
-              </div>
-            )}
+            {view === "calls" && <CallsPage />}
           </main>
         </div>
       </div>
