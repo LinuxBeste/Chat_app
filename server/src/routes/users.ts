@@ -28,6 +28,7 @@ router.get(
         bio: users.bio,
         customStatus: users.customStatus,
         status: users.status,
+        emailVerified: users.emailVerified,
         createdAt: users.createdAt,
       })
       .from(users)

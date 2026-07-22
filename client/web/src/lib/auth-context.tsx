@@ -9,6 +9,7 @@ interface User {
   status?: string
   customStatus?: string
   displayName?: string | null
+  emailVerified?: string
 }
 
 interface AuthState {

@@ -17,6 +17,7 @@ export const users = pgTable(
     bio: text("bio"),
     customStatus: text("custom_status"),
     status: userStatusEnum("status").default("offline").notNull(),
+    emailVerified: text("email_verified").default("false").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
@@ -127,6 +128,24 @@ export const refreshTokens = pgTable(
   },
   (table) => ({
     userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
+  }),
+)
+
+export const emailVerificationTokens = pgTable(
+  "email_verification_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    token: text("token").unique().notNull(),
+    type: text("type").notNull().default("email_verify"),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("email_verification_tokens_user_id_idx").on(table.userId),
+    tokenIdx: index("email_verification_tokens_token_idx").on(table.token),
   }),
 )
 
