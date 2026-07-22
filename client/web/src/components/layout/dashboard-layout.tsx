@@ -10,9 +10,10 @@ import { EventsPage } from "../events/events-page"
 import { NotificationsPage } from "../notifications/notifications-page"
 import { SettingsPage } from "../settings/settings-page"
 import { CallsPage } from "../calls/calls-page"
+import { AdminPage } from "../admin/admin-page"
 
 export type View =
-  "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings"
+  "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings" | "admin"
 
 interface NavContextValue {
   view: View
@@ -49,6 +50,7 @@ export function DashboardLayout() {
             {view === "notifications" && <NotificationsPage />}
             {view === "settings" && <SettingsPage />}
             {view === "calls" && <CallsPage />}
+            {view === "admin" && <AdminPage />}
           </main>
         </div>
       </div>

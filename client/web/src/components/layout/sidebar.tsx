@@ -1,5 +1,5 @@
 import { cn } from "../../lib/utils"
-import { MessageSquare, Users, Phone, Bell, FileText, User, Settings, LogOut, Globe, Calendar } from "lucide-react"
+import { MessageSquare, Users, Phone, Bell, FileText, User, Settings, LogOut, Globe, Calendar, Shield } from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
 import { useNav } from "./dashboard-layout"
 import type { View } from "./dashboard-layout"
@@ -12,6 +12,7 @@ const navItems: { icon: any; label: string; view: View }[] = [
   { icon: Phone, label: "Calls", view: "calls" },
   { icon: FileText, label: "Files", view: "files" },
   { icon: Bell, label: "Notifications", view: "notifications" },
+  { icon: Shield, label: "Admin", view: "admin" },
 ]
 
 const bottomItems = [

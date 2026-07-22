@@ -51,4 +51,8 @@ export const config = {
     dir: process.env.UPLOAD_DIR ?? "data/uploads",
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE ?? "10485760", 10),
   },
+
+  admin: {
+    userIds: (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean),
+  },
 } as const

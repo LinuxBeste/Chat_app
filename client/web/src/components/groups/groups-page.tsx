@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
-import { Plus, Users, X } from "lucide-react"
+import { useAuth } from "../../lib/auth-context"
+import { Plus, Users, X, Search, UserCheck } from "lucide-react"
 
 interface Group {
   id: string
   type: string
   name: string | null
   createdAt: string
+  createdBy: string
 }
 
 interface Member {
@@ -16,13 +18,23 @@ interface Member {
   role: string
 }
 
+interface UserResult {
+  id: string
+  username: string
+  displayName: string | null
+}
+
 export function GroupsPage() {
+  const { user } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
   const [selected, setSelected] = useState<Group | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [newName, setNewName] = useState("")
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState("")
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<UserResult[]>([])
 
   useEffect(() => {
     api<Group[]>("/api/conversations")
@@ -38,6 +50,11 @@ export function GroupsPage() {
     const conv = await api<any>(`/api/conversations/${g.id}`)
     setMembers(conv.members ?? [])
   }
+
+  const currentMember = members.find((m) => m.id === user?.id)
+  const isOwner = currentMember?.role === "owner"
+  const isAdmin = currentMember?.role === "admin"
+  const canManage = isOwner || isAdmin
 
   const renameGroup = async () => {
     if (!selected || !newName.trim()) return
@@ -60,6 +77,48 @@ export function GroupsPage() {
       setCreateName("")
       setShowCreate(false)
     }
+  }
+
+  const removeMember = async (userId: string) => {
+    if (!selected) return
+    await api(`/api/conversations/${selected.id}/participants/${userId}`, {
+      method: "DELETE",
+    }).catch(() => {})
+    setMembers((prev) => prev.filter((m) => m.id !== userId))
+  }
+
+  const changeRole = async (userId: string, role: string) => {
+    if (!selected) return
+    await api(`/api/conversations/${selected.id}/participants/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }).catch(() => {})
+    setMembers((prev) => prev.map((m) => (m.id === userId ? { ...m, role } : m)))
+  }
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 1) {
+      setSearchResults([])
+      return
+    }
+    const timer = setTimeout(() => {
+      api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
+        .then(setSearchResults)
+        .catch(() => setSearchResults([]))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const addMember = async (userId: string) => {
+    if (!selected) return
+    await api(`/api/conversations/${selected.id}/participants`, {
+      method: "POST",
+      body: JSON.stringify({ participantIds: [userId] }),
+    }).catch(() => {})
+    const conv = await api<any>(`/api/conversations/${selected.id}`)
+    setMembers(conv.members ?? [])
+    setSearchQuery("")
+    setSearchResults([])
   }
 
   return (
@@ -119,7 +178,17 @@ export function GroupsPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-text-primary mb-2">Members ({members.length})</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-text-primary">Members ({members.length})</h3>
+                {canManage && (
+                  <button
+                    onClick={() => setShowAddMember(true)}
+                    className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" /> Add
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
                 {members.map((m) => (
                   <div
@@ -136,6 +205,25 @@ export function GroupsPage() {
                     <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">
                       {m.role}
                     </span>
+                    {canManage && m.id !== user?.id && m.role !== "owner" && (
+                      <button
+                        onClick={() => removeMember(m.id)}
+                        className="text-text-muted hover:text-danger cursor-pointer"
+                        title="Remove member"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {isOwner && m.id !== user?.id && m.role !== "owner" && (
+                      <select
+                        value={m.role}
+                        onChange={(e) => changeRole(m.id, e.target.value)}
+                        className="text-xs bg-transparent border border-border rounded-xl px-2 py-1 text-text-muted cursor-pointer outline-none"
+                      >
+                        <option value="member">member</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    )}
                   </div>
                 ))}
               </div>
@@ -168,6 +256,61 @@ export function GroupsPage() {
               className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
             >
               Create
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAddMember && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddMember(false)}>
+          <div
+            className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-text-primary">Add Member</h3>
+              <button
+                onClick={() => setShowAddMember(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-2xl border border-border bg-bg-primary">
+              <Search className="h-4 w-4 text-text-muted shrink-0" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users..."
+                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
+              {searchQuery.length >= 1 && searchResults.length === 0 && (
+                <p className="text-sm text-text-muted text-center py-2">No users found</p>
+              )}
+              {searchResults.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => addMember(u.id)}
+                  className="flex w-full items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 transition-all cursor-pointer text-left"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
+                    {(u.displayName || u.username)[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-text-primary truncate">{u.displayName || u.username}</p>
+                    <p className="text-xs text-text-muted">@{u.username}</p>
+                  </div>
+                  <UserCheck className="h-4 w-4 text-accent shrink-0" />
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowAddMember(false)}
+              className="w-full h-10 rounded-2xl border border-border text-text-muted text-sm font-medium hover:bg-white/5 transition-all cursor-pointer"
+            >
+              Cancel
             </button>
           </div>
         </div>

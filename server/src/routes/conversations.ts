@@ -50,7 +50,13 @@ router.post(
         .values({ type, name: name ?? null, createdBy: req.user!.userId })
         .returning()
 
-      await db.insert(participants).values(allIds.map((userId) => ({ conversationId: conv.id, userId })))
+      await db.insert(participants).values(
+        allIds.map((userId) => ({
+          conversationId: conv.id,
+          userId,
+          role: userId === req.user!.userId ? "owner" : "member",
+        })),
+      )
 
       res.status(201).json(conv)
     } catch (err) {
@@ -99,6 +105,7 @@ router.get(
         displayName: users.displayName,
         avatar: users.avatar,
         status: users.status,
+        role: participants.role,
       })
       .from(participants)
       .innerJoin(users, eq(users.id, participants.userId))
@@ -123,6 +130,97 @@ router.put(
       .where(eq(conversations.id, req.params.id as string))
       .returning()
     res.json(updated)
+  }),
+)
+
+const addParticipantsSchema = z.object({
+  participantIds: z.array(z.string().uuid()).min(1),
+})
+
+router.post(
+  "/:id/participants",
+  authGuard,
+  validate(addParticipantsSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    const convId = req.params.id as string
+    const { participantIds } = req.body
+
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" })
+      return
+    }
+    if (conv.type === "dm") {
+      res.status(400).json({ error: "Cannot add participants to a DM" })
+      return
+    }
+
+    const existingParticipants = await db
+      .select({ userId: participants.userId })
+      .from(participants)
+      .where(eq(participants.conversationId, convId))
+
+    const existingIds = new Set(existingParticipants.map((p) => p.userId))
+    const newIds = participantIds.filter((id: string) => !existingIds.has(id))
+
+    if (newIds.length === 0) {
+      res.status(400).json({ error: "All users are already participants" })
+      return
+    }
+
+    await db.insert(participants).values(newIds.map((userId: string) => ({ conversationId: convId, userId })))
+
+    const added = await db
+      .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, status: users.status, role: participants.role })
+      .from(participants)
+      .innerJoin(users, eq(users.id, participants.userId))
+      .where(and(eq(participants.conversationId, convId), sql`${participants.userId} = ANY(${sql.join(newIds.map((id: string) => sql`${id}::uuid`), sql`, `)})`))
+
+    res.status(201).json(added)
+  }),
+)
+
+router.delete(
+  "/:id/participants/:userId",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const convId = req.params.id as string
+    const targetUserId = req.params.userId as string
+
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" })
+      return
+    }
+
+    if (conv.createdBy === targetUserId) {
+      res.status(403).json({ error: "Cannot remove the conversation owner" })
+      return
+    }
+
+    await db
+      .delete(participants)
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)))
+
+    res.json({ message: "Participant removed" })
+  }),
+)
+
+router.put(
+  "/:id/participants/:userId/role",
+  authGuard,
+  validate(z.object({ role: z.enum(["owner", "admin", "member"]) })),
+  catchAsync(async (req: Request, res: Response) => {
+    const convId = req.params.id as string
+    const targetUserId = req.params.userId as string
+    const { role } = req.body
+
+    await db
+      .update(participants)
+      .set({ role })
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)))
+
+    res.json({ message: "Role updated" })
   }),
 )
 

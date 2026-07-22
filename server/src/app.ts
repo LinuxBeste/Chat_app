@@ -24,6 +24,7 @@ import eventRoutes from "./routes/events.js"
 import communityRoutes from "./routes/communities.js"
 import callRoutes from "./routes/calls.js"
 import themeRoutes from "./routes/themes.js"
+import adminRoutes from "./routes/admin.js"
 
 const app: Express = express()
 
@@ -71,6 +72,7 @@ app.use(`${config.apiPrefix}/communities`, communityRoutes)
 app.use(`${config.apiPrefix}/calls`, callRoutes)
 app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 app.use(`${config.apiPrefix}/themes`, themeRoutes)
+app.use(`${config.apiPrefix}/admin`, adminRoutes)
 
 app.use(errorHandler)
 

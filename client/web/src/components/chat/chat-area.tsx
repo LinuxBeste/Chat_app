@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { MessageInput, type AttachmentData } from "./message-input"
 import { CallOverlay } from "./call-overlay"
+import { AddParticipantsModal } from "./add-participants-modal"
 import { Avatar } from "../ui/avatar"
-import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download } from "lucide-react"
+import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download, Plus, Users } from "lucide-react"
 import { api } from "../../lib/api"
 import { wsClient } from "../../lib/ws"
 
@@ -21,6 +22,23 @@ interface Message {
   }
 }
 
+interface Member {
+  id: string
+  username: string
+  displayName: string | null
+  avatar: string | null
+  status: string
+  role: string
+}
+
+interface ConversationInfo {
+  id: string
+  type: string
+  name: string | null
+  createdBy: string
+  members: Member[]
+}
+
 interface ChatAreaProps {
   conversationId: string
   currentUserId: string
@@ -28,20 +46,43 @@ interface ChatAreaProps {
 
 export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [convInfo, setConvInfo] = useState<ConversationInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [callState, setCallState] = useState<{ targetUserId: string; direction: "incoming" | "outgoing" } | null>(null)
   const [menuMessageId, setMenuMessageId] = useState<string | null>(null)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
+  const [showAddPeople, setShowAddPeople] = useState(false)
+  const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setLoading(true)
-    api<Message[]>(`/api/conversations/${conversationId}/messages`)
-      .then(setMessages)
+    Promise.all([
+      api<Message[]>(`/api/conversations/${conversationId}/messages`),
+      api<ConversationInfo>(`/api/conversations/${conversationId}`),
+    ])
+      .then(([msgs, info]) => {
+        setMessages(msgs)
+        setConvInfo(info)
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [conversationId])
+
+  const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
+  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
+  const isGroup = convInfo?.type === "group" || convInfo?.type === "channel"
+
+  const handleRemoveParticipant = async (userId: string) => {
+    try {
+      await api(`/api/conversations/${conversationId}/participants/${userId}`, { method: "DELETE" })
+      setConvInfo((prev) =>
+        prev ? { ...prev, members: prev.members.filter((m) => m.id !== userId) } : prev,
+      )
+      setShowMemberMenu(null)
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     const unsubNew = wsClient.on("message:new", (data) => {
@@ -136,12 +177,31 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         aria-label="Chat actions"
       >
         <div className="relative">
-          <Avatar fallback={otherSender?.sender?.username?.[0] ?? "?"} />
+          <Avatar fallback={convInfo?.name?.[0] ?? otherSender?.sender?.username?.[0] ?? "?"} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-text-primary">{otherSender?.sender?.username ?? "Chat"}</h3>
+          <h3 className="text-sm font-semibold text-text-primary">
+            {convInfo?.name ?? otherSender?.sender?.username ?? "Chat"}
+          </h3>
+          {isGroup && convInfo && (
+            <p className="text-xs text-text-muted truncate">
+              {convInfo.members.length} members
+              {currentMember && (
+                <span className="ml-2 lowercase text-accent">· {currentMember.role}</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1">
+          {isGroup && canManage && (
+            <button
+              onClick={() => setShowAddPeople(true)}
+              aria-label="Add people"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
           <button
             onClick={() => otherSender && setCallState({ targetUserId: otherSender.senderId, direction: "outgoing" })}
             aria-label="Start voice call"
@@ -156,6 +216,42 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           >
             <Video className="h-4 w-4" aria-hidden="true" />
           </button>
+          {isGroup && canManage && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMemberMenu(showMemberMenu === "header" ? null : "header")}
+                aria-label="Manage members"
+                className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Users className="h-4 w-4" aria-hidden="true" />
+              </button>
+              {showMemberMenu === "header" && (
+                <div className="absolute right-0 top-10 z-50 bg-surface border border-border rounded-2xl shadow-lg py-1 min-w-[200px] max-h-72 overflow-y-auto">
+                  <p className="text-xs text-text-muted px-3 py-2 font-medium">Members</p>
+                  {convInfo?.members.map((m) => (
+                    <div key={m.id} className="flex items-center gap-2 px-3 py-2 hover:bg-white/5">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent text-[10px] font-bold shrink-0">
+                        {(m.displayName || m.username)[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-text-primary truncate">{m.displayName || m.username}</p>
+                        <p className="text-[10px] text-text-muted capitalize">{m.role}</p>
+                      </div>
+                      {canManage && m.id !== currentUserId && m.role !== "owner" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRemoveParticipant(m.id) }}
+                          className="text-text-muted hover:text-danger cursor-pointer"
+                          title="Remove"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             aria-label="More options"
             className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -289,6 +385,20 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
 
       {menuMessageId && (
         <div className="fixed inset-0 z-40" onClick={() => setMenuMessageId(null)} />
+      )}
+
+      {showAddPeople && (
+        <AddParticipantsModal
+          conversationId={conversationId}
+          onClose={() => setShowAddPeople(false)}
+          onAdded={() => {
+            api<ConversationInfo>(`/api/conversations/${conversationId}`).then(setConvInfo).catch(() => {})
+          }}
+        />
+      )}
+
+      {showMemberMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowMemberMenu(null)} />
       )}
     </div>
   )
