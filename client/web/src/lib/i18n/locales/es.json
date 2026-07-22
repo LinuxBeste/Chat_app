@@ -301,6 +301,8 @@
       "themeMode": "Modo de tema",
       "darkMode": "Modo oscuro",
       "darkModeDesc": "Cambiar entre modo claro y oscuro",
+      "switchToDark": "Cambiar a modo oscuro",
+      "switchToLight": "Cambiar a modo claro",
       "accentColor": "Color de acento",
       "accentColorDesc": "Color primario de marca",
       "secondaryColor": "Color secundario",

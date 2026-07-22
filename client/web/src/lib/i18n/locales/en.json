@@ -301,6 +301,8 @@
       "themeMode": "Theme Mode",
       "darkMode": "Dark Mode",
       "darkModeDesc": "Switch between light and dark mode",
+      "switchToDark": "Switch to dark mode",
+      "switchToLight": "Switch to light mode",
       "accentColor": "Accent Color",
       "accentColorDesc": "Primary brand color",
       "secondaryColor": "Secondary Color",

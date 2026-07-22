@@ -301,6 +301,8 @@
       "themeMode": "テーマモード",
       "darkMode": "ダークモード",
       "darkModeDesc": "ライトモードとダークモードを切り替え",
+      "switchToDark": "ダークモードに切り替え",
+      "switchToLight": "ライトモードに切り替え",
       "accentColor": "アクセントカラー",
       "accentColorDesc": "プライマリブランドカラー",
       "secondaryColor": "セカンダリカラー",

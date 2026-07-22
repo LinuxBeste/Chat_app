@@ -1,17 +1,23 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../../lib/auth-context"
-import { Eye, EyeOff } from "lucide-react"
+import { useTheme } from "../../lib/theme-context"
+import i18n, { supportedLanguages } from "../../lib/i18n"
+import { Eye, EyeOff, Sun, Moon, Globe } from "lucide-react"
 
 export function LoginPage() {
   const { t } = useTranslation()
   const { login, register } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [showLangPicker, setShowLangPicker] = useState(false)
+
+  const currentLang = supportedLanguages.find((l) => l.code === i18n.language) || supportedLanguages[0]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,9 +36,47 @@ export function LoginPage() {
   return (
     <div className="flex h-screen items-center justify-center bg-bg-primary">
       <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-8">
-        <h1 className="text-xl font-semibold text-text-primary mb-1">
-          {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
-        </h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-semibold text-text-primary">
+            {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
+          </h1>
+          <div className="flex items-center gap-1">
+            <div className="relative">
+              <button
+                onClick={() => setShowLangPicker(!showLangPicker)}
+                aria-label={t("settings.language.title")}
+                className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all cursor-pointer"
+              >
+                <Globe className="h-4 w-4" />
+              </button>
+              {showLangPicker && (
+                <div className="absolute right-0 top-10 z-50 bg-surface border border-border rounded-2xl shadow-lg py-1 min-w-[180px] max-h-60 overflow-y-auto">
+                  {supportedLanguages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => { i18n.changeLanguage(lang.code); setShowLangPicker(false) }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer ${
+                        i18n.language === lang.code
+                          ? "text-accent bg-accent/5"
+                          : "text-text-primary hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="text-text-muted text-xs mr-2">{lang.native}</span>
+                      {lang.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={toggleTheme}
+              aria-label={t(theme === "dark" ? "settings.appearance.switchToLight" : "settings.appearance.switchToDark")}
+              className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all cursor-pointer"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
         <p className="text-sm text-text-muted mb-6">
           {mode === "login" ? t("auth.signInToAccount") : t("auth.registerToStart")}
         </p>

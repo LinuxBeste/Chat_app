@@ -301,6 +301,8 @@
       "themeMode": "Designmodus",
       "darkMode": "Dark Mode",
       "darkModeDesc": "Zwischen hellem und dunklem Modus wechseln",
+      "switchToDark": "Zum dunklen Modus wechseln",
+      "switchToLight": "Zum hellen Modus wechseln",
       "accentColor": "Akzentfarbe",
       "accentColorDesc": "Primäre Markenfarbe",
       "secondaryColor": "Sekundärfarbe",
