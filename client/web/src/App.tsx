@@ -3,6 +3,7 @@ import { ThemeProvider } from "./lib/theme-context"
 import { NotificationProvider } from "./lib/notification-context"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
 import { LoginPage } from "./components/auth/login-page"
+import "./lib/i18n"
 
 function AppContent() {
   const { user, loading } = useAuth()

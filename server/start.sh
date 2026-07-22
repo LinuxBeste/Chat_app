@@ -182,6 +182,35 @@ else
   docker compose "${COMPOSE_PROFILES[@]}" up --build -d
 
   echo "Waiting for server to be ready ..."
+
+  # Poll for container failures (restart loops) — 10s max
+  for _ in $(seq 1 5); do
+    failed=""
+    while IFS= read -r cid; do
+      [[ -z "$cid" ]] && continue
+      restarts="$(docker inspect -f '{{.RestartCount}}' "$cid" 2>/dev/null || echo 0)"
+      if [[ "$restarts" -ge 3 ]]; then
+        name="$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's|/||')"
+        failed+="$name "
+      fi
+    done < <(docker compose "${COMPOSE_PROFILES[@]}" ps -q 2>/dev/null || true)
+
+    if [[ -n "$failed" ]]; then
+      echo >&2 ""
+      echo >&2 "WARNING: Container(s) in restart loop: $failed"
+      echo >&2 "--- Last logs ---"
+      for svc in $failed; do
+        echo >&2 "=== $svc ==="
+        docker compose "${COMPOSE_PROFILES[@]}" logs --tail=20 "$svc" 2>/dev/null || true
+      done
+      echo >&2 "---"
+      echo >&2 "Aborting due to container failures."
+      docker compose "${COMPOSE_PROFILES[@]}" down 2>/dev/null || true
+      exit 1
+    fi
+    sleep 2
+  done
+
   for i in $(seq 1 30); do
     if curl -s "http://localhost:$PORT/health" >/dev/null 2>&1; then
       echo "Server is ready!"

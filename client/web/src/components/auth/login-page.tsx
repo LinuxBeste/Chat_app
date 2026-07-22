@@ -1,8 +1,10 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useAuth } from "../../lib/auth-context"
 import { Eye, EyeOff } from "lucide-react"
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const { login, register } = useAuth()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [username, setUsername] = useState("")
@@ -21,7 +23,7 @@ export function LoginPage() {
         await register(username, email, password)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      setError(err instanceof Error ? err.message : t("auth.somethingWentWrong"))
     }
   }
 
@@ -29,23 +31,23 @@ export function LoginPage() {
     <div className="flex h-screen items-center justify-center bg-bg-primary">
       <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-8">
         <h1 className="text-xl font-semibold text-text-primary mb-1">
-          {mode === "login" ? "Welcome back" : "Create account"}
+          {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
         </h1>
         <p className="text-sm text-text-muted mb-6">
-          {mode === "login" ? "Sign in to your account" : "Register to get started"}
+          {mode === "login" ? t("auth.signInToAccount") : t("auth.registerToStart")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
             <div>
               <label htmlFor="username" className="sr-only">
-                Username
+                {t("auth.username")}
               </label>
               <input
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
+                placeholder={t("auth.username")}
                 className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
                 required
               />
@@ -53,35 +55,35 @@ export function LoginPage() {
           )}
           <div>
             <label htmlFor="email" className="sr-only">
-              Email
+              {t("auth.email")}
             </label>
             <input
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              placeholder="Email"
+              placeholder={t("auth.email")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
               required
             />
           </div>
           <div className="relative">
             <label htmlFor="password" className="sr-only">
-              Password
+              {t("auth.password")}
             </label>
             <input
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              placeholder={t("auth.password")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary pr-10 px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -96,18 +98,18 @@ export function LoginPage() {
             type="submit"
             className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer"
           >
-            {mode === "login" ? "Sign In" : "Create Account"}
+            {mode === "login" ? t("auth.signIn") : t("auth.createAccountBtn")}
           </button>
         </form>
 
         <p className="text-sm text-text-muted mt-6 text-center">
-          {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
+          {mode === "login" ? t("auth.noAccount") : t("auth.hasAccount")}{" "}
           <button
             onClick={() => setMode(mode === "login" ? "register" : "login")}
-            aria-label={mode === "login" ? "Switch to register" : "Switch to sign in"}
+            aria-label={mode === "login" ? t("auth.switchToRegister") : t("auth.switchToSignIn")}
             className="text-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
           >
-            {mode === "login" ? "Register" : "Sign in"}
+            {mode === "login" ? t("auth.register") : t("auth.signInLink")}
           </button>
         </p>
       </div>

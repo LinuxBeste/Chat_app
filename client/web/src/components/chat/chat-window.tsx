@@ -1,26 +1,21 @@
 import { useState } from "react"
 import { ConversationList } from "./conversation-list"
+import { useTranslation } from "react-i18next"
 import { ChatArea } from "./chat-area"
-import { useAuth } from "../../lib/auth-context"
 
-export function ChatWindow() {
-  const { user } = useAuth()
-  const [activeConv, setActiveConv] = useState<string | null>(null)
+interface ChatWindowProps {
+  conversationId: string | null
+  currentUserId: string
+}
 
-  return (
-    <div className="flex h-full rounded-[32px] overflow-hidden border border-border">
-      <div className="w-80 shrink-0 border-r border-border bg-bg-secondary">
-        <ConversationList activeId={activeConv} onSelect={setActiveConv} />
+export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
+  const { t } = useTranslation()
+  if (!conversationId) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-text-muted">
+        {t("chat.selectConversation")}
       </div>
-      <div className="flex-1 bg-surface">
-        {activeConv && user ? (
-          <ChatArea conversationId={activeConv} currentUserId={user.id} />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-text-muted">Select a conversation</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+    )
+  }
+  return <ChatArea key={conversationId} conversationId={conversationId} currentUserId={currentUserId} />
 }

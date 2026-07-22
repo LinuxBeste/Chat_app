@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { Card, CardHeader, CardTitle } from "../ui/card"
 
@@ -12,6 +13,7 @@ interface MediaItem {
 }
 
 export function MediaGallery() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<MediaItem[]>([])
 
   useEffect(() => {
@@ -29,10 +31,10 @@ export function MediaGallery() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Media Gallery</CardTitle>
+        <CardTitle>{t("chat.mediaGallery")}</CardTitle>
       </CardHeader>
       {items.length === 0 ? (
-        <p className="text-sm text-text-muted px-6 pb-6">No media shared yet</p>
+        <p className="text-sm text-text-muted px-6 pb-6">{t("chat.noMediaShared")}</p>
       ) : (
         <div className="grid grid-cols-3 gap-2 p-2">
           {items.map((item) => (

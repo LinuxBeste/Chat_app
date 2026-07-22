@@ -1,48 +1,292 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTheme } from "../../lib/theme-context"
 import { ThemeEditor } from "./theme-editor"
+import { supportedLanguages } from "../../lib/i18n"
+import i18n from "../../lib/i18n"
+import { useTranslation } from "react-i18next"
 import {
   User, Shield, Palette, Bell, Lock, Info, History, Key, Check, Copy, Smartphone,
-  Moon, Sun, Eye, LogOut, Mail,
+  Moon, Sun, Eye, LogOut, Mail, Globe, MessageSquare, Volume2, Send,
+  Monitor, Music, Camera, Mic, Video, Terminal,
+  BookOpen, Sliders, Cloud, Zap, Type, Image, FileText, Hash,
+  Clock, Calendar, Ruler, Layers, Headphones, Mic2,
+  Phone, Trash2, Square, Grid3X3,
 } from "lucide-react"
 
-interface TOTPStatus {
-  enabled: boolean
+interface TOTPStatus { enabled: boolean }
+interface LoginEntry { id: string; ip: string | null; userAgent: string | null; success: string; createdAt: string }
+interface Session { id: string; createdAt: string; expiresAt: string }
+
+interface Preferences {
+  // Notifications
+  messageNotifications?: boolean; groupInvites?: boolean; communityUpdates?: boolean
+  eventReminders?: boolean; callAlerts?: boolean; notificationSound?: boolean
+  desktopNotifications?: boolean; pushNotifications?: boolean; mentionOnly?: boolean
+  notificationPreview?: boolean; dndEnabled?: boolean; dndStart?: string; dndEnd?: string
+  badgeCount?: boolean; messagePreview?: boolean; keywordAlerts?: string
+  notificationSoundName?: string; notificationVolume?: number
+  // Privacy
+  readReceipts?: boolean; showOnlineStatus?: boolean; allowFriendRequests?: boolean
+  dmFrom?: "everyone" | "friends" | "off"; explicitFilter?: boolean; safetyAlerts?: boolean
+  shareActivity?: boolean; showPresence?: boolean
+  // Chat
+  enterToSend?: boolean; showTypingIndicators?: boolean; autoPlayMedia?: boolean
+  imagePreviews?: boolean; linkPreviews?: boolean; emojiSuggestions?: boolean
+  markdownPreview?: boolean; spellCheck?: boolean; autoCorrect?: boolean
+  messageGrouping?: boolean; replyPreview?: boolean; autoDownloadFiles?: boolean
+  imageQuality?: "low" | "medium" | "high"; gifAutoplay?: boolean; videoAutoplay?: boolean
+  stickerSuggestions?: boolean; inlineCodePreview?: boolean
+  // Appearance
+  compactMode?: boolean; fontSize?: "small" | "medium" | "large" | "xlarge"
+  timeFormat?: "12h" | "24h"; fontFamily?: string; monospaceFont?: string
+  showTimestamps?: "always" | "hover" | "off"
+  avatarStyle?: "circle" | "square"; avatarSize?: "small" | "medium" | "large"
+  avatarChatSize?: "small" | "medium" | "large"
+  animatedEmoji?: boolean; reduceMotion?: boolean
+  reduceTransparency?: boolean; chatBubbleStyle?: "rounded" | "flat" | "minimal"
+  sidebarWidth?: "narrow" | "default" | "wide"; accentColor?: string
+  secondaryColor?: string; surfaceColor?: string; backgroundColor?: string
+  textColor?: string; linkColor?: string; borderColor?: string
+  successColor?: string; dangerColor?: string; warningColor?: string
+  glassMorphism?: boolean; saturation?: number; contrast?: number; brightness?: number
+  // Corners
+  borderRadius?: "none" | "small" | "medium" | "large" | "full"
+  buttonRadius?: "none" | "small" | "medium" | "large" | "full"
+  inputRadius?: "none" | "small" | "medium" | "large" | "full"
+  chatBubbleRadius?: "none" | "small" | "medium" | "large" | "full"
+  avatarRadius?: "none" | "small" | "medium" | "full"
+  modalRadius?: "none" | "small" | "medium" | "large" | "full"
+  cardRadius?: "none" | "small" | "medium" | "large" | "full"
+  // Shadows & Effects
+  shadowIntensity?: "none" | "light" | "medium" | "strong"
+  borderWidth?: "none" | "thin" | "normal" | "thick"
+  hoverScale?: number; transitionDuration?: "fast" | "normal" | "slow"
+  animationSpeed?: "slow" | "normal" | "fast" | "none"
+  backgroundPattern?: "none" | "dots" | "grid" | "waves"
+  backgroundBlur?: number
+  // Layout
+  messageSpacing?: "compact" | "normal" | "relaxed"
+  sectionSpacing?: "compact" | "normal" | "relaxed"
+  elementGap?: "compact" | "normal" | "wide"
+  listDensity?: "compact" | "normal" | "relaxed"
+  channelListDensity?: "compact" | "normal" | "relaxed"
+  memberListWidth?: "narrow" | "default" | "wide"
+  sidebarPosition?: "left" | "right"
+  showHeader?: boolean; showFooter?: boolean
+  scrollbarStyle?: "default" | "thin" | "hidden"
+  scrollbarWidth?: number; scrollBehavior?: "smooth" | "instant"
+  // Messages
+  dateSeparator?: "full" | "short" | "none"
+  dateSeparatorStyle?: "line" | "pill" | "minimal"
+  senderNameFormat?: "full" | "first" | "none"
+  badgeStyle?: "dot" | "pill" | "number"
+  notificationDotSize?: "small" | "medium" | "large"
+  typingIndicatorStyle?: "dots" | "pulse" | "text"
+  loadingStyle?: "spinner" | "skeleton" | "dots"
+  codeBlockTheme?: "light" | "dark" | "auto"
+  codeFontSize?: "small" | "medium" | "large"
+  codeBackground?: string
+  linkStyle?: "underline" | "colored" | "both"
+  mentionStyle?: "highlight" | "bold" | "both"
+  spoilerStyle?: "blur" | "hidden" | "reveal"
+  blockquoteStyle?: "line" | "accent" | "modern"
+  headingStyle?: "default" | "accent" | "underlined"
+  // Animations
+  pageTransition?: "fade" | "slide" | "scale" | "none"
+  messageAnimation?: "fade" | "slide" | "scale" | "none"
+  modalAnimation?: "fade" | "scale" | "slide" | "none"
+  hoverAnimation?: "scale" | "glow" | "lift" | "none"
+  reactionAnimation?: "bounce" | "pop" | "fade" | "none"
+  skeletonStyle?: "shimmer" | "pulse" | "none"
+  stickyHeader?: boolean
+  // Chat
+  avatarPresenceSize?: "small" | "medium" | "large"
+  imagePreviewSize?: "small" | "medium" | "large"
+  inlineCodeStyle?: "modern" | "classic" | "minimal"
+  selectionColor?: string; highlightColor?: string
+  // Language
+  language?: string; dateFormat?: "MDY" | "DMY" | "YMD"; firstDayOfWeek?: "mon" | "sun"
+  timezone?: string; temperatureUnit?: "c" | "f"; measurementSystem?: "metric" | "imperial"
+  // Accessibility
+  highContrast?: boolean; screenReader?: boolean; stickyHeaders?: boolean
+  focusIndicators?: boolean; colorBlindMode?: string; lineHeight?: number; letterSpacing?: number
+  chatBubbleDir?: "auto" | "left" | "right"
+  // Calls
+  defaultMic?: string; defaultSpeaker?: string; echoCancellation?: boolean
+  noiseSuppression?: boolean; autoGainControl?: boolean; videoQuality?: "480p" | "720p" | "1080p"
+  pictureInPicture?: boolean; pushToTalk?: boolean; voiceActivityThreshold?: number
+  callRecording?: boolean; ringtone?: string
+  // Audio/Video
+  inputDevice?: string; outputDevice?: string; camera?: string
+  micSensitivity?: number; videoBackgroundBlur?: boolean; videoResolution?: string
+  frameRate?: number
+  // Advanced
+  developerMode?: boolean; experimentalFeatures?: boolean; hardwareAcceleration?: boolean
+  loggingLevel?: "error" | "warn" | "info" | "debug"; autoUpdate?: boolean
+  crashReporting?: boolean; diagnostics?: boolean; cacheEnabled?: boolean
+  sessionTimeout?: string; securityAlerts?: boolean
+  // Media
+  voiceMessageQuality?: "low" | "medium" | "high"; maxFileSize?: number
+  downloadLocation?: string; imageSaveQuality?: number
+  // Reader
+  readerMode?: boolean; fontSizeReader?: number; lineSpacing?: number
 }
 
-interface LoginEntry {
-  id: string
-  ip: string | null
-  userAgent: string | null
-  success: string
-  createdAt: string
+const defaultPrefs: Preferences = {
+  messageNotifications: true, groupInvites: true, communityUpdates: true,
+  eventReminders: true, callAlerts: true, notificationSound: true,
+  desktopNotifications: true, pushNotifications: true, mentionOnly: false,
+  notificationPreview: true, dndEnabled: false, badgeCount: true,
+  messagePreview: true, keywordAlerts: "", notificationSoundName: "default",
+  notificationVolume: 80,
+  readReceipts: true, showOnlineStatus: true, allowFriendRequests: true,
+  dmFrom: "everyone", explicitFilter: true, safetyAlerts: true,
+  shareActivity: true, showPresence: true,
+  enterToSend: true, showTypingIndicators: true, autoPlayMedia: true,
+  imagePreviews: true, linkPreviews: true, emojiSuggestions: true,
+  markdownPreview: true, spellCheck: true, autoCorrect: false,
+  messageGrouping: true, replyPreview: true, autoDownloadFiles: false,
+  imageQuality: "high", gifAutoplay: true, videoAutoplay: true,
+  stickerSuggestions: true, inlineCodePreview: true,
+  compactMode: false, fontSize: "medium", timeFormat: "12h",
+  fontFamily: "system", monospaceFont: "monospace", showTimestamps: "always",
+  avatarStyle: "circle", avatarSize: "medium", avatarChatSize: "medium",
+  animatedEmoji: true, reduceMotion: false,
+  reduceTransparency: false, chatBubbleStyle: "rounded", sidebarWidth: "default",
+  accentColor: "#6366f1", secondaryColor: "#8b5cf6",
+  glassMorphism: false, saturation: 100, contrast: 100, brightness: 100,
+  borderRadius: "medium", buttonRadius: "medium", inputRadius: "medium",
+  chatBubbleRadius: "large", avatarRadius: "full", modalRadius: "large",
+  cardRadius: "medium",
+  shadowIntensity: "medium", borderWidth: "normal",
+  hoverScale: 1.05, transitionDuration: "normal", animationSpeed: "normal",
+  backgroundPattern: "none", backgroundBlur: 0,
+  messageSpacing: "normal", sectionSpacing: "normal", elementGap: "normal",
+  listDensity: "normal", channelListDensity: "normal",
+  memberListWidth: "default", sidebarPosition: "left",
+  showHeader: true, showFooter: false,
+  scrollbarStyle: "default", scrollbarWidth: 8, scrollBehavior: "smooth",
+  dateSeparator: "full", dateSeparatorStyle: "pill",
+  senderNameFormat: "full", badgeStyle: "pill",
+  notificationDotSize: "medium", typingIndicatorStyle: "dots",
+  loadingStyle: "spinner", codeBlockTheme: "dark",
+  codeFontSize: "medium", codeBackground: "#1e1e2e",
+  linkStyle: "both", mentionStyle: "highlight",
+  spoilerStyle: "blur", blockquoteStyle: "line",
+  headingStyle: "default",
+  pageTransition: "fade", messageAnimation: "fade",
+  modalAnimation: "scale", hoverAnimation: "lift",
+  reactionAnimation: "pop", skeletonStyle: "shimmer",
+  stickyHeader: true,
+  avatarPresenceSize: "small", imagePreviewSize: "medium",
+  inlineCodeStyle: "modern",
+  language: "en", dateFormat: "MDY", firstDayOfWeek: "sun",
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  temperatureUnit: "c", measurementSystem: "metric",
+  highContrast: false, screenReader: false, stickyHeaders: true,
+  focusIndicators: true, colorBlindMode: "off", lineHeight: 1.5,
+  letterSpacing: 0, chatBubbleDir: "auto",
+  defaultMic: "default", defaultSpeaker: "default", echoCancellation: true,
+  noiseSuppression: true, autoGainControl: true, videoQuality: "720p",
+  pictureInPicture: true, pushToTalk: false, voiceActivityThreshold: 50,
+  callRecording: false, ringtone: "default",
+  inputDevice: "default", outputDevice: "default", camera: "default",
+  micSensitivity: 80, videoBackgroundBlur: false, videoResolution: "1280x720",
+  frameRate: 30,
+  developerMode: false, experimentalFeatures: false, hardwareAcceleration: true,
+  loggingLevel: "info", autoUpdate: true, crashReporting: true,
+  diagnostics: false, cacheEnabled: true,
+  voiceMessageQuality: "medium", maxFileSize: 25, downloadLocation: "default",
+  imageSaveQuality: 90,
+  readerMode: false, fontSizeReader: 16, lineSpacing: 1.6,
 }
 
-type SettingsTab = "account" | "security" | "appearance" | "notifications" | "privacy" | "about"
+type SettingsTab =
+  "account" | "security" | "appearance" | "notifications" | "privacy" |
+  "chat" | "accessibility" | "language" | "calls" | "media" |
+  "audio-video" | "advanced" | "reader" | "about"
 
-interface TabDef {
-  id: SettingsTab
-  label: string
-  icon: typeof User
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return (
+    <button onClick={() => onChange(!checked)}
+      className={`relative h-6 w-10 rounded-full transition-colors cursor-pointer shrink-0 ${checked ? "bg-accent" : "bg-border"}`}
+      aria-label={label}>
+      <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+    </button>
+  )
 }
 
-const tabs: TabDef[] = [
-  { id: "account", label: "Account", icon: User },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "privacy", label: "Privacy & Safety", icon: Lock },
-  { id: "about", label: "About", icon: Info },
-]
+function Select({ value, options, onChange }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none focus:border-accent/50 cursor-pointer max-w-[160px]">
+      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  )
+}
+
+function SliderControl({ value, min, max, step, onChange, label }: { value: number; min: number; max: number; step?: number; onChange: (v: number) => void; label?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <input type="range" min={min} max={max} step={step ?? 1} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="flex-1 h-1.5 rounded-full bg-border appearance-none cursor-pointer accent-accent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow"
+        aria-label={label} />
+      <span className="text-xs text-text-muted w-8 text-right">{value}{step && step < 1 ? "" : ""}</span>
+    </div>
+  )
+}
+
+function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
+        <Icon className="h-4 w-4 text-text-muted shrink-0" />
+        {title}
+      </h2>
+      <div className="rounded-2xl border border-border bg-surface p-4 space-y-4">{children}</div>
+    </section>
+  )
+}
+
+function Row({ label, desc, control }: { label: string; desc: string; control: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-text-primary truncate">{label}</p>
+        <p className="text-xs text-text-muted truncate">{desc}</p>
+      </div>
+      {control}
+    </div>
+  )
+}
 
 export function SettingsPage() {
+  const { t } = useTranslation()
+  const tabs: { id: SettingsTab; label: string; icon: any; group?: string }[] = [
+    { id: "account", label: t("settings.tabs.account"), icon: User },
+    { id: "security", label: t("settings.tabs.security"), icon: Shield },
+    { id: "appearance", label: t("settings.tabs.appearance"), icon: Palette },
+    { id: "notifications", label: t("settings.tabs.notifications"), icon: Bell },
+    { id: "privacy", label: t("settings.tabs.privacy"), icon: Lock },
+    { id: "chat", label: t("settings.tabs.chat"), icon: MessageSquare, group: t("settings.groups.communication") },
+    { id: "calls", label: t("settings.tabs.calls"), icon: Phone, group: t("settings.groups.communication") },
+    { id: "media", label: t("settings.tabs.media"), icon: Image, group: t("settings.groups.communication") },
+    { id: "audio-video", label: t("settings.tabs.audio-video"), icon: Mic2, group: t("settings.groups.communication") },
+    { id: "accessibility", label: t("settings.tabs.accessibility"), icon: Eye, group: t("settings.groups.experience") },
+    { id: "reader", label: t("settings.tabs.reader"), icon: BookOpen, group: t("settings.groups.experience") },
+    { id: "language", label: t("settings.tabs.language"), icon: Globe, group: t("settings.groups.experience") },
+    { id: "advanced", label: t("settings.tabs.advanced"), icon: Terminal, group: t("settings.groups.system") },
+    { id: "about", label: t("settings.tabs.about"), icon: Info },
+  ]
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [tab, setTab] = useState<SettingsTab>("account")
   const [totpStatus, setTotpStatus] = useState<TOTPStatus | null>(null)
   const [loginHistory, setLoginHistory] = useState<LoginEntry[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
   const [secret, setSecret] = useState("")
   const [setupUri, setSetupUri] = useState("")
   const [verifyCode, setVerifyCode] = useState("")
@@ -50,57 +294,63 @@ export function SettingsPage() {
   const [copied, setCopied] = useState(false)
   const [verifyMsg, setVerifyMsg] = useState("")
   const [sendingVerification, setSendingVerification] = useState(false)
+  const [prefs, setPrefs] = useState<Preferences>(defaultPrefs)
+
+  useEffect(() => {
+    api<Preferences>("/api/users/preferences")
+      .then((p) => setPrefs({ ...defaultPrefs, ...p }))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "L") {
+        e.preventDefault()
+        setTab("language")
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
+
+  const updatePref = useCallback(async (key: keyof Preferences, value: any) => {
+    const next = { ...prefs, [key]: value }
+    setPrefs(next)
+    if (key === "language") {
+      i18n.changeLanguage(value)
+    }
+    try { await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(next) }) } catch { /* */ }
+  }, [prefs])
 
   useEffect(() => {
     if (tab === "security") {
-      api<TOTPStatus>("/api/security/totp/status")
-        .then(setTotpStatus)
-        .catch(() => {})
-      api<LoginEntry[]>("/api/security/history")
-        .then(setLoginHistory)
-        .catch(() => {})
+      api<TOTPStatus>("/api/security/totp/status").then(setTotpStatus).catch(() => {})
+      api<LoginEntry[]>("/api/security/history").then(setLoginHistory).catch(() => {})
+      api<Session[]>("/api/auth/sessions").then(setSessions).catch(() => {})
     }
   }, [tab])
 
   const setupTOTP = async () => {
-    const data = await api<{ secret: string; uri: string }>("/api/security/totp/setup", { method: "POST" }).catch(
-      () => null,
-    )
-    if (data) {
-      setSecret(data.secret)
-      setSetupUri(data.uri)
-      setShowVerify(true)
-    }
+    const data = await api<{ secret: string; uri: string }>("/api/security/totp/setup", { method: "POST" }).catch(() => null)
+    if (data) { setSecret(data.secret); setSetupUri(data.uri); setShowVerify(true) }
   }
-
   const verifyTOTP = async () => {
     if (!verifyCode.trim()) return
-    await api("/api/security/totp/verify", {
-      method: "POST",
-      body: JSON.stringify({ code: verifyCode.trim() }),
-    }).catch(() => null)
-    setTotpStatus({ enabled: true })
-    setShowVerify(false)
-    setVerifyCode("")
+    await api("/api/security/totp/verify", { method: "POST", body: JSON.stringify({ code: verifyCode.trim() }) }).catch(() => null)
+    setTotpStatus({ enabled: true }); setShowVerify(false); setVerifyCode("")
   }
-
   const disableTOTP = async () => {
     await api("/api/security/totp/disable", { method: "POST" }).catch(() => {})
-    setTotpStatus({ enabled: false })
-    setSecret("")
-    setSetupUri("")
+    setTotpStatus({ enabled: false }); setSecret(""); setSetupUri("")
   }
-
-  const copySecret = () => {
-    navigator.clipboard.writeText(secret)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const revokeSession = async (id: string) => {
+    await api(`/api/auth/sessions/${id}`, { method: "DELETE" }).catch(() => {})
+    setSessions((prev) => prev.filter((s) => s.id !== id))
   }
-
+  const copySecret = () => { navigator.clipboard.writeText(secret); setCopied(true); setTimeout(() => setCopied(false), 2000) }
   const formatDate = (iso: string) => new Date(iso).toLocaleString()
-
   const formatUA = (ua: string | null) => {
-    if (!ua) return "Unknown"
+    if (!ua) return t("common.unknown")
     if (ua.includes("Chrome")) return "Chrome"
     if (ua.includes("Firefox")) return "Firefox"
     if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari"
@@ -108,367 +358,778 @@ export function SettingsPage() {
     return ua.slice(0, 30)
   }
 
+  const grouped = tabs.reduce((acc, tab) => {
+    const g = tab.group ?? t("settings.groups.general")
+    if (!acc[g]) acc[g] = []
+    acc[g].push(tab)
+    return acc
+  }, {} as Record<string, typeof tabs>)
+
   return (
     <div className="flex h-full">
-      {/* Sidebar */}
-      <nav className="w-52 shrink-0 border-r border-border bg-bg-secondary p-3 space-y-1 flex flex-col">
-        <div className="px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider">Settings</div>
-        {tabs.map((t) => {
-          const Icon = t.icon
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                tab === t.id
-                  ? "bg-accent/10 text-accent"
-                  : "text-text-secondary hover:text-text-primary hover:bg-white/5"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {t.label}
-            </button>
-          )
-        })}
-
+      <nav className="w-52 shrink-0 border-r border-border bg-bg-secondary p-3 space-y-1 flex flex-col overflow-y-auto">
+        <div className="px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider">{t("settings.title")}</div>
+        {Object.entries(grouped).map(([group, items]) => (
+          <div key={group} className="mb-2">
+            <p className="px-3 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{group}</p>
+            {items.map((t) => {
+              const Icon = t.icon
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                    tab === t.id ? "bg-accent/10 text-accent" : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                  }`}>
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        ))}
         <div className="mt-auto pt-3 border-t border-border">
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-danger hover:bg-danger/5 transition-all cursor-pointer"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            Logout
+          <button onClick={logout}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-danger hover:bg-danger/5 transition-all cursor-pointer">
+            <LogOut className="h-4 w-4 shrink-0" /> {t("settings.logout")}
           </button>
         </div>
       </nav>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto p-6 space-y-8">
-          {/* ========== ACCOUNT ========== */}
+
+          {/* === ACCOUNT === */}
           {tab === "account" && (
             <>
-              <h1 className="text-lg font-semibold text-text-primary">Account</h1>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <User className="h-4 w-4 text-text-muted" />
-                  Profile Info
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.account.title")}</h1>
+              <Section icon={User} title={t("settings.account.profileInfo")}>
+                <Row label={t("settings.account.username")} desc={t("settings.account.usernameDesc")} control={<span className="text-sm text-text-primary font-medium">@{user?.username}</span>} />
+                <Row label={t("settings.account.displayName")} desc={t("settings.account.displayNameDesc")} control={<span className="text-sm text-text-primary">{user?.displayName || t("settings.account.fallback")}</span>} />
+                <Row label={t("settings.account.email")} desc={t("settings.account.emailDesc")} control={<span className="text-sm text-text-primary">{user?.email}</span>} />
+                <Row label={t("settings.account.memberSince")} desc={t("settings.account.memberSinceDesc")} control={<span className="text-sm text-text-muted">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : t("settings.account.fallback")}</span>} />
+              </Section>
+              <Section icon={Mail} title={t("settings.account.emailVerification")}>
+                <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-text-muted block">Username</span>
-                    <span className="text-sm text-text-primary">@{user?.username}</span>
+                    <p className="text-sm text-text-primary">{user?.email}</p>
+                    <p className={`text-xs ${user?.emailVerified === "true" ? "text-green-400" : "text-yellow-400"}`}>
+                      {user?.emailVerified === "true" ? t("settings.account.verified") : t("settings.account.notVerified")}
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-xs text-text-muted block">Email</span>
-                    <span className="text-sm text-text-primary">{user?.email}</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-text-muted block">Display Name</span>
-                    <span className="text-sm text-text-primary">{user?.displayName || "—"}</span>
-                  </div>
+                  {user?.emailVerified !== "true" && (
+                    <button onClick={async () => {
+                      setSendingVerification(true); setVerifyMsg("")
+                      try { const res = await api<{ verifyUrl: string }>("/api/auth/send-verification", { method: "POST" }); setVerifyMsg(`${t("settings.account.sent")} ${res.verifyUrl}`) }
+                      catch { setVerifyMsg(t("settings.account.failed")) }
+                      setSendingVerification(false)
+                    }} disabled={sendingVerification} className="text-xs text-accent hover:text-accent-hover cursor-pointer disabled:opacity-40">
+                      {sendingVerification ? t("settings.account.sending") : t("settings.account.verifyEmail")}
+                    </button>
+                  )}
                 </div>
-              </section>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-text-muted" />
-                  Email Verification
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                {verifyMsg && <p className="text-xs text-text-muted break-all">{verifyMsg}</p>}
+              </Section>
+              <Section icon={Smartphone} title={t("settings.account.activeSessions")}>
+                {sessions.length === 0 && <p className="text-sm text-text-muted">{t("settings.account.noSessions")}</p>}
+                {sessions.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-text-primary">{user?.email}</p>
-                      <p className={`text-xs ${user?.emailVerified === "true" ? "text-green-400" : "text-yellow-400"}`}>
-                        {user?.emailVerified === "true" ? "Verified" : "Not verified"}
-                      </p>
+                      <p className="text-sm text-text-primary">{t("settings.account.session")}</p>
+                      <p className="text-xs text-text-muted">{t("settings.account.created")} {formatDate(s.createdAt)}</p>
                     </div>
-                    {user?.emailVerified !== "true" && (
-                      <button
-                        onClick={async () => {
-                          setSendingVerification(true)
-                          setVerifyMsg("")
-                          try {
-                            const res = await api<{ verifyUrl: string }>("/api/auth/send-verification", { method: "POST" })
-                            setVerifyMsg(`Verification link sent! ${res.verifyUrl}`)
-                          } catch {
-                            setVerifyMsg("Failed to send verification email")
-                          }
-                          setSendingVerification(false)
-                        }}
-                        disabled={sendingVerification}
-                        className="text-xs text-accent hover:text-accent-hover cursor-pointer disabled:opacity-40"
-                      >
-                        {sendingVerification ? "Sending..." : "Verify Email"}
-                      </button>
-                    )}
+                    <button onClick={() => revokeSession(s.id)} className="text-xs text-danger hover:text-danger/80 cursor-pointer">{t("settings.account.revoke")}</button>
                   </div>
-                  {verifyMsg && <p className="text-xs text-text-muted break-all">{verifyMsg}</p>}
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-text-muted" />
-                  Active Sessions
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4">
-                  <p className="text-sm text-text-muted">Session management coming soon.</p>
-                </div>
-              </section>
+                ))}
+              </Section>
+              <Section icon={Trash2} title={t("settings.account.dangerZone")}>
+                <Row label={t("settings.account.deleteAccount")} desc={t("settings.account.deleteDesc")}
+                  control={<button className="text-xs h-8 px-4 rounded-2xl bg-danger/10 text-danger font-medium hover:bg-danger/20 transition-all cursor-pointer">{t("settings.account.delete")}</button>} />
+              </Section>
             </>
           )}
 
-          {/* ========== SECURITY ========== */}
+          {/* === SECURITY === */}
           {tab === "security" && (
             <>
-              <h1 className="text-lg font-semibold text-text-primary">Security</h1>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-text-muted" />
-                  Two-Factor Authentication
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4">
-                  {totpStatus === null && <p className="text-sm text-text-muted">Loading...</p>}
-                  {totpStatus && !totpStatus.enabled && !showVerify && (
-                    <div className="space-y-3">
-                      <p className="text-sm text-text-muted">
-                        2FA is not enabled. Add an extra layer of security to your account.
-                      </p>
-                      <button
-                        onClick={setupTOTP}
-                        className="h-10 rounded-2xl bg-accent text-white text-sm px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer"
-                      >
-                        <Key className="h-4 w-4 inline mr-1.5" />
-                        Enable 2FA
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.security.title")}</h1>
+              <Section icon={Shield} title={t("settings.security.twoFactor")}>
+                {totpStatus === null && <p className="text-sm text-text-muted">{t("common.loading")}</p>}
+                {totpStatus && !totpStatus.enabled && !showVerify && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-text-muted">{t("settings.security.notEnabled")}</p>
+                    <button onClick={setupTOTP} className="h-9 rounded-2xl bg-accent text-white text-xs px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer">
+                      <Key className="h-3.5 w-3.5 inline mr-1.5" /> {t("settings.security.enable2FA")}
+                    </button>
+                  </div>
+                )}
+                {totpStatus && totpStatus.enabled && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /><span className="text-sm text-text-primary">{t("settings.security.enabled")}</span></div>
+                    <button onClick={disableTOTP} className="h-9 rounded-2xl border border-danger/30 text-danger text-xs px-4 font-medium hover:bg-danger/5 transition-all cursor-pointer">{t("settings.security.disable2FA")}</button>
+                  </div>
+                )}
+                {showVerify && (
+                  <div className="space-y-3 mt-3">
+                    <p className="text-sm font-medium text-text-primary">{t("settings.security.enterCode")}</p>
+                    <div className="flex items-center gap-2 rounded-xl bg-bg-primary p-3">
+                      <code className="text-xs text-accent break-all flex-1">{secret}</code>
+                      <button onClick={copySecret} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer">
+                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       </button>
                     </div>
-                  )}
-                  {totpStatus && totpStatus.enabled && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-text-primary">2FA is enabled</span>
-                      </div>
-                      <button
-                        onClick={disableTOTP}
-                        className="h-10 rounded-2xl border border-danger/30 text-danger text-sm px-4 font-medium hover:bg-danger/5 transition-all cursor-pointer"
-                      >
-                        Disable 2FA
-                      </button>
+                    <p className="text-xs text-text-muted">{t("settings.security.uri")} <code className="text-xs text-accent">{setupUri}</code></p>
+                    <input value={verifyCode} onChange={(e) => setVerifyCode(e.target.value)} placeholder={t("settings.security.code")} maxLength={6}
+                      className="w-full h-9 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50" />
+                    <div className="flex gap-2">
+                      <button onClick={verifyTOTP} disabled={verifyCode.length !== 6}
+                        className="h-9 rounded-2xl bg-accent text-white text-xs px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40">{t("settings.security.verifyAndEnable")}</button>
+                      <button onClick={() => setShowVerify(false)}
+                        className="h-9 rounded-2xl border border-border text-text-secondary text-xs px-4 font-medium hover:bg-white/5 transition-all cursor-pointer">{t("settings.security.cancel")}</button>
                     </div>
-                  )}
-                  {showVerify && (
-                    <div className="space-y-3 mt-3">
-                      <p className="text-sm font-medium text-text-primary">Scan this QR code or enter the secret manually</p>
-                      <div className="flex items-center gap-2 rounded-xl bg-bg-primary p-3">
-                        <code className="text-xs text-accent break-all flex-1">{secret}</code>
-                        <button
-                          onClick={copySecret}
-                          className="p-1.5 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
-                          aria-label="Copy secret"
-                        >
-                          {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <p className="text-xs text-text-muted">
-                        Or use URI: <code className="text-xs text-accent">{setupUri}</code>
-                      </p>
-                      <input
-                        value={verifyCode}
-                        onChange={(e) => setVerifyCode(e.target.value)}
-                        placeholder="Enter 6-digit code from authenticator app"
-                        maxLength={6}
-                        className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={verifyTOTP}
-                          disabled={verifyCode.length !== 6}
-                          className="h-10 rounded-2xl bg-accent text-white text-sm px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
-                        >
-                          Verify & Enable
-                        </button>
-                        <button
-                          onClick={() => setShowVerify(false)}
-                          className="h-10 rounded-2xl border border-border text-text-secondary text-sm px-4 font-medium hover:bg-white/5 transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                  </div>
+                )}
+              </Section>
+              <Section icon={History} title={t("settings.security.loginHistory")}>
+                {loginHistory.length === 0 && <p className="text-sm text-text-muted">{t("settings.security.noLoginHistory")}</p>}
+                {loginHistory.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-3">
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${entry.success === "true" ? "bg-green-500" : "bg-danger"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-text-primary">{formatUA(entry.userAgent)}</p>
+                      <p className="text-xs text-text-muted">{entry.ip ?? t("common.unknown")} · {formatDate(entry.createdAt)}</p>
                     </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <History className="h-4 w-4 text-text-muted" />
-                  Login History
-                </h2>
-                <div className="space-y-1.5">
-                  {loginHistory.length === 0 && <p className="text-sm text-text-muted">No login history</p>}
-                  {loginHistory.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3"
-                    >
-                      <div
-                        className={`h-2 w-2 rounded-full shrink-0 ${entry.success === "true" ? "bg-green-500" : "bg-danger"}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-text-primary">{formatUA(entry.userAgent)}</p>
-                        <p className="text-xs text-text-muted">
-                          {entry.ip ?? "Unknown IP"} · {formatDate(entry.createdAt)}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs font-medium capitalize ${entry.success === "true" ? "text-green-500" : "text-danger"}`}
-                      >
-                        {entry.success === "true" ? "Success" : "Failed"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                    <span className={`text-xs font-medium capitalize ${entry.success === "true" ? "text-green-500" : "text-danger"}`}>
+                      {entry.success === "true" ? t("common.success") : t("common.failed")}
+                    </span>
+                  </div>
+                ))}
+              </Section>
+              <Section icon={Lock} title={t("settings.security.sessionControls")}>
+                <Row label={t("settings.security.sessionTimeout")} desc={t("settings.security.sessionTimeoutDesc")}
+                  control={<Select value={prefs.sessionTimeout ?? "30"} onChange={(v) => updatePref("sessionTimeout", v)} options={[{ value: "15", label: t("settings.security.15min") }, { value: "30", label: t("settings.security.30min") }, { value: "60", label: t("settings.security.1hour") }, { value: "never", label: t("settings.security.never") }]} />} />
+                <Row label={t("settings.security.securityAlerts")} desc={t("settings.security.securityAlertsDesc")}
+                  control={<Toggle checked={prefs.securityAlerts ?? true} onChange={(v) => updatePref("securityAlerts", v)} />} />
+              </Section>
             </>
           )}
 
-          {/* ========== APPEARANCE ========== */}
+          {/* === APPEARANCE === */}
           {tab === "appearance" && (
             <>
-              <h1 className="text-lg font-semibold text-text-primary">Appearance</h1>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.appearance.title")}</h1>
 
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  {theme === "dark" ? <Moon className="h-4 w-4 text-text-muted" /> : <Sun className="h-4 w-4 text-text-muted" />}
-                  Theme Mode
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-text-primary">Appearance</p>
-                      <p className="text-xs text-text-muted">Switch between light and dark mode</p>
-                    </div>
-                    <button
-                      onClick={toggleTheme}
-                      className={`relative h-7 w-12 rounded-full transition-colors cursor-pointer ${
-                        theme === "dark" ? "bg-accent" : "bg-border"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
-                          theme === "dark" ? "translate-x-5.5" : "translate-x-0.5"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </section>
+              <Section icon={theme === "dark" ? Moon : Sun} title={t("settings.appearance.themeMode")}>
+                <Row label={t("settings.appearance.darkMode")} desc={t("settings.appearance.darkModeDesc")} control={<Toggle checked={theme === "dark"} onChange={toggleTheme} />} />
+                <Row label={t("settings.appearance.accentColor")} desc={t("settings.appearance.accentColorDesc")} control={
+                  <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                    {["#6366f1", "#8b5cf6", "#d946ef", "#ec4899", "#f43f5e", "#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6"].map((c) => (
+                      <button key={c} onClick={() => updatePref("accentColor", c)}
+                        className={`h-5 w-5 rounded-full border-2 transition-all cursor-pointer ${prefs.accentColor === c ? "border-white scale-110" : "border-transparent"}`}
+                        style={{ backgroundColor: c }} />
+                    ))}
+                  </div>} />
+                <Row label={t("settings.appearance.secondaryColor")} desc={t("settings.appearance.secondaryColorDesc")} control={
+                  <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                    {["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#14b8a6", "#22c55e", "#eab308", "#f97316"].map((c) => (
+                      <button key={c} onClick={() => updatePref("secondaryColor", c)}
+                        className={`h-5 w-5 rounded-full border-2 transition-all cursor-pointer ${prefs.secondaryColor === c ? "border-white scale-110" : "border-transparent"}`}
+                        style={{ backgroundColor: c }} />
+                    ))}
+                  </div>} />
+                <Row label={t("settings.appearance.glassMorphism")} desc={t("settings.appearance.glassMorphismDesc")} control={<Toggle checked={prefs.glassMorphism ?? false} onChange={(v) => updatePref("glassMorphism", v)} />} />
+                <Row label={t("settings.appearance.backgroundPattern")} desc={t("settings.appearance.backgroundPatternDesc")}
+                  control={<Select value={prefs.backgroundPattern ?? "none"} onChange={(v) => updatePref("backgroundPattern", v)} options={[
+                    { value: "none", label: t("settings.appearance.patterns.none") }, { value: "dots", label: t("settings.appearance.patterns.dots") }, { value: "grid", label: t("settings.appearance.patterns.grid") }, { value: "waves", label: t("settings.appearance.patterns.waves") },
+                  ]} />} />
+                <Row label={t("settings.appearance.backgroundBlur")} desc={t("settings.appearance.backgroundBlurDesc")} control={<SliderControl value={prefs.backgroundBlur ?? 0} min={0} max={24} step={2} onChange={(v) => updatePref("backgroundBlur", v)} />} />
+                <Row label={t("settings.appearance.saturation")} desc={t("settings.appearance.saturationDesc")} control={<SliderControl value={prefs.saturation ?? 100} min={0} max={200} onChange={(v) => updatePref("saturation", v)} />} />
+                <Row label={t("settings.appearance.contrast")} desc={t("settings.appearance.contrastDesc")} control={<SliderControl value={prefs.contrast ?? 100} min={50} max={150} onChange={(v) => updatePref("contrast", v)} />} />
+                <Row label={t("settings.appearance.brightness")} desc={t("settings.appearance.brightnessDesc")} control={<SliderControl value={prefs.brightness ?? 100} min={50} max={150} onChange={(v) => updatePref("brightness", v)} />} />
+              </Section>
+
+              <Section icon={Type} title={t("settings.appearance.typography")}>
+                <Row label={t("settings.appearance.fontFamily")} desc={t("settings.appearance.fontFamilyDesc")}
+                  control={<Select value={prefs.fontFamily ?? "system"} onChange={(v) => updatePref("fontFamily", v)} options={[
+                    { value: "system", label: t("settings.appearance.fonts.system") }, { value: "sans", label: t("settings.appearance.fonts.sansSerif") },
+                    { value: "serif", label: t("settings.appearance.fonts.serif") }, { value: "mono", label: t("settings.appearance.fonts.monospace") },
+                    { value: "inter", label: t("settings.appearance.fonts.inter") }, { value: "roboto", label: t("settings.appearance.fonts.roboto") },
+                    { value: "poppins", label: t("settings.appearance.fonts.poppins") }, { value: "noto", label: t("settings.appearance.fonts.notoSans") },
+                  ]} />} />
+                <Row label={t("settings.appearance.monospaceFont")} desc={t("settings.appearance.monospaceFontDesc")}
+                  control={<Select value={prefs.monospaceFont ?? "monospace"} onChange={(v) => updatePref("monospaceFont", v)} options={[
+                    { value: "monospace", label: t("settings.appearance.fonts.defaultMono") }, { value: "jetbrains", label: t("settings.appearance.fonts.jetbrainsMono") },
+                    { value: "fira", label: t("settings.appearance.fonts.firaCode") }, { value: "source", label: t("settings.appearance.fonts.sourceCodePro") },
+                    { value: "cascadia", label: t("settings.appearance.fonts.cascadiaCode") },
+                  ]} />} />
+                <Row label={t("settings.appearance.fontSize")} desc={t("settings.appearance.fontSizeDesc")}
+                  control={<Select value={prefs.fontSize ?? "medium"} onChange={(v) => updatePref("fontSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") },
+                    { value: "large", label: t("settings.appearance.options.large") }, { value: "xlarge", label: t("settings.appearance.options.xlarge") },
+                  ]} />} />
+                <Row label={t("settings.appearance.codeFontSize")} desc={t("settings.appearance.codeFontSizeDesc")}
+                  control={<Select value={prefs.codeFontSize ?? "medium"} onChange={(v) => updatePref("codeFontSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
+                  ]} />} />
+                <Row label={t("settings.appearance.codeBackground")} desc={t("settings.appearance.codeBackgroundDesc")} control={
+                  <input type="color" value={prefs.codeBackground ?? "#1e1e2e"} onChange={(e) => updatePref("codeBackground", e.target.value)}
+                    className="h-8 w-12 rounded-lg cursor-pointer bg-transparent border-0" />} />
+              </Section>
+
+              <Section icon={Square} title={t("settings.appearance.corners")}>
+                <Row label={t("settings.appearance.defaultRadius")} desc={t("settings.appearance.defaultRadiusDesc")}
+                  control={<Select value={prefs.borderRadius ?? "medium"} onChange={(v) => updatePref("borderRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+                <Row label={t("settings.appearance.buttonRadius")} desc={t("settings.appearance.buttonRadiusDesc")}
+                  control={<Select value={prefs.buttonRadius ?? "medium"} onChange={(v) => updatePref("buttonRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+                <Row label={t("settings.appearance.inputRadius")} desc={t("settings.appearance.inputRadiusDesc")}
+                  control={<Select value={prefs.inputRadius ?? "medium"} onChange={(v) => updatePref("inputRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+                <Row label={t("settings.appearance.chatBubbleRadius")} desc={t("settings.appearance.chatBubbleRadiusDesc")}
+                  control={<Select value={prefs.chatBubbleRadius ?? "large"} onChange={(v) => updatePref("chatBubbleRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+                <Row label={t("settings.appearance.avatarRadius")} desc={t("settings.appearance.avatarRadiusDesc")}
+                  control={<Select value={prefs.avatarRadius ?? "full"} onChange={(v) => updatePref("avatarRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.square") }, { value: "small", label: t("settings.appearance.options.rounded") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "full", label: t("settings.appearance.options.circle") },
+                  ]} />} />
+                <Row label={t("settings.appearance.modalRadius")} desc={t("settings.appearance.modalRadiusDesc")}
+                  control={<Select value={prefs.modalRadius ?? "large"} onChange={(v) => updatePref("modalRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+                <Row label={t("settings.appearance.cardRadius")} desc={t("settings.appearance.cardRadiusDesc")}
+                  control={<Select value={prefs.cardRadius ?? "medium"} onChange={(v) => updatePref("cardRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
+                  ]} />} />
+              </Section>
+
+              <Section icon={Layers} title={t("settings.appearance.shadows")}>
+                <Row label={t("settings.appearance.shadowIntensity")} desc={t("settings.appearance.shadowIntensityDesc")}
+                  control={<Select value={prefs.shadowIntensity ?? "medium"} onChange={(v) => updatePref("shadowIntensity", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "light", label: t("settings.appearance.options.light") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "strong", label: t("settings.appearance.options.strong") },
+                  ]} />} />
+                <Row label={t("settings.appearance.borderWidth")} desc={t("settings.appearance.borderWidthDesc")}
+                  control={<Select value={prefs.borderWidth ?? "normal"} onChange={(v) => updatePref("borderWidth", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.none") }, { value: "thin", label: t("settings.appearance.options.thin") },
+                    { value: "normal", label: t("settings.appearance.options.normal") }, { value: "thick", label: t("settings.appearance.options.thick") },
+                  ]} />} />
+                <Row label={t("settings.appearance.hoverScale")} desc={t("settings.appearance.hoverScaleDesc")} control={<SliderControl value={prefs.hoverScale ?? 1.05} min={1} max={1.2} step={0.01} onChange={(v) => updatePref("hoverScale", v)} />} />
+                <Row label={t("settings.appearance.transitionDuration")} desc={t("settings.appearance.transitionDurationDesc")}
+                  control={<Select value={prefs.transitionDuration ?? "normal"} onChange={(v) => updatePref("transitionDuration", v)} options={[
+                    { value: "fast", label: t("settings.appearance.options.fast") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "slow", label: t("settings.appearance.options.slow") },
+                  ]} />} />
+                <Row label={t("settings.appearance.animationSpeed")} desc={t("settings.appearance.animationSpeedDesc")}
+                  control={<Select value={prefs.animationSpeed ?? "normal"} onChange={(v) => updatePref("animationSpeed", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.off") }, { value: "slow", label: t("settings.appearance.options.slow") },
+                    { value: "normal", label: t("settings.appearance.options.normal") }, { value: "fast", label: t("settings.appearance.options.fast") },
+                  ]} />} />
+              </Section>
+
+              <Section icon={Grid3X3} title={t("settings.appearance.layout")}>
+                <Row label={t("settings.appearance.sidebarPosition")} desc={t("settings.appearance.sidebarPositionDesc")}
+                  control={<Select value={prefs.sidebarPosition ?? "left"} onChange={(v) => updatePref("sidebarPosition", v)} options={[
+                    { value: "left", label: t("settings.appearance.options.small") }, { value: "right", label: t("settings.appearance.options.medium") },
+                  ]} />} />
+                <Row label={t("settings.appearance.sidebarWidth")} desc={t("settings.appearance.sidebarWidthDesc")}
+                  control={<Select value={prefs.sidebarWidth ?? "default"} onChange={(v) => updatePref("sidebarWidth", v)} options={[
+                    { value: "narrow", label: t("settings.appearance.options.narrow") }, { value: "default", label: t("settings.appearance.options.default") }, { value: "wide", label: t("settings.appearance.options.wide") },
+                  ]} />} />
+                <Row label={t("settings.appearance.memberListWidth")} desc={t("settings.appearance.memberListWidthDesc")}
+                  control={<Select value={prefs.memberListWidth ?? "default"} onChange={(v) => updatePref("memberListWidth", v)} options={[
+                    { value: "narrow", label: t("settings.appearance.options.narrow") }, { value: "default", label: t("settings.appearance.options.default") }, { value: "wide", label: t("settings.appearance.options.wide") },
+                  ]} />} />
+                <Row label={t("settings.appearance.compactMode")} desc={t("settings.appearance.compactModeDesc")} control={<Toggle checked={prefs.compactMode ?? false} onChange={(v) => updatePref("compactMode", v)} />} />
+                <Row label={t("settings.appearance.messageSpacing")} desc={t("settings.appearance.messageSpacingDesc")}
+                  control={<Select value={prefs.messageSpacing ?? "normal"} onChange={(v) => updatePref("messageSpacing", v)} options={[
+                    { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
+                  ]} />} />
+                <Row label={t("settings.appearance.sectionSpacing")} desc={t("settings.appearance.sectionSpacingDesc")}
+                  control={<Select value={prefs.sectionSpacing ?? "normal"} onChange={(v) => updatePref("sectionSpacing", v)} options={[
+                    { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
+                  ]} />} />
+                <Row label={t("settings.appearance.elementGap")} desc={t("settings.appearance.elementGapDesc")}
+                  control={<Select value={prefs.elementGap ?? "normal"} onChange={(v) => updatePref("elementGap", v)} options={[
+                    { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "wide", label: t("settings.appearance.options.wide") },
+                  ]} />} />
+                <Row label={t("settings.appearance.listDensity")} desc={t("settings.appearance.listDensityDesc")}
+                  control={<Select value={prefs.listDensity ?? "normal"} onChange={(v) => updatePref("listDensity", v)} options={[
+                    { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
+                  ]} />} />
+                <Row label={t("settings.appearance.channelListDensity")} desc={t("settings.appearance.channelListDensityDesc")}
+                  control={<Select value={prefs.channelListDensity ?? "normal"} onChange={(v) => updatePref("channelListDensity", v)} options={[
+                    { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
+                  ]} />} />
+                <Row label={t("settings.appearance.showHeader")} desc={t("settings.appearance.showHeaderDesc")} control={<Toggle checked={prefs.showHeader ?? true} onChange={(v) => updatePref("showHeader", v)} />} />
+                <Row label={t("settings.appearance.showFooter")} desc={t("settings.appearance.showFooterDesc")} control={<Toggle checked={prefs.showFooter ?? false} onChange={(v) => updatePref("showFooter", v)} />} />
+              </Section>
+
+              <Section icon={MessageSquare} title={t("settings.appearance.messageDisplay")}>
+                <Row label={t("settings.appearance.chatBubbleStyle")} desc={t("settings.appearance.chatBubbleStyleDesc")}
+                  control={<Select value={prefs.chatBubbleStyle ?? "rounded"} onChange={(v) => updatePref("chatBubbleStyle", v)} options={[
+                    { value: "rounded", label: t("settings.appearance.options.rounded") }, { value: "flat", label: t("settings.appearance.options.flat") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
+                  ]} />} />
+                <Row label={t("settings.appearance.chatBubbleCorner")} desc={t("settings.appearance.chatBubbleCornerDesc")}
+                  control={<Select value={prefs.chatBubbleRadius ?? "large"} onChange={(v) => updatePref("chatBubbleRadius", v)} options={[
+                    { value: "none", label: t("settings.appearance.options.square") }, { value: "small", label: t("settings.appearance.options.small") },
+                    { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.pill") },
+                  ]} />} />
+                <Row label={t("settings.appearance.dateSeparator")} desc={t("settings.appearance.dateSeparatorDesc")}
+                  control={<Select value={prefs.dateSeparator ?? "full"} onChange={(v) => updatePref("dateSeparator", v)} options={[
+                    { value: "full", label: t("settings.appearance.options.fullDate") }, { value: "short", label: t("settings.appearance.options.short") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.dateStyle")} desc={t("settings.appearance.dateStyleDesc")}
+                  control={<Select value={prefs.dateSeparatorStyle ?? "pill"} onChange={(v) => updatePref("dateSeparatorStyle", v)} options={[
+                    { value: "pill", label: t("settings.appearance.options.pill") }, { value: "line", label: t("settings.appearance.options.line") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
+                  ]} />} />
+                <Row label={t("settings.appearance.senderName")} desc={t("settings.appearance.senderNameDesc")}
+                  control={<Select value={prefs.senderNameFormat ?? "full"} onChange={(v) => updatePref("senderNameFormat", v)} options={[
+                    { value: "full", label: t("settings.appearance.options.fullName") }, { value: "first", label: t("settings.appearance.options.firstName") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.timeFormat")} desc={t("settings.appearance.timeFormatDesc")}
+                  control={<Select value={prefs.timeFormat ?? "12h"} onChange={(v) => updatePref("timeFormat", v)} options={[
+                    { value: "12h", label: t("settings.appearance.options.small") }, { value: "24h", label: t("settings.appearance.options.medium") },
+                  ]} />} />
+                <Row label={t("settings.appearance.showTimestamps")} desc={t("settings.appearance.showTimestampsDesc")}
+                  control={<Select value={prefs.showTimestamps ?? "always"} onChange={(v) => updatePref("showTimestamps", v)} options={[
+                    { value: "always", label: t("settings.appearance.options.always") }, { value: "hover", label: t("settings.appearance.options.onHover") }, { value: "off", label: t("settings.appearance.options.off") },
+                  ]} />} />
+                <Row label={t("settings.appearance.animatedEmoji")} desc={t("settings.appearance.animatedEmojiDesc")} control={<Toggle checked={prefs.animatedEmoji ?? true} onChange={(v) => updatePref("animatedEmoji", v)} />} />
+                <Row label={t("settings.appearance.imagePreviewSize")} desc={t("settings.appearance.imagePreviewSizeDesc")}
+                  control={<Select value={prefs.imagePreviewSize ?? "medium"} onChange={(v) => updatePref("imagePreviewSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
+                  ]} />} />
+                <Row label={t("settings.appearance.avatarSizeList")} desc={t("settings.appearance.avatarSizeListDesc")}
+                  control={<Select value={prefs.avatarSize ?? "medium"} onChange={(v) => updatePref("avatarSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
+                  ]} />} />
+                <Row label={t("settings.appearance.avatarSizeChat")} desc={t("settings.appearance.avatarSizeChatDesc")}
+                  control={<Select value={prefs.avatarChatSize ?? "medium"} onChange={(v) => updatePref("avatarChatSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
+                  ]} />} />
+                <Row label={t("settings.appearance.avatarPresenceDot")} desc={t("settings.appearance.avatarPresenceDotDesc")}
+                  control={<Select value={prefs.avatarPresenceSize ?? "small"} onChange={(v) => updatePref("avatarPresenceSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
+                  ]} />} />
+              </Section>
+
+              <Section icon={Hash} title={t("settings.appearance.contentStyling")}>
+                <Row label={t("settings.appearance.codeBlockTheme")} desc={t("settings.appearance.codeBlockThemeDesc")}
+                  control={<Select value={prefs.codeBlockTheme ?? "dark"} onChange={(v) => updatePref("codeBlockTheme", v)} options={[
+                    { value: "light", label: t("settings.appearance.options.small") }, { value: "dark", label: t("settings.appearance.options.medium") }, { value: "auto", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.inlineCodeStyle")} desc={t("settings.appearance.inlineCodeStyleDesc")}
+                  control={<Select value={prefs.inlineCodeStyle ?? "modern"} onChange={(v) => updatePref("inlineCodeStyle", v)} options={[
+                    { value: "modern", label: t("settings.appearance.options.modern") }, { value: "classic", label: t("settings.appearance.options.classic") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
+                  ]} />} />
+                <Row label={t("settings.appearance.linkStyle")} desc={t("settings.appearance.linkStyleDesc")}
+                  control={<Select value={prefs.linkStyle ?? "both"} onChange={(v) => updatePref("linkStyle", v)} options={[
+                    { value: "underline", label: t("settings.appearance.options.underline") }, { value: "colored", label: t("settings.appearance.options.colored") }, { value: "both", label: t("settings.appearance.options.both") },
+                  ]} />} />
+                <Row label={t("settings.appearance.mentionStyle")} desc={t("settings.appearance.mentionStyleDesc")}
+                  control={<Select value={prefs.mentionStyle ?? "highlight"} onChange={(v) => updatePref("mentionStyle", v)} options={[
+                    { value: "highlight", label: t("settings.appearance.options.highlight") }, { value: "bold", label: t("settings.appearance.options.bold") }, { value: "both", label: t("settings.appearance.options.both") },
+                  ]} />} />
+                <Row label={t("settings.appearance.spoilerStyle")} desc={t("settings.appearance.spoilerStyleDesc")}
+                  control={<Select value={prefs.spoilerStyle ?? "blur"} onChange={(v) => updatePref("spoilerStyle", v)} options={[
+                    { value: "blur", label: t("settings.appearance.options.blur") }, { value: "hidden", label: t("settings.appearance.options.hidden") }, { value: "reveal", label: t("settings.appearance.options.revealClick") },
+                  ]} />} />
+                <Row label={t("settings.appearance.blockquoteStyle")} desc={t("settings.appearance.blockquoteStyleDesc")}
+                  control={<Select value={prefs.blockquoteStyle ?? "line"} onChange={(v) => updatePref("blockquoteStyle", v)} options={[
+                    { value: "line", label: t("settings.appearance.options.line") }, { value: "accent", label: t("settings.appearance.options.accent") }, { value: "modern", label: t("settings.appearance.options.modern") },
+                  ]} />} />
+                <Row label={t("settings.appearance.headingStyle")} desc={t("settings.appearance.headingStyleDesc")}
+                  control={<Select value={prefs.headingStyle ?? "default"} onChange={(v) => updatePref("headingStyle", v)} options={[
+                    { value: "default", label: t("settings.appearance.options.default") }, { value: "accent", label: t("settings.appearance.options.accent") }, { value: "underlined", label: t("settings.appearance.options.underlined") },
+                  ]} />} />
+              </Section>
+
+              <Section icon={Sliders} title={t("settings.appearance.scrollbar")}>
+                <Row label={t("settings.appearance.scrollbarStyle")} desc={t("settings.appearance.scrollbarStyleDesc")}
+                  control={<Select value={prefs.scrollbarStyle ?? "default"} onChange={(v) => updatePref("scrollbarStyle", v)} options={[
+                    { value: "default", label: t("settings.appearance.options.default") }, { value: "thin", label: t("settings.appearance.options.thin") }, { value: "hidden", label: t("settings.appearance.options.hidden") },
+                  ]} />} />
+                <Row label={t("settings.appearance.scrollbarWidth")} desc={t("settings.appearance.scrollbarWidthDesc")} control={<SliderControl value={prefs.scrollbarWidth ?? 8} min={4} max={20} onChange={(v) => updatePref("scrollbarWidth", v)} />} />
+                <Row label={t("settings.appearance.scrollBehavior")} desc={t("settings.appearance.scrollBehaviorDesc")}
+                  control={<Select value={prefs.scrollBehavior ?? "smooth"} onChange={(v) => updatePref("scrollBehavior", v)} options={[
+                    { value: "smooth", label: t("settings.appearance.options.small") }, { value: "instant", label: t("settings.appearance.options.medium") },
+                  ]} />} />
+                <Row label={t("settings.appearance.stickyHeader")} desc={t("settings.appearance.stickyHeaderDesc")} control={<Toggle checked={prefs.stickyHeader ?? true} onChange={(v) => updatePref("stickyHeader", v)} />} />
+              </Section>
+
+              <Section icon={Zap} title={t("settings.appearance.animations")}>
+                <Row label={t("settings.appearance.reduceMotion")} desc={t("settings.appearance.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
+                <Row label={t("settings.appearance.reduceTransparency")} desc={t("settings.appearance.reduceTransparencyDesc")} control={<Toggle checked={prefs.reduceTransparency ?? false} onChange={(v) => updatePref("reduceTransparency", v)} />} />
+                <Row label={t("settings.appearance.pageTransition")} desc={t("settings.appearance.pageTransitionDesc")}
+                  control={<Select value={prefs.pageTransition ?? "fade"} onChange={(v) => updatePref("pageTransition", v)} options={[
+                    { value: "fade", label: t("settings.appearance.options.fade") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.messageAnimation")} desc={t("settings.appearance.messageAnimationDesc")}
+                  control={<Select value={prefs.messageAnimation ?? "fade"} onChange={(v) => updatePref("messageAnimation", v)} options={[
+                    { value: "fade", label: t("settings.appearance.options.fade") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.modalAnimation")} desc={t("settings.appearance.modalAnimationDesc")}
+                  control={<Select value={prefs.modalAnimation ?? "scale"} onChange={(v) => updatePref("modalAnimation", v)} options={[
+                    { value: "fade", label: t("settings.appearance.options.fade") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.hoverEffect")} desc={t("settings.appearance.hoverEffectDesc")}
+                  control={<Select value={prefs.hoverAnimation ?? "lift"} onChange={(v) => updatePref("hoverAnimation", v)} options={[
+                    { value: "scale", label: t("settings.appearance.options.scale") }, { value: "glow", label: t("settings.appearance.options.glow") }, { value: "lift", label: t("settings.appearance.options.lift") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.reactionAnimation")} desc={t("settings.appearance.reactionAnimationDesc")}
+                  control={<Select value={prefs.reactionAnimation ?? "pop"} onChange={(v) => updatePref("reactionAnimation", v)} options={[
+                    { value: "bounce", label: t("settings.appearance.options.bounce") }, { value: "pop", label: t("settings.appearance.options.pop") }, { value: "fade", label: t("settings.appearance.options.fade") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.skeletonStyle")} desc={t("settings.appearance.skeletonStyleDesc")}
+                  control={<Select value={prefs.skeletonStyle ?? "shimmer"} onChange={(v) => updatePref("skeletonStyle", v)} options={[
+                    { value: "shimmer", label: t("settings.appearance.options.shimmer") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "none", label: t("settings.appearance.options.none") },
+                  ]} />} />
+                <Row label={t("settings.appearance.typingIndicator")} desc={t("settings.appearance.typingIndicatorDesc")}
+                  control={<Select value={prefs.typingIndicatorStyle ?? "dots"} onChange={(v) => updatePref("typingIndicatorStyle", v)} options={[
+                    { value: "dots", label: t("settings.appearance.options.bouncingDots") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "text", label: t("settings.appearance.options.textOnly") },
+                  ]} />} />
+                <Row label={t("settings.appearance.badgeStyle")} desc={t("settings.appearance.badgeStyleDesc")}
+                  control={<Select value={prefs.badgeStyle ?? "pill"} onChange={(v) => updatePref("badgeStyle", v)} options={[
+                    { value: "dot", label: t("settings.appearance.options.dot") }, { value: "pill", label: t("settings.appearance.options.pill") }, { value: "number", label: t("settings.appearance.options.number") },
+                  ]} />} />
+              </Section>
 
               <ThemeEditor />
             </>
           )}
 
-          {/* ========== NOTIFICATIONS ========== */}
+          {/* === NOTIFICATIONS === */}
           {tab === "notifications" && (
             <>
-              <h1 className="text-lg font-semibold text-text-primary">Notifications</h1>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-text-muted" />
-                  Notification Preferences
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4 space-y-4">
-                  {[
-                    { label: "Messages", desc: "New message notifications" },
-                    { label: "Group Invites", desc: "When someone invites you to a group" },
-                    { label: "Community Updates", desc: "New channels, member changes" },
-                    { label: "Event Reminders", desc: "Reminders for upcoming events" },
-                    { label: "Call Alerts", desc: "Incoming call notifications" },
-                  ].map((n) => (
-                    <div key={n.label} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-text-primary">{n.label}</p>
-                        <p className="text-xs text-text-muted">{n.desc}</p>
-                      </div>
-                      <div className="h-6 w-10 rounded-full bg-accent/30 cursor-pointer relative">
-                        <div className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-accent shadow-sm" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.notifications.title")}</h1>
+              <Section icon={Bell} title={t("settings.notifications.pushInApp")}>
+                <Row label={t("settings.notifications.messages")} desc={t("settings.notifications.messagesDesc")} control={<Toggle checked={prefs.messageNotifications ?? true} onChange={(v) => updatePref("messageNotifications", v)} />} />
+                <Row label={t("settings.notifications.groupInvites")} desc={t("settings.notifications.groupInvitesDesc")} control={<Toggle checked={prefs.groupInvites ?? true} onChange={(v) => updatePref("groupInvites", v)} />} />
+                <Row label={t("settings.notifications.communityUpdates")} desc={t("settings.notifications.communityUpdatesDesc")} control={<Toggle checked={prefs.communityUpdates ?? true} onChange={(v) => updatePref("communityUpdates", v)} />} />
+                <Row label={t("settings.notifications.eventReminders")} desc={t("settings.notifications.eventRemindersDesc")} control={<Toggle checked={prefs.eventReminders ?? true} onChange={(v) => updatePref("eventReminders", v)} />} />
+                <Row label={t("settings.notifications.callAlerts")} desc={t("settings.notifications.callAlertsDesc")} control={<Toggle checked={prefs.callAlerts ?? true} onChange={(v) => updatePref("callAlerts", v)} />} />
+              </Section>
+              <Section icon={Monitor} title={t("settings.notifications.delivery")}>
+                <Row label={t("settings.notifications.desktopNotifications")} desc={t("settings.notifications.desktopNotificationsDesc")} control={<Toggle checked={prefs.desktopNotifications ?? true} onChange={(v) => updatePref("desktopNotifications", v)} />} />
+                <Row label={t("settings.notifications.pushNotifications")} desc={t("settings.notifications.pushNotificationsDesc")} control={<Toggle checked={prefs.pushNotifications ?? true} onChange={(v) => updatePref("pushNotifications", v)} />} />
+                <Row label={t("settings.notifications.messagePreview")} desc={t("settings.notifications.messagePreviewDesc")} control={<Toggle checked={prefs.messagePreview ?? true} onChange={(v) => updatePref("messagePreview", v)} />} />
+              </Section>
+              <Section icon={Volume2} title={t("settings.notifications.sounds")}>
+                <Row label={t("settings.notifications.notificationSound")} desc={t("settings.notifications.notificationSoundDesc")} control={<Toggle checked={prefs.notificationSound ?? true} onChange={(v) => updatePref("notificationSound", v)} />} />
+                <Row label={t("settings.notifications.sound")} desc={t("settings.notifications.soundDesc")}
+                  control={<Select value={prefs.notificationSoundName ?? "default"} onChange={(v) => updatePref("notificationSoundName", v)}
+                    options={[{ value: "default", label: t("settings.notifications.soundOptions.default") }, { value: "chime", label: t("settings.notifications.soundOptions.chime") }, { value: "pop", label: t("settings.notifications.soundOptions.pop") }, { value: "bell", label: t("settings.notifications.soundOptions.bell") }, { value: "none", label: t("common.none") }]} />} />
+                <Row label={t("settings.notifications.volume")} desc={t("settings.notifications.volumeDesc")} control={<SliderControl value={prefs.notificationVolume ?? 80} min={0} max={100} onChange={(v) => updatePref("notificationVolume", v)} />} />
+              </Section>
+              <Section icon={Clock} title={t("settings.notifications.quietHours")}>
+                <Row label={t("settings.notifications.doNotDisturb")} desc={t("settings.notifications.doNotDisturbDesc")} control={<Toggle checked={prefs.dndEnabled ?? false} onChange={(v) => updatePref("dndEnabled", v)} />} />
+                {prefs.dndEnabled && (
+                  <div className="flex gap-2">
+                    <input type="time" className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none" />
+                    <span className="text-xs text-text-muted self-center">{t("settings.notifications.to")}</span>
+                    <input type="time" className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none" />
+                  </div>
+                )}
+              </Section>
+              <Section icon={Bell} title={t("settings.notifications.advanced")}>
+                <Row label={t("settings.notifications.mentionsOnly")} desc={t("settings.notifications.mentionsOnlyDesc")} control={<Toggle checked={prefs.mentionOnly ?? false} onChange={(v) => updatePref("mentionOnly", v)} />} />
+                <Row label={t("settings.notifications.badgeCount")} desc={t("settings.notifications.badgeCountDesc")} control={<Toggle checked={prefs.badgeCount ?? true} onChange={(v) => updatePref("badgeCount", v)} />} />
+                <Row label={t("settings.notifications.keywordAlerts")} desc={t("settings.notifications.keywordAlertsDesc")}
+                  control={<input value={prefs.keywordAlerts ?? ""} onChange={(e) => updatePref("keywordAlerts", e.target.value)} placeholder={t("settings.notifications.keywordsPlaceholder")}
+                    className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 max-w-[160px]" />} />
+              </Section>
             </>
           )}
 
-          {/* ========== PRIVACY ========== */}
+          {/* === PRIVACY === */}
           {tab === "privacy" && (
             <>
-              <h1 className="text-lg font-semibold text-text-primary">Privacy & Safety</h1>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.privacy.title")}</h1>
+              <Section icon={Eye} title={t("settings.privacy.presence")}>
+                <Row label={t("settings.privacy.showOnlineStatus")} desc={t("settings.privacy.showOnlineStatusDesc")} control={<Toggle checked={prefs.showOnlineStatus ?? true} onChange={(v) => updatePref("showOnlineStatus", v)} />} />
+                <Row label={t("settings.privacy.showPresence")} desc={t("settings.privacy.showPresenceDesc")} control={<Toggle checked={prefs.showPresence ?? true} onChange={(v) => updatePref("showPresence", v)} />} />
+                <Row label={t("settings.privacy.shareActivity")} desc={t("settings.privacy.shareActivityDesc")} control={<Toggle checked={prefs.shareActivity ?? true} onChange={(v) => updatePref("shareActivity", v)} />} />
+              </Section>
+              <Section icon={MessageSquare} title={t("settings.privacy.messages")}>
+                <Row label={t("settings.privacy.readReceipts")} desc={t("settings.privacy.readReceiptsDesc")} control={<Toggle checked={prefs.readReceipts ?? true} onChange={(v) => updatePref("readReceipts", v)} />} />
+                <Row label={t("settings.privacy.allowFriendRequests")} desc={t("settings.privacy.allowFriendRequestsDesc")}
+                  control={<Select value={prefs.allowFriendRequests ? "everyone" : "off"} onChange={(v) => updatePref("allowFriendRequests", v === "everyone")}
+                    options={[{ value: "everyone", label: t("settings.privacy.everyone") }, { value: "friends", label: t("settings.privacy.friendsOnly") }, { value: "off", label: t("settings.privacy.off") }]} />} />
+                <Row label={t("settings.privacy.directMessages")} desc={t("settings.privacy.directMessagesDesc")}
+                  control={<Select value={prefs.dmFrom ?? "everyone"} onChange={(v) => updatePref("dmFrom", v)}
+                    options={[{ value: "everyone", label: t("settings.privacy.everyone") }, { value: "friends", label: t("settings.privacy.friendsOnly") }, { value: "off", label: t("settings.privacy.off") }]} />} />
+              </Section>
+              <Section icon={Shield} title={t("settings.privacy.safety")}>
+                <Row label={t("settings.privacy.explicitFilter")} desc={t("settings.privacy.explicitFilterDesc")} control={<Toggle checked={prefs.explicitFilter ?? true} onChange={(v) => updatePref("explicitFilter", v)} />} />
+                <Row label={t("settings.privacy.safetyAlerts")} desc={t("settings.privacy.safetyAlertsDesc")} control={<Toggle checked={prefs.safetyAlerts ?? true} onChange={(v) => updatePref("safetyAlerts", v)} />} />
+              </Section>
+              <Section icon={Lock} title={t("settings.privacy.blockedMuted")}>
+                <p className="text-sm text-text-muted">{t("settings.privacy.noBlocked")}</p>
+              </Section>
+            </>
+          )}
 
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-text-muted" />
-                  Privacy
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4 space-y-4">
-                  {[
-                    { label: "Read Receipts", desc: "Let others see when you've read their messages" },
-                    { label: "Show Online Status", desc: "Allow others to see when you're online" },
-                    { label: "Allow Friend Requests", desc: "Who can send you friend requests" },
-                  ].map((p) => (
-                    <div key={p.label} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-text-primary">{p.label}</p>
-                        <p className="text-xs text-text-muted">{p.desc}</p>
-                      </div>
-                      <div className="h-6 w-10 rounded-full bg-accent/30 cursor-pointer relative">
-                        <div className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-accent shadow-sm" />
-                      </div>
+          {/* === CHAT === */}
+          {tab === "chat" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.chat.title")}</h1>
+              <Section icon={Send} title={t("settings.chat.messaging")}>
+                <Row label={t("settings.chat.enterToSend")} desc={t("settings.chat.enterToSendDesc")} control={<Toggle checked={prefs.enterToSend ?? true} onChange={(v) => updatePref("enterToSend", v)} />} />
+                <Row label={t("settings.chat.typingIndicators")} desc={t("settings.chat.typingIndicatorsDesc")} control={<Toggle checked={prefs.showTypingIndicators ?? true} onChange={(v) => updatePref("showTypingIndicators", v)} />} />
+                <Row label={t("settings.chat.messageGrouping")} desc={t("settings.chat.messageGroupingDesc")} control={<Toggle checked={prefs.messageGrouping ?? true} onChange={(v) => updatePref("messageGrouping", v)} />} />
+                <Row label={t("settings.chat.replyPreview")} desc={t("settings.chat.replyPreviewDesc")} control={<Toggle checked={prefs.replyPreview ?? true} onChange={(v) => updatePref("replyPreview", v)} />} />
+              </Section>
+              <Section icon={Hash} title={t("settings.chat.content")}>
+                <Row label={t("settings.chat.imagePreviews")} desc={t("settings.chat.imagePreviewsDesc")} control={<Toggle checked={prefs.imagePreviews ?? true} onChange={(v) => updatePref("imagePreviews", v)} />} />
+                <Row label={t("settings.chat.linkPreviews")} desc={t("settings.chat.linkPreviewsDesc")} control={<Toggle checked={prefs.linkPreviews ?? true} onChange={(v) => updatePref("linkPreviews", v)} />} />
+                <Row label={t("settings.chat.emojiSuggestions")} desc={t("settings.chat.emojiSuggestionsDesc")} control={<Toggle checked={prefs.emojiSuggestions ?? true} onChange={(v) => updatePref("emojiSuggestions", v)} />} />
+                <Row label={t("settings.chat.stickerSuggestions")} desc={t("settings.chat.stickerSuggestionsDesc")} control={<Toggle checked={prefs.stickerSuggestions ?? true} onChange={(v) => updatePref("stickerSuggestions", v)} />} />
+                <Row label={t("settings.chat.markdownPreview")} desc={t("settings.chat.markdownPreviewDesc")} control={<Toggle checked={prefs.markdownPreview ?? true} onChange={(v) => updatePref("markdownPreview", v)} />} />
+                <Row label={t("settings.chat.inlineCodePreview")} desc={t("settings.chat.inlineCodePreviewDesc")} control={<Toggle checked={prefs.inlineCodePreview ?? true} onChange={(v) => updatePref("inlineCodePreview", v)} />} />
+              </Section>
+              <Section icon={Type} title={t("settings.chat.input")}>
+                <Row label={t("settings.chat.spellCheck")} desc={t("settings.chat.spellCheckDesc")} control={<Toggle checked={prefs.spellCheck ?? true} onChange={(v) => updatePref("spellCheck", v)} />} />
+                <Row label={t("settings.chat.autoCorrect")} desc={t("settings.chat.autoCorrectDesc")} control={<Toggle checked={prefs.autoCorrect ?? false} onChange={(v) => updatePref("autoCorrect", v)} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === CALLS === */}
+          {tab === "calls" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.calls.title")}</h1>
+              <Section icon={Phone} title={t("settings.calls.audio")}>
+                <Row label={t("settings.calls.defaultMic")} desc={t("settings.calls.defaultMicDesc")}
+                  control={<Select value={prefs.defaultMic ?? "default"} onChange={(v) => updatePref("defaultMic", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "mic1", label: t("settings.calls.deviceOptions.builtinMic") }, { value: "mic2", label: t("settings.calls.deviceOptions.externalMic") }]} />} />
+                <Row label={t("settings.calls.defaultSpeaker")} desc={t("settings.calls.defaultSpeakerDesc")}
+                  control={<Select value={prefs.defaultSpeaker ?? "default"} onChange={(v) => updatePref("defaultSpeaker", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "spk1", label: t("settings.calls.deviceOptions.builtinSpeakers") }, { value: "spk2", label: t("settings.calls.deviceOptions.headphones") }]} />} />
+                <Row label={t("settings.calls.echoCancellation")} desc={t("settings.calls.echoCancellationDesc")} control={<Toggle checked={prefs.echoCancellation ?? true} onChange={(v) => updatePref("echoCancellation", v)} />} />
+                <Row label={t("settings.calls.noiseSuppression")} desc={t("settings.calls.noiseSuppressionDesc")} control={<Toggle checked={prefs.noiseSuppression ?? true} onChange={(v) => updatePref("noiseSuppression", v)} />} />
+                <Row label={t("settings.calls.autoGainControl")} desc={t("settings.calls.autoGainControlDesc")} control={<Toggle checked={prefs.autoGainControl ?? true} onChange={(v) => updatePref("autoGainControl", v)} />} />
+              </Section>
+              <Section icon={Video} title={t("settings.calls.video")}>
+                <Row label={t("settings.calls.camera")} desc={t("settings.calls.cameraDesc")}
+                  control={<Select value={prefs.camera ?? "default"} onChange={(v) => updatePref("camera", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "cam1", label: t("settings.calls.deviceOptions.builtinCamera") }, { value: "cam2", label: t("settings.calls.deviceOptions.externalCamera") }]} />} />
+                <Row label={t("settings.calls.videoQuality")} desc={t("settings.calls.videoQualityDesc")}
+                  control={<Select value={prefs.videoQuality ?? "720p"} onChange={(v) => updatePref("videoQuality", v)}
+                    options={[{ value: "480p", label: t("settings.calls.videoQualityOptions.480p") }, { value: "720p", label: t("settings.calls.videoQualityOptions.720p") }, { value: "1080p", label: t("settings.calls.videoQualityOptions.1080p") }]} />} />
+                <Row label={t("settings.calls.backgroundBlur")} desc={t("settings.calls.backgroundBlurDesc")} control={<Toggle checked={prefs.videoBackgroundBlur ?? false} onChange={(v) => updatePref("videoBackgroundBlur", v)} />} />
+                <Row label={t("settings.calls.pictureInPicture")} desc={t("settings.calls.pictureInPictureDesc")} control={<Toggle checked={prefs.pictureInPicture ?? true} onChange={(v) => updatePref("pictureInPicture", v)} />} />
+              </Section>
+              <Section icon={Sliders} title={t("settings.calls.advanced")}>
+                <Row label={t("settings.calls.pushToTalk")} desc={t("settings.calls.pushToTalkDesc")} control={<Toggle checked={prefs.pushToTalk ?? false} onChange={(v) => updatePref("pushToTalk", v)} />} />
+                <Row label={t("settings.calls.voiceActivity")} desc={t("settings.calls.voiceActivityDesc")} control={<SliderControl value={prefs.voiceActivityThreshold ?? 50} min={0} max={100} onChange={(v) => updatePref("voiceActivityThreshold", v)} />} />
+                <Row label={t("settings.calls.ringtone")} desc={t("settings.calls.ringtoneDesc")}
+                  control={<Select value={prefs.ringtone ?? "default"} onChange={(v) => updatePref("ringtone", v)}
+                    options={[{ value: "default", label: t("settings.calls.ringtoneOptions.default") }, { value: "classic", label: t("settings.calls.ringtoneOptions.classic") }, { value: "digital", label: t("settings.calls.ringtoneOptions.digital") }, { value: "none", label: t("common.none") }]} />} />
+                <Row label={t("settings.calls.callRecording")} desc={t("settings.calls.callRecordingDesc")} control={<Toggle checked={prefs.callRecording ?? false} onChange={(v) => updatePref("callRecording", v)} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === MEDIA === */}
+          {tab === "media" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.media.title")}</h1>
+              <Section icon={Image} title={t("settings.media.imagesVideo")}>
+                <Row label={t("settings.media.autoPlayMedia")} desc={t("settings.media.autoPlayMediaDesc")} control={<Toggle checked={prefs.autoPlayMedia ?? true} onChange={(v) => updatePref("autoPlayMedia", v)} />} />
+                <Row label={t("settings.media.gifAutoplay")} desc={t("settings.media.gifAutoplayDesc")} control={<Toggle checked={prefs.gifAutoplay ?? true} onChange={(v) => updatePref("gifAutoplay", v)} />} />
+                <Row label={t("settings.media.videoAutoplay")} desc={t("settings.media.videoAutoplayDesc")} control={<Toggle checked={prefs.videoAutoplay ?? true} onChange={(v) => updatePref("videoAutoplay", v)} />} />
+                <Row label={t("settings.media.imageQuality")} desc={t("settings.media.imageQualityDesc")}
+                  control={<Select value={prefs.imageQuality ?? "high"} onChange={(v) => updatePref("imageQuality", v)}
+                    options={[{ value: "low", label: t("settings.media.qualityOptions.low") }, { value: "medium", label: t("settings.media.qualityOptions.medium") }, { value: "high", label: t("settings.media.qualityOptions.high") }]} />} />
+                <Row label={t("settings.media.imageSaveQuality")} desc={t("settings.media.imageSaveQualityDesc")} control={<SliderControl value={prefs.imageSaveQuality ?? 90} min={10} max={100} step={5} onChange={(v) => updatePref("imageSaveQuality", v)} />} />
+              </Section>
+              <Section icon={FileText} title={t("settings.media.files")}>
+                <Row label={t("settings.media.autoDownload")} desc={t("settings.media.autoDownloadDesc")} control={<Toggle checked={prefs.autoDownloadFiles ?? false} onChange={(v) => updatePref("autoDownloadFiles", v)} />} />
+                <Row label={t("settings.media.maxFileSize")} desc={t("settings.media.maxFileSizeDesc")}
+                  control={<Select value={String(prefs.maxFileSize ?? 25)} onChange={(v) => updatePref("maxFileSize", parseInt(v))}
+                    options={[{ value: "10", label: t("settings.media.fileSizeOptions.10") }, { value: "25", label: t("settings.media.fileSizeOptions.25") }, { value: "50", label: t("settings.media.fileSizeOptions.50") }, { value: "100", label: t("settings.media.fileSizeOptions.100") }]} />} />
+                <Row label={t("settings.media.downloadLocation")} desc={t("settings.media.downloadLocationDesc")}
+                  control={<Select value={prefs.downloadLocation ?? "default"} onChange={(v) => updatePref("downloadLocation", v)}
+                    options={[{ value: "default", label: t("common.default") }, { value: "custom", label: t("settings.appearance.options.small") }]} />} />
+              </Section>
+              <Section icon={Music} title={t("settings.media.voiceMessages")}>
+                <Row label={t("settings.media.voiceQuality")} desc={t("settings.media.voiceQualityDesc")}
+                  control={<Select value={prefs.voiceMessageQuality ?? "medium"} onChange={(v) => updatePref("voiceMessageQuality", v)}
+                    options={[{ value: "low", label: t("settings.media.qualityOptions.low") }, { value: "medium", label: t("settings.media.qualityOptions.medium") }, { value: "high", label: t("settings.media.qualityOptions.high") }]} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === AUDIO & VIDEO === */}
+          {tab === "audio-video" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.audioVideo.title")}</h1>
+              <Section icon={Mic} title={t("settings.audioVideo.inputDevices")}>
+                <Row label={t("settings.audioVideo.inputDevice")} desc={t("settings.audioVideo.inputDeviceDesc")}
+                  control={<Select value={prefs.inputDevice ?? "default"} onChange={(v) => updatePref("inputDevice", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "mic1", label: t("settings.audioVideo.deviceOptions.builtinMic") }, { value: "mic2", label: t("settings.audioVideo.deviceOptions.externalMic") }]} />} />
+                <Row label={t("settings.audioVideo.micSensitivity")} desc={t("settings.audioVideo.micSensitivityDesc")} control={<SliderControl value={prefs.micSensitivity ?? 80} min={0} max={100} onChange={(v) => updatePref("micSensitivity", v)} />} />
+              </Section>
+              <Section icon={Headphones} title={t("settings.audioVideo.outputDevices")}>
+                <Row label={t("settings.audioVideo.outputDevice")} desc={t("settings.audioVideo.outputDeviceDesc")}
+                  control={<Select value={prefs.outputDevice ?? "default"} onChange={(v) => updatePref("outputDevice", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "spk1", label: t("settings.calls.deviceOptions.builtinSpeakers") }, { value: "spk2", label: t("settings.calls.deviceOptions.headphones") }]} />} />
+              </Section>
+              <Section icon={Camera} title={t("settings.audioVideo.videoDevices")}>
+                <Row label={t("settings.audioVideo.camera")} desc={t("settings.audioVideo.cameraDesc")}
+                  control={<Select value={prefs.camera ?? "default"} onChange={(v) => updatePref("camera", v)}
+                    options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "cam1", label: t("settings.calls.deviceOptions.builtinCamera") }]} />} />
+                <Row label={t("settings.audioVideo.resolution")} desc={t("settings.audioVideo.resolutionDesc")}
+                  control={<Select value={prefs.videoResolution ?? "1280x720"} onChange={(v) => updatePref("videoResolution", v)}
+                    options={[{ value: "640x480", label: t("settings.audioVideo.resolutionOptions.640x480") }, { value: "1280x720", label: t("settings.audioVideo.resolutionOptions.1280x720") }, { value: "1920x1080", label: t("settings.audioVideo.resolutionOptions.1920x1080") }]} />} />
+                <Row label={t("settings.audioVideo.frameRate")} desc={t("settings.audioVideo.frameRateDesc")}
+                  control={<Select value={String(prefs.frameRate ?? 30)} onChange={(v) => updatePref("frameRate", parseInt(v))}
+                    options={[{ value: "15", label: t("settings.audioVideo.framerateOptions.15") }, { value: "24", label: t("settings.audioVideo.framerateOptions.24") }, { value: "30", label: t("settings.audioVideo.framerateOptions.30") }, { value: "60", label: t("settings.audioVideo.framerateOptions.60") }]} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === ACCESSIBILITY === */}
+          {tab === "accessibility" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.accessibility.title")}</h1>
+              <Section icon={Eye} title={t("settings.accessibility.vision")}>
+                <Row label={t("settings.accessibility.highContrast")} desc={t("settings.accessibility.highContrastDesc")} control={<Toggle checked={prefs.highContrast ?? false} onChange={(v) => updatePref("highContrast", v)} />} />
+                <Row label={t("settings.accessibility.colorBlindMode")} desc={t("settings.accessibility.colorBlindModeDesc")}
+                  control={<Select value={prefs.colorBlindMode ?? "off"} onChange={(v) => updatePref("colorBlindMode", v)}
+                    options={[{ value: "off", label: t("settings.accessibility.colorBlindOptions.off") }, { value: "deuteranopia", label: t("settings.accessibility.colorBlindOptions.deuteranopia") }, { value: "protanopia", label: t("settings.accessibility.colorBlindOptions.protanopia") }, { value: "tritanopia", label: t("settings.accessibility.colorBlindOptions.tritanopia") }]} />} />
+                <Row label={t("settings.accessibility.fontSize")} desc={t("settings.accessibility.fontSizeDesc")}
+                  control={<Select value={prefs.fontSize ?? "medium"} onChange={(v) => updatePref("fontSize", v)}
+                    options={[{ value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "xlarge", label: t("settings.appearance.options.xlarge") }]} />} />
+                <Row label={t("settings.accessibility.lineHeight")} desc={t("settings.accessibility.lineHeightDesc")} control={<SliderControl value={prefs.lineHeight ?? 1.5} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineHeight", v)} />} />
+                <Row label={t("settings.accessibility.letterSpacing")} desc={t("settings.accessibility.letterSpacingDesc")} control={<SliderControl value={prefs.letterSpacing ?? 0} min={0} max={5} step={0.5} onChange={(v) => updatePref("letterSpacing", v)} />} />
+              </Section>
+              <Section icon={Smartphone} title={t("settings.accessibility.interaction")}>
+                <Row label={t("settings.accessibility.screenReader")} desc={t("settings.accessibility.screenReaderDesc")} control={<Toggle checked={prefs.screenReader ?? false} onChange={(v) => updatePref("screenReader", v)} />} />
+                <Row label={t("settings.accessibility.focusIndicators")} desc={t("settings.accessibility.focusIndicatorsDesc")} control={<Toggle checked={prefs.focusIndicators ?? true} onChange={(v) => updatePref("focusIndicators", v)} />} />
+                <Row label={t("settings.accessibility.reduceMotion")} desc={t("settings.accessibility.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
+                <Row label={t("settings.accessibility.stickyHeaders")} desc={t("settings.accessibility.stickyHeadersDesc")} control={<Toggle checked={prefs.stickyHeaders ?? true} onChange={(v) => updatePref("stickyHeaders", v)} />} />
+              </Section>
+              <Section icon={MessageSquare} title={t("settings.accessibility.chat")}>
+                <Row label={t("settings.accessibility.chatBubbleDirection")} desc={t("settings.accessibility.chatBubbleDirectionDesc")}
+                  control={<Select value={prefs.chatBubbleDir ?? "auto"} onChange={(v) => updatePref("chatBubbleDir", v)}
+                    options={[{ value: "auto", label: t("settings.accessibility.directionOptions.auto") }, { value: "left", label: t("settings.accessibility.directionOptions.left") }, { value: "right", label: t("settings.accessibility.directionOptions.right") }]} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === READER === */}
+          {tab === "reader" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.reader.title")}</h1>
+              <Section icon={BookOpen} title={t("settings.reader.readingMode")}>
+                <Row label={t("settings.reader.readerMode")} desc={t("settings.reader.readerModeDesc")} control={<Toggle checked={prefs.readerMode ?? false} onChange={(v) => updatePref("readerMode", v)} />} />
+                <Row label={t("settings.reader.fontSize")} desc={t("settings.reader.fontSizeDesc")}
+                  control={<Select value={String(prefs.fontSizeReader ?? 16)} onChange={(v) => updatePref("fontSizeReader", parseInt(v))}
+                    options={[{ value: "14", label: t("settings.reader.fontSizeOptions.14") }, { value: "16", label: t("settings.reader.fontSizeOptions.16") }, { value: "18", label: t("settings.reader.fontSizeOptions.18") }, { value: "20", label: t("settings.reader.fontSizeOptions.20") }, { value: "24", label: t("settings.reader.fontSizeOptions.24") }]} />} />
+                <Row label={t("settings.reader.lineSpacing")} desc={t("settings.reader.lineSpacingDesc")} control={<SliderControl value={prefs.lineSpacing ?? 1.6} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineSpacing", v)} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === LANGUAGE === */}
+          {tab === "language" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.language.title")}</h1>
+              <Section icon={Globe} title={t("settings.language.language")}>
+                <Row label={t("settings.language.appLanguage")} desc={t("settings.language.appLanguageDesc")}
+                  control={<Select value={prefs.language ?? "en"} onChange={(v) => updatePref("language", v)}
+                    options={supportedLanguages.map((l) => ({ value: l.code, label: `${l.native} (${l.name})` }))} />} />
+              </Section>
+              <Section icon={Calendar} title={t("settings.language.dateTime")}>
+                <Row label={t("settings.language.timeFormat")} desc={t("settings.language.timeFormatDesc")}
+                  control={<Select value={prefs.timeFormat ?? "12h"} onChange={(v) => updatePref("timeFormat", v)}
+                    options={[{ value: "12h", label: t("settings.language.timeFormatOptions.12h") }, { value: "24h", label: t("settings.language.timeFormatOptions.24h") }]} />} />
+                <Row label={t("settings.language.dateFormat")} desc={t("settings.language.dateFormatDesc")}
+                  control={<Select value={prefs.dateFormat ?? "MDY"} onChange={(v) => updatePref("dateFormat", v)}
+                    options={[{ value: "MDY", label: t("settings.language.dateFormatOptions.MDY") }, { value: "DMY", label: t("settings.language.dateFormatOptions.DMY") }, { value: "YMD", label: t("settings.language.dateFormatOptions.YMD") }]} />} />
+                <Row label={t("settings.language.firstDayOfWeek")} desc={t("settings.language.firstDayOfWeekDesc")}
+                  control={<Select value={prefs.firstDayOfWeek ?? "sun"} onChange={(v) => updatePref("firstDayOfWeek", v)}
+                    options={[{ value: "sun", label: t("settings.language.dayOptions.sun") }, { value: "mon", label: t("settings.language.dayOptions.mon") }]} />} />
+                <Row label={t("settings.language.timezone")} desc={t("settings.language.timezoneDesc")}
+                  control={<select value={prefs.timezone ?? "UTC"} onChange={(e) => updatePref("timezone", e.target.value)}
+                    className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none max-w-[160px] cursor-pointer">
+                    {["UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Moscow", "Asia/Tokyo", "Asia/Shanghai", "Asia/Kolkata", "Australia/Sydney", "Pacific/Auckland"].map((tz) => (
+                      <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>} />
+              </Section>
+              <Section icon={Ruler} title={t("settings.language.units")}>
+                <Row label={t("settings.language.temperature")} desc={t("settings.language.temperatureDesc")}
+                  control={<Select value={prefs.temperatureUnit ?? "c"} onChange={(v) => updatePref("temperatureUnit", v)}
+                    options={[{ value: "c", label: t("settings.language.temperatureOptions.c") }, { value: "f", label: t("settings.language.temperatureOptions.f") }]} />} />
+                <Row label={t("settings.language.measurement")} desc={t("settings.language.measurementDesc")}
+                  control={<Select value={prefs.measurementSystem ?? "metric"} onChange={(v) => updatePref("measurementSystem", v)}
+                    options={[{ value: "metric", label: t("settings.language.measurementOptions.metric") }, { value: "imperial", label: t("settings.language.measurementOptions.imperial") }]} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === ADVANCED === */}
+          {tab === "advanced" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.advanced.title")}</h1>
+              <Section icon={Terminal} title={t("settings.advanced.developer")}>
+                <Row label={t("settings.advanced.developerMode")} desc={t("settings.advanced.developerModeDesc")} control={<Toggle checked={prefs.developerMode ?? false} onChange={(v) => updatePref("developerMode", v)} />} />
+                <Row label={t("settings.advanced.experimentalFeatures")} desc={t("settings.advanced.experimentalFeaturesDesc")} control={<Toggle checked={prefs.experimentalFeatures ?? false} onChange={(v) => updatePref("experimentalFeatures", v)} />} />
+                <Row label={t("settings.advanced.loggingLevel")} desc={t("settings.advanced.loggingLevelDesc")}
+                  control={<Select value={prefs.loggingLevel ?? "info"} onChange={(v) => updatePref("loggingLevel", v)}
+                    options={[{ value: "error", label: t("settings.advanced.loggingOptions.errorsOnly") }, { value: "warn", label: t("settings.advanced.loggingOptions.warnings") }, { value: "info", label: t("settings.advanced.loggingOptions.info") }, { value: "debug", label: t("settings.advanced.loggingOptions.debug") }]} />} />
+              </Section>
+              <Section icon={Zap} title={t("settings.advanced.performance")}>
+                <Row label={t("settings.advanced.hardwareAcceleration")} desc={t("settings.advanced.hardwareAccelerationDesc")} control={<Toggle checked={prefs.hardwareAcceleration ?? true} onChange={(v) => updatePref("hardwareAcceleration", v)} />} />
+                <Row label={t("settings.advanced.cacheEnabled")} desc={t("settings.advanced.cacheEnabledDesc")} control={<Toggle checked={prefs.cacheEnabled ?? true} onChange={(v) => updatePref("cacheEnabled", v)} />} />
+                <Row label={t("settings.advanced.autoUpdate")} desc={t("settings.advanced.autoUpdateDesc")} control={<Toggle checked={prefs.autoUpdate ?? true} onChange={(v) => updatePref("autoUpdate", v)} />} />
+              </Section>
+              <Section icon={Cloud} title={t("settings.advanced.dataPrivacy")}>
+                <Row label={t("settings.advanced.crashReporting")} desc={t("settings.advanced.crashReportingDesc")} control={<Toggle checked={prefs.crashReporting ?? true} onChange={(v) => updatePref("crashReporting", v)} />} />
+                <Row label={t("settings.advanced.diagnostics")} desc={t("settings.advanced.diagnosticsDesc")} control={<Toggle checked={prefs.diagnostics ?? false} onChange={(v) => updatePref("diagnostics", v)} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === ABOUT === */}
+          {tab === "about" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.about.title")}</h1>
+              <Section icon={Info} title={t("settings.about.appInfo")}>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    ["version", "1.0.0"],
+                    ["server", "Express + PostgreSQL + Redis"],
+                    ["client", "React + Tailwind CSS"],
+                    ["protocol", "WebSocket + REST API"],
+                    ["authentication", "JWT + TOTP 2FA"],
+                    ["realTime", "WebSocket + Heartbeat"],
+                    ["database", "PostgreSQL 16"],
+                    ["nodeJs", "20+"],
+                    ["license", "MIT"],
+                    ["repository", "github.com/chat-app"],
+                  ] as const).map(([key, value]) => (
+                    <div key={key} className="rounded-xl bg-bg-primary p-3">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider">{t(`settings.about.${key}`)}</p>
+                      <p className="text-sm text-text-primary mt-0.5 break-all">{value}</p>
                     </div>
                   ))}
                 </div>
-              </section>
-
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-text-muted" />
-                  Blocked Users
-                </h2>
-                <div className="rounded-2xl border border-border bg-surface p-4">
-                  <p className="text-sm text-text-muted">No blocked users yet.</p>
-                </div>
-              </section>
+              </Section>
             </>
           )}
 
-          {/* ========== ABOUT ========== */}
-          {tab === "about" && (
-            <>
-              <h1 className="text-lg font-semibold text-text-primary">About</h1>
-
-              <section className="space-y-3">
-                <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
-                  <div>
-                    <span className="text-xs text-text-muted block">Version</span>
-                    <span className="text-sm text-text-primary">1.0.0</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-text-muted block">Server</span>
-                    <span className="text-sm text-text-primary">Express + PostgreSQL + Redis</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-text-muted block">Client</span>
-                    <span className="text-sm text-text-primary">React + Tailwind CSS</span>
-                  </div>
-                </div>
-              </section>
-            </>
-          )}
         </div>
       </div>
     </div>

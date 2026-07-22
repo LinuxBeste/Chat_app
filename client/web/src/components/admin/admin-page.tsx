@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
 import { Shield, Users, MessageSquare, FileText, AlertTriangle, Ban, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface Stats {
   users: number
@@ -41,6 +42,7 @@ interface Ban {
 type Tab = "overview" | "users" | "reports" | "bans"
 
 export function AdminPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>("overview")
   const [stats, setStats] = useState<Stats | null>(null)
   const [userList, setUserList] = useState<User[]>([])
@@ -66,7 +68,7 @@ export function AdminPage() {
   }
 
   const deleteUser = async (id: string) => {
-    if (!confirm("Delete this user permanently?")) return
+    if (!confirm(t("admin.deleteConfirm"))) return
     await api(`/api/admin/users/${id}`, { method: "DELETE" }).catch(() => {})
     setUserList((prev) => prev.filter((u) => u.id !== id))
   }
@@ -77,10 +79,10 @@ export function AdminPage() {
   }
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
-    { key: "overview", label: "Overview", icon: Shield },
-    { key: "users", label: "Users", icon: Users },
-    { key: "reports", label: "Reports", icon: AlertTriangle },
-    { key: "bans", label: "Bans", icon: Ban },
+    { key: "overview", label: t("admin.overview"), icon: Shield },
+    { key: "users", label: t("admin.users"), icon: Users },
+    { key: "reports", label: t("admin.reports"), icon: AlertTriangle },
+    { key: "bans", label: t("admin.bans"), icon: Ban },
   ]
 
   return (
@@ -88,7 +90,7 @@ export function AdminPage() {
       <div className="w-56 border-r border-border flex flex-col shrink-0">
         <div className="px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-            <Shield className="h-4 w-4 text-accent" /> Admin
+            <Shield className="h-4 w-4 text-accent" /> {t("admin.title")}
           </h2>
         </div>
         <nav className="flex-1 p-2 space-y-1">
@@ -110,25 +112,25 @@ export function AdminPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {tab === "overview" && (
           <div>
-            <h1 className="text-lg font-semibold text-text-primary mb-4">Overview</h1>
+            <h1 className="text-lg font-semibold text-text-primary mb-4">{t("admin.overview")}</h1>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {stats && (
                 <>
-                  <StatCard icon={Users} label="Users" value={stats.users} />
-                  <StatCard icon={MessageSquare} label="Conversations" value={stats.conversations} />
-                  <StatCard icon={FileText} label="Messages" value={stats.messages} />
-                  <StatCard icon={AlertTriangle} label="Reports" value={stats.reports} />
-                  <StatCard icon={Ban} label="Bans" value={stats.bans} />
+                  <StatCard icon={Users} label={t("admin.users")} value={stats.users} />
+                  <StatCard icon={MessageSquare} label={t("admin.conversations")} value={stats.conversations} />
+                  <StatCard icon={FileText} label={t("admin.messages")} value={stats.messages} />
+                  <StatCard icon={AlertTriangle} label={t("admin.reports")} value={stats.reports} />
+                  <StatCard icon={Ban} label={t("admin.bans")} value={stats.bans} />
                 </>
               )}
-              {!stats && <p className="text-sm text-text-muted col-span-full">Loading stats...</p>}
+              {!stats && <p className="text-sm text-text-muted col-span-full">{t("admin.loadingStats")}</p>}
             </div>
           </div>
         )}
 
         {tab === "users" && (
           <div>
-            <h1 className="text-lg font-semibold text-text-primary mb-4">Users ({userList.length})</h1>
+            <h1 className="text-lg font-semibold text-text-primary mb-4">{t("admin.users")} ({userList.length})</h1>
             <div className="space-y-2">
               {userList.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
@@ -144,7 +146,7 @@ export function AdminPage() {
                   <button
                     onClick={() => deleteUser(u.id)}
                     className="text-text-muted hover:text-danger cursor-pointer"
-                    title="Delete user"
+                    title={t("admin.deleteUser")}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -156,7 +158,7 @@ export function AdminPage() {
 
         {tab === "reports" && (
           <div>
-            <h1 className="text-lg font-semibold text-text-primary mb-4">Reports ({reportList.length})</h1>
+            <h1 className="text-lg font-semibold text-text-primary mb-4">{t("admin.reports")} ({reportList.length})</h1>
             <div className="space-y-2">
               {reportList.map((r) => (
                 <div key={r.id} className="rounded-2xl border border-border bg-surface px-4 py-3">
@@ -179,42 +181,42 @@ export function AdminPage() {
                       </span>
                       {r.status === "open" && (
                         <>
-                          <button onClick={() => resolveReport(r.id, "resolved")} className="text-xs text-accent hover:text-accent-hover cursor-pointer">Resolve</button>
-                          <button onClick={() => resolveReport(r.id, "dismissed")} className="text-xs text-text-muted hover:text-text-primary cursor-pointer">Dismiss</button>
+                          <button onClick={() => resolveReport(r.id, "resolved")} className="text-xs text-accent hover:text-accent-hover cursor-pointer">{t("admin.resolve")}</button>
+                          <button onClick={() => resolveReport(r.id, "dismissed")} className="text-xs text-text-muted hover:text-text-primary cursor-pointer">{t("admin.dismiss")}</button>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
               ))}
-              {reportList.length === 0 && <p className="text-sm text-text-muted text-center py-4">No reports</p>}
+              {reportList.length === 0 && <p className="text-sm text-text-muted text-center py-4">{t("admin.noReports")}</p>}
             </div>
           </div>
         )}
 
         {tab === "bans" && (
           <div>
-            <h1 className="text-lg font-semibold text-text-primary mb-4">Bans ({banList.length})</h1>
+            <h1 className="text-lg font-semibold text-text-primary mb-4">{t("admin.bans")} ({banList.length})</h1>
             <div className="space-y-2">
               {banList.map((b) => (
                 <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
                   <Ban className="h-4 w-4 text-danger shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary">User: {b.userId.slice(0, 8)}...</p>
+                    <p className="text-sm text-text-primary">{t("admin.userLabel")}: {b.userId.slice(0, 8)}...</p>
                     <p className="text-xs text-text-muted">
-                      {b.reason ? `Reason: ${b.reason} · ` : ""}
-                      Banned: {new Date(b.createdAt).toLocaleDateString()}
+                      {b.reason ? `${t("admin.reason")}: ${b.reason} · ` : ""}
+                      {t("admin.banned")}: {new Date(b.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <button
                     onClick={() => removeBan(b.id)}
                     className="text-xs text-accent hover:text-accent-hover cursor-pointer"
                   >
-                    Unban
+                    {t("admin.unban")}
                   </button>
                 </div>
               ))}
-              {banList.length === 0 && <p className="text-sm text-text-muted text-center py-4">No bans</p>}
+              {banList.length === 0 && <p className="text-sm text-text-muted text-center py-4">{t("admin.noBans")}</p>}
             </div>
           </div>
         )}

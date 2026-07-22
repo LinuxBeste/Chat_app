@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { Plus, Users, X, Search, UserCheck } from "lucide-react"
@@ -25,6 +26,7 @@ interface UserResult {
 }
 
 export function GroupsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
   const [selected, setSelected] = useState<Group | null>(null)
@@ -125,11 +127,11 @@ export function GroupsPage() {
     <div className="flex h-full">
       <div className="w-72 border-r border-border flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-semibold text-text-primary">Groups</h2>
+          <h2 className="text-sm font-semibold text-text-primary">{t("groups.title")}</h2>
           <button
             onClick={() => setShowCreate(true)}
             className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 transition-all cursor-pointer"
-            aria-label="Create group"
+            aria-label={t("groups.createGroup")}
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -145,7 +147,7 @@ export function GroupsPage() {
                 <Users className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{g.name ?? "Unnamed"}</p>
+                <p className="text-sm font-medium text-text-primary truncate">{g.name ?? t("groups.unnamed")}</p>
                 <p className="text-xs text-text-muted">{g.type}</p>
               </div>
             </button>
@@ -154,13 +156,13 @@ export function GroupsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {!selected && <p className="text-sm text-text-muted">Select a group to manage</p>}
+        {!selected && <p className="text-sm text-text-muted">{t("groups.selectGroup")}</p>}
         {selected && (
           <div className="max-w-lg space-y-6">
-            <h1 className="text-lg font-semibold text-text-primary">Group Settings</h1>
+            <h1 className="text-lg font-semibold text-text-primary">{t("groups.groupSettings")}</h1>
 
             <div>
-              <label className="text-xs text-text-muted block mb-1">Group Name</label>
+              <label className="text-xs text-text-muted block mb-1">{t("groups.groupName")}</label>
               <div className="flex gap-2">
                 <input
                   value={newName}
@@ -172,20 +174,20 @@ export function GroupsPage() {
                   disabled={!newName.trim()}
                   className="h-10 rounded-2xl bg-accent text-white text-sm px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
                 >
-                  Rename
+                  {t("groups.rename")}
                 </button>
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-text-primary">Members ({members.length})</h3>
+                <h3 className="text-sm font-medium text-text-primary">{t("groups.members")} ({members.length})</h3>
                 {canManage && (
                   <button
                     onClick={() => setShowAddMember(true)}
                     className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover cursor-pointer"
                   >
-                    <Plus className="h-3 w-3" /> Add
+                    <Plus className="h-3 w-3" /> {t("common.add")}
                   </button>
                 )}
               </div>
@@ -209,7 +211,7 @@ export function GroupsPage() {
                       <button
                         onClick={() => removeMember(m.id)}
                         className="text-text-muted hover:text-danger cursor-pointer"
-                        title="Remove member"
+                        title={t("groups.removeMember")}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -220,8 +222,8 @@ export function GroupsPage() {
                         onChange={(e) => changeRole(m.id, e.target.value)}
                         className="text-xs bg-transparent border border-border rounded-xl px-2 py-1 text-text-muted cursor-pointer outline-none"
                       >
-                        <option value="member">member</option>
-                        <option value="admin">admin</option>
+                        <option value="member">{t("groups.member")}</option>
+                        <option value="admin">{t("groups.admin")}</option>
                       </select>
                     )}
                   </div>
@@ -236,7 +238,7 @@ export function GroupsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text-primary">Create Group</h3>
+              <h3 className="text-sm font-semibold text-text-primary">{t("groups.createGroup")}</h3>
               <button
                 onClick={() => setShowCreate(false)}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
@@ -247,7 +249,7 @@ export function GroupsPage() {
             <input
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
-              placeholder="Group name"
+              placeholder={t("groups.groupNamePlaceholder")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-4"
             />
             <button
@@ -255,7 +257,7 @@ export function GroupsPage() {
               disabled={!createName.trim()}
               className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
             >
-              Create
+              {t("common.create")}
             </button>
           </div>
         </div>
@@ -268,7 +270,7 @@ export function GroupsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text-primary">Add Member</h3>
+              <h3 className="text-sm font-semibold text-text-primary">{t("groups.addMember")}</h3>
               <button
                 onClick={() => setShowAddMember(false)}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
@@ -281,13 +283,13 @@ export function GroupsPage() {
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users..."
+                placeholder={t("groups.searchUsers")}
                 className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
               />
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
               {searchQuery.length >= 1 && searchResults.length === 0 && (
-                <p className="text-sm text-text-muted text-center py-2">No users found</p>
+                <p className="text-sm text-text-muted text-center py-2">{t("groups.noUsersFound")}</p>
               )}
               {searchResults.map((u) => (
                 <button
@@ -310,7 +312,7 @@ export function GroupsPage() {
               onClick={() => setShowAddMember(false)}
               className="w-full h-10 rounded-2xl border border-border text-text-muted text-sm font-medium hover:bg-white/5 transition-all cursor-pointer"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>

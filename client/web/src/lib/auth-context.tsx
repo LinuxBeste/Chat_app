@@ -10,6 +10,7 @@ interface User {
   customStatus?: string
   displayName?: string | null
   emailVerified?: string
+  createdAt?: string
 }
 
 interface AuthState {

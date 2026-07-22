@@ -9,6 +9,21 @@ const mockConversations = [
   { id: "conv-3", type: "channel", name: null, createdAt: "2024-01-03T00:00:00Z" },
 ]
 
+vi.mock("react-i18next", async () => {
+  const en = await import("../../lib/i18n/locales/en.json")
+  return {
+    useTranslation: () => ({
+      t: (k: string) => {
+        const parts = k.split(".")
+        let obj: any = en
+        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        return typeof obj === "string" ? obj : k
+      },
+      i18n: { changeLanguage: vi.fn(), language: "en" },
+    }),
+  }
+})
+
 vi.mock("../../lib/api", () => ({
   api: vi.fn(),
 }))

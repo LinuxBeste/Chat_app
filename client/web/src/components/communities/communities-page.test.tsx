@@ -3,6 +3,21 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { CommunitiesPage } from "./communities-page"
 
+vi.mock("react-i18next", async () => {
+  const en = await import("../../lib/i18n/locales/en.json")
+  return {
+    useTranslation: () => ({
+      t: (k: string) => {
+        const parts = k.split(".")
+        let obj: any = en
+        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        return typeof obj === "string" ? obj : k
+      },
+      i18n: { changeLanguage: vi.fn(), language: "en" },
+    }),
+  }
+})
+
 const mockCommunities = [
   {
     id: "comm-1",

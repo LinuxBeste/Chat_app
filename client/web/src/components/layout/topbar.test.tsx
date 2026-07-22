@@ -3,8 +3,29 @@ import { render, screen, act } from "@testing-library/react"
 import { Topbar } from "./topbar"
 
 const mockToggleTheme = vi.fn()
+
+vi.mock("react-i18next", async () => {
+  const en = await import("../../lib/i18n/locales/en.json")
+  return {
+    useTranslation: () => ({
+      t: (k: string) => {
+        const parts = k.split(".")
+        let obj: any = en
+        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        return typeof obj === "string" ? obj : k
+      },
+      i18n: { changeLanguage: vi.fn(), language: "en" },
+    }),
+  }
+})
+
 vi.mock("../../lib/theme-context", () => ({
   useTheme: vi.fn(() => ({ theme: "dark", toggleTheme: mockToggleTheme })),
+}))
+
+const mockUser = { id: "1", username: "testuser", email: "test@test.com", displayName: "Test User" }
+vi.mock("../../lib/auth-context", () => ({
+  useAuth: vi.fn(() => ({ user: mockUser })),
 }))
 
 vi.mock("../presence/status-selector", () => ({
@@ -68,9 +89,9 @@ describe("Topbar", () => {
     expect(screen.getByTestId("avatar")).toBeInTheDocument()
   })
 
-  it("shows John Doe text", () => {
+  it("shows the user display name", () => {
     render(<Topbar collapsed={false} onToggle={onToggle} />)
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
+    expect(screen.getByText("Test User")).toBeInTheDocument()
   })
 
   it("shows theme toggle icon based on theme", () => {

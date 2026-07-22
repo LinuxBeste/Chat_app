@@ -438,6 +438,21 @@ export const communityInvites = pgTable(
   }),
 )
 
+export const userPreferences = pgTable(
+  "user_preferences",
+  {
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull()
+      .unique(),
+    preferences: text("preferences").notNull().default("{}"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("user_preferences_user_id_idx").on(table.userId),
+  }),
+)
+
 export const userThemes = pgTable(
   "user_themes",
   {

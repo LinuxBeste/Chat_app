@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
+import { useTranslation } from "react-i18next"
 import { Plus, X, Globe, Hash, Link, Check, Copy, Crown } from "lucide-react"
 
 interface Community {
@@ -34,6 +35,7 @@ interface Invite {
 }
 
 export function CommunitiesPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [communities, setCommunities] = useState<Community[]>([])
   const [selected, setSelected] = useState<Community | null>(null)
@@ -126,19 +128,19 @@ export function CommunitiesPage() {
     <div className="flex h-full">
       <div className="w-72 border-r border-border flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-semibold text-text-primary">Communities</h2>
+          <h2 className="text-sm font-semibold text-text-primary">{t("communities.title")}</h2>
           <div className="flex gap-1">
             <button
               onClick={() => setShowJoin(true)}
               className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 transition-all cursor-pointer"
-              aria-label="Join community"
+              aria-label={t("communities.joinCommunity")}
             >
               <Link className="h-4 w-4" />
             </button>
             <button
               onClick={() => setShowCreate(true)}
               className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 transition-all cursor-pointer"
-              aria-label="Create community"
+              aria-label={t("communities.createCommunity")}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -164,14 +166,14 @@ export function CommunitiesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {!selected && <p className="text-sm text-text-muted">Select a community or create one</p>}
+        {!selected && <p className="text-sm text-text-muted">{t("communities.selectCommunity")}</p>}
         {selected && (
           <div className="max-w-lg space-y-6">
             <h1 className="text-lg font-semibold text-text-primary">{selected.name}</h1>
 
             {/* Channels */}
             <div>
-              <h3 className="text-sm font-medium text-text-primary mb-2">Channels</h3>
+              <h3 className="text-sm font-medium text-text-primary mb-2">{t("communities.channels")}</h3>
               <div className="space-y-1.5">
                 {channels.map((ch) => (
                   <div
@@ -189,7 +191,7 @@ export function CommunitiesPage() {
                   <input
                     value={newChannel}
                     onChange={(e) => setNewChannel(e.target.value)}
-                    placeholder="New channel name"
+                    placeholder={t("communities.newChannelName")}
                     className="flex-1 h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
                   />
                   <button
@@ -197,7 +199,7 @@ export function CommunitiesPage() {
                     disabled={!newChannel.trim()}
                     className="h-9 rounded-2xl bg-accent text-white text-sm px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
                   >
-                    Add
+                    {t("communities.add")}
                   </button>
                 </div>
               )}
@@ -205,7 +207,7 @@ export function CommunitiesPage() {
 
             {/* Members */}
             <div>
-              <h3 className="text-sm font-medium text-text-primary mb-2">Members ({members.length})</h3>
+              <h3 className="text-sm font-medium text-text-primary mb-2">{t("communities.members")} ({members.length})</h3>
               <div className="space-y-1.5">
                 {members.map((m) => (
                   <div
@@ -230,7 +232,7 @@ export function CommunitiesPage() {
                           setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId))
                         })}
                         className="text-text-muted hover:text-danger cursor-pointer"
-                        title="Remove member"
+                        title={t("communities.removeMember")}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -246,8 +248,8 @@ export function CommunitiesPage() {
                         })}
                         className="text-xs bg-transparent border border-border rounded-xl px-1.5 py-1 text-text-muted cursor-pointer outline-none"
                       >
-                        <option value="member">member</option>
-                        <option value="admin">admin</option>
+                        <option value="member">{t("communities.member")}</option>
+                        <option value="admin">{t("communities.admin")}</option>
                       </select>
                     )}
                   </div>
@@ -258,14 +260,14 @@ export function CommunitiesPage() {
             {/* Invites */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-text-primary">Invites</h3>
+                <h3 className="text-sm font-medium text-text-primary">{t("communities.invites")}</h3>
                 {canManage && (
                   <button
                     onClick={createInvite}
                     className="flex items-center gap-1.5 h-8 rounded-2xl bg-accent/10 text-accent text-xs px-3 font-medium hover:bg-accent/20 transition-all cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Generate
+                    {t("communities.generate")}
                   </button>
                 )}
               </div>
@@ -279,12 +281,12 @@ export function CommunitiesPage() {
                     <code className="text-sm text-accent flex-1">{inv.code}</code>
                     <span className="text-xs text-text-muted">
                       {inv.useCount}
-                      {inv.maxUses ? `/${inv.maxUses}` : ""} used
+                      {inv.maxUses ? `/${inv.maxUses}` : ""} {t("communities.used")}
                     </span>
                     <button
                       onClick={() => copyInvite(inv.code)}
                       className="p-1 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
-                      aria-label="Copy invite code"
+                      aria-label={t("communities.copyInviteCode")}
                     >
                       {copied === inv.code ? (
                         <Check className="h-3.5 w-3.5 text-green-500" />
@@ -294,7 +296,7 @@ export function CommunitiesPage() {
                     </button>
                   </div>
                 ))}
-                {invites.length === 0 && <p className="text-xs text-text-muted">No invites yet</p>}
+                {invites.length === 0 && <p className="text-xs text-text-muted">{t("communities.noInvites")}</p>}
               </div>
             </div>
           </div>
@@ -305,7 +307,7 @@ export function CommunitiesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text-primary">Create Community</h3>
+              <h3 className="text-sm font-semibold text-text-primary">{t("communities.createTitle")}</h3>
               <button
                 onClick={() => setShowCreate(false)}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
@@ -316,13 +318,13 @@ export function CommunitiesPage() {
             <input
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
-              placeholder="Community name"
+              placeholder={t("communities.communityName")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-3"
             />
             <input
               value={createDesc}
               onChange={(e) => setCreateDesc(e.target.value)}
-              placeholder="Description (optional)"
+              placeholder={t("communities.descriptionOptional")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-4"
             />
             <button
@@ -330,7 +332,7 @@ export function CommunitiesPage() {
               disabled={!createName.trim()}
               className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
             >
-              Create
+              {t("communities.create")}
             </button>
           </div>
         </div>
@@ -340,7 +342,7 @@ export function CommunitiesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text-primary">Join Community</h3>
+              <h3 className="text-sm font-semibold text-text-primary">{t("communities.joinTitle")}</h3>
               <button
                 onClick={() => setShowJoin(false)}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
@@ -351,7 +353,7 @@ export function CommunitiesPage() {
             <input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Enter invite code"
+              placeholder={t("communities.enterInviteCode")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-4"
             />
             <button
@@ -359,7 +361,7 @@ export function CommunitiesPage() {
               disabled={!joinCode.trim()}
               className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
             >
-              Join
+              {t("communities.join")}
             </button>
           </div>
         </div>

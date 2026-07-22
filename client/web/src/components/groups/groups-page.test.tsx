@@ -3,6 +3,21 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { GroupsPage } from "./groups-page"
 
+vi.mock("react-i18next", async () => {
+  const en = await import("../../lib/i18n/locales/en.json")
+  return {
+    useTranslation: () => ({
+      t: (k: string) => {
+        const parts = k.split(".")
+        let obj: any = en
+        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        return typeof obj === "string" ? obj : k
+      },
+      i18n: { changeLanguage: vi.fn(), language: "en" },
+    }),
+  }
+})
+
 const mockGroups = [
   { id: "group-1", type: "group", name: "Dev Team", createdAt: "2024-01-01T00:00:00Z" },
   { id: "group-2", type: "group", name: "Design Team", createdAt: "2024-01-02T00:00:00Z" },

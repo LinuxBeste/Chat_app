@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react"
 import { wsClient } from "../../lib/ws"
 
@@ -10,6 +11,7 @@ interface CallOverlayProps {
 }
 
 export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: CallOverlayProps) {
+  const { t } = useTranslation()
   const [muted, setMuted] = useState(false)
   const [videoOff, setVideoOff] = useState(false)
   const [duration, setDuration] = useState(0)
@@ -110,7 +112,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
     <div
       className="fixed inset-0 z-50 flex flex-col bg-bg-primary"
       role="dialog"
-      aria-label="Call controls"
+      aria-label={t("calls.callControls")}
       aria-live="polite"
     >
       <div className="flex-1 relative">
@@ -119,7 +121,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
           autoPlay
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          aria-label="Remote video"
+          aria-label={t("calls.remoteVideo")}
         />
         <video
           ref={localRef}
@@ -127,17 +129,17 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
           playsInline
           muted
           className="absolute bottom-6 right-6 w-40 h-28 rounded-2xl object-cover border-2 border-border"
-          aria-label="Your video"
+          aria-label={t("calls.yourVideo")}
         />
       </div>
 
       <div className="flex items-center justify-center gap-4 p-6 bg-bg-secondary">
         <p className="text-sm text-text-muted mr-4" aria-live="polite">
-          {direction === "incoming" ? "Incoming call" : connected ? formatTime(duration) : "Connecting..."}
+          {direction === "incoming" ? t("calls.incomingCall") : connected ? formatTime(duration) : t("calls.connecting")}
         </p>
         <button
           onClick={() => setMuted(!muted)}
-          aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+          aria-label={muted ? t("calls.unmuteMic") : t("calls.muteMic")}
           aria-pressed={muted}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
@@ -145,7 +147,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
         </button>
         <button
           onClick={() => setVideoOff(!videoOff)}
-          aria-label={videoOff ? "Turn on video" : "Turn off video"}
+          aria-label={videoOff ? t("calls.turnOnVideo") : t("calls.turnOffVideo")}
           aria-pressed={videoOff}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-text-secondary hover:text-text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
@@ -158,7 +160,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
         {direction === "incoming" && !connected && (
           <button
             onClick={answerCall}
-            aria-label="Answer call"
+            aria-label={t("calls.answerCall")}
             className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <Phone className="h-6 w-6" aria-hidden="true" />
@@ -166,7 +168,7 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
         )}
         <button
           onClick={endCall}
-          aria-label="End call"
+          aria-label={t("calls.endCall")}
           className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <PhoneOff className="h-6 w-6" aria-hidden="true" />

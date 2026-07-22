@@ -5,7 +5,7 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { users } from "../db/schema.js"
+import { users, userPreferences } from "../db/schema.js"
 import { eq, ilike, or, and, ne } from "drizzle-orm"
 
 const router: RouterType = Router()
@@ -121,6 +121,32 @@ router.get(
     }
 
     res.json(user)
+  }),
+)
+
+router.get(
+  "/preferences",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [pref] = await db
+      .select()
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, req.user!.userId))
+      .limit(1)
+    res.json(pref ? JSON.parse(pref.preferences) : {})
+  }),
+)
+
+router.put(
+  "/preferences",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const prefs = JSON.stringify(req.body)
+    await db
+      .insert(userPreferences)
+      .values({ userId: req.user!.userId, preferences: prefs })
+      .onConflictDoUpdate({ target: userPreferences.userId, set: { preferences: prefs, updatedAt: new Date() } })
+    res.json(req.body)
   }),
 )
 

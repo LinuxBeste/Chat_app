@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { Search, X, Plus, UserCheck } from "lucide-react"
 
@@ -16,6 +17,7 @@ interface AddParticipantsModalProps {
 }
 
 export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddParticipantsModalProps) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<UserResult[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -70,7 +72,7 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h3 className="text-sm font-semibold text-text-primary">Add People</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t("chat.addPeopleTitle")}</h3>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary cursor-pointer">
             <X className="h-4 w-4" />
           </button>
@@ -82,14 +84,14 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search users..."
+            placeholder={t("chat.searchUsers")}
             className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
           />
         </div>
 
         <div className="max-h-60 overflow-y-auto px-5 pb-3 space-y-1">
           {query.length >= 1 && results.length === 0 && (
-            <p className="text-sm text-text-muted text-center py-4">No users found</p>
+            <p className="text-sm text-text-muted text-center py-4">{t("chat.noUsersFound")}</p>
           )}
           {results.map((u) => {
             const isSelected = selected.has(u.id)
@@ -124,7 +126,7 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
             disabled={selected.size === 0 || adding}
             className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
           >
-            {adding ? "Adding..." : `Add ${selected.size > 0 ? `(${selected.size})` : ""}`}
+            {adding ? t("chat.adding") : `${t("common.add")} ${selected.size > 0 ? `(${selected.size})` : ""}`}
           </button>
         </div>
       </div>

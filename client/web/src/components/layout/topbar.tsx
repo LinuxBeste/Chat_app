@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next"
 import { Search, ChevronDown, PanelLeftClose, PanelLeft, Moon, Sun } from "lucide-react"
 import { Avatar } from "../ui/avatar"
 import { Input } from "../ui/input"
 import { useTheme } from "../../lib/theme-context"
+import { useAuth } from "../../lib/auth-context"
 import { StatusSelector } from "../presence/status-selector"
 import { SearchPanel } from "../search/search-panel"
 import { useState } from "react"
@@ -12,8 +14,13 @@ interface TopbarProps {
 }
 
 export function Topbar({ collapsed, onToggle }: TopbarProps) {
+  const { t } = useTranslation()
   const { theme, toggleTheme } = useTheme()
+  const { user } = useAuth()
   const [searchOpen, setSearchOpen] = useState(false)
+
+  const displayName = user?.displayName || user?.username || "User"
+  const initials = (displayName.match(/\b\w/g) || []).join("").slice(0, 2).toUpperCase() || "U"
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border bg-bg-secondary px-6">
@@ -27,7 +34,7 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
         <Input
-          placeholder="Search messages, groups..."
+          placeholder={t("chat.searchPlaceholder")}
           className="pl-10 cursor-pointer"
           onFocus={() => setSearchOpen(true)}
           readOnly
@@ -44,9 +51,9 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
         </button>
 
         <div className="flex items-center gap-2 cursor-pointer">
-          <Avatar size="sm" fallback="JD" />
+          <Avatar size="sm" fallback={initials} />
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-text-primary">John Doe</p>
+            <p className="text-sm font-medium text-text-primary">{displayName}</p>
             <StatusSelector />
           </div>
           <ChevronDown className="h-4 w-4 text-text-muted" />
