@@ -118,7 +118,8 @@
     "membersCount": "{{count}} membres",
     "fileType": "Fichier {{ext}}",
     "addFriend": "Ajouter un ami",
-    "friendPending": "Demande d'ami en attente"
+    "friendPending": "Demande d'ami en attente",
+    "newConversation": "Nouvelle conversation"
   },
   "calls": {
     "callControls": "Commandes d'appel",

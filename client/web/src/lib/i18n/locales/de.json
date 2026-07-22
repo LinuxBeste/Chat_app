@@ -119,7 +119,8 @@
     "fileType": "{{ext}}-Datei",
     "searchPlaceholder": "Durchsuche Nachrichten, Gruppen...",
     "addFriend": "Freund hinzufügen",
-    "friendPending": "Freundschaftsanfrage ausstehend"
+    "friendPending": "Freundschaftsanfrage ausstehend",
+    "newConversation": "Neue Konversation"
   },
   "calls": {
     "callControls": "Anrufsteuerung",

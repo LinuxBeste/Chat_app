@@ -119,7 +119,8 @@
     "fileType": "{{ext}} ファイル",
     "searchPlaceholder": "メッセージ、グループを検索...",
     "addFriend": "友達を追加",
-    "friendPending": "友達リクエスト保留中"
+    "friendPending": "友達リクエスト保留中",
+    "newConversation": "新しい会話"
   },
   "calls": {
     "callControls": "通話コントロール",

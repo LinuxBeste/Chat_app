@@ -119,7 +119,8 @@
     "fileType": "Archivo {{ext}}",
     "searchPlaceholder": "Buscar mensajes, grupos...",
     "addFriend": "Añadir amigo",
-    "friendPending": "Solicitud de amistad pendiente"
+    "friendPending": "Solicitud de amistad pendiente",
+    "newConversation": "Nueva conversación"
   },
   "calls": {
     "callControls": "Controles de llamada",

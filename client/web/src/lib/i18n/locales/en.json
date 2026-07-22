@@ -119,7 +119,8 @@
     "fileType": "{{ext}} file",
     "searchPlaceholder": "Search messages, groups...",
     "addFriend": "Add Friend",
-    "friendPending": "Friend request pending"
+    "friendPending": "Friend request pending",
+    "newConversation": "New Conversation"
   },
   "calls": {
     "callControls": "Call controls",
