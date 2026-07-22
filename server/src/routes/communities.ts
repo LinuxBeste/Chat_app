@@ -7,6 +7,7 @@ import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
 import { communities, communityMembers, communityChannels, communityInvites } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
+import { logger } from "../lib/logger.js"
 
 const router: ReturnType<typeof Router> = Router()
 
@@ -70,6 +71,25 @@ router.put(
   }),
 )
 
+const requireCommunityOwner = async (req: Request, res: Response, next: () => void) => {
+  try {
+    const communityId = req.params.id as string
+    const [member] = await db
+      .select({ role: communityMembers.role })
+      .from(communityMembers)
+      .where(and(eq(communityMembers.communityId, communityId), eq(communityMembers.userId, req.user!.userId)))
+      .limit(1)
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      res.status(403).json({ error: "Owner or admin access required" })
+      return
+    }
+    next()
+  } catch (err) {
+    logger.error({ err }, "Community admin guard error")
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
 // --- Channels ---
 
 const channelSchema = z.object({ name: z.string().min(1).max(100), topic: z.string().max(200).optional() })
@@ -77,6 +97,7 @@ const channelSchema = z.object({ name: z.string().min(1).max(100), topic: z.stri
 router.post(
   "/:id/channels",
   authGuard,
+  requireCommunityOwner,
   validate(channelSchema),
   catchAsync(async (req: Request, res: Response) => {
     const [ch] = await db
@@ -96,11 +117,40 @@ router.delete(
   }),
 )
 
+// --- Members ---
+
+router.delete(
+  "/:id/members/:userId",
+  authGuard,
+  requireCommunityOwner,
+  catchAsync(async (req: Request, res: Response) => {
+    await db
+      .delete(communityMembers)
+      .where(and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.params.userId as string)))
+    res.json({ message: "Member removed" })
+  }),
+)
+
+router.put(
+  "/:id/members/:userId/role",
+  authGuard,
+  requireCommunityOwner,
+  validate(z.object({ role: z.enum(["owner", "admin", "member"]) })),
+  catchAsync(async (req: Request, res: Response) => {
+    await db
+      .update(communityMembers)
+      .set({ role: req.body.role })
+      .where(and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.params.userId as string)))
+    res.json({ message: "Role updated" })
+  }),
+)
+
 // --- Invites ---
 
 router.post(
   "/:id/invites",
   authGuard,
+  requireCommunityOwner,
   catchAsync(async (req: Request, res: Response) => {
     const code = crypto.randomBytes(4).toString("hex")
     const [invite] = await db

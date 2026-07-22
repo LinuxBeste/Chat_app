@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
-import { Plus, X, Globe, Users, Hash, Link, Check, Copy } from "lucide-react"
+import { useAuth } from "../../lib/auth-context"
+import { Plus, X, Globe, Hash, Link, Check, Copy, Crown } from "lucide-react"
 
 interface Community {
   id: string
   name: string
   description: string | null
+  ownerId: string
   createdAt: string
 }
 
@@ -32,6 +34,7 @@ interface Invite {
 }
 
 export function CommunitiesPage() {
+  const { user } = useAuth()
   const [communities, setCommunities] = useState<Community[]>([])
   const [selected, setSelected] = useState<Community | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
@@ -44,6 +47,10 @@ export function CommunitiesPage() {
   const [joinCode, setJoinCode] = useState("")
   const [newChannel, setNewChannel] = useState("")
   const [copied, setCopied] = useState<string | null>(null)
+
+  const currentMember = members.find((m) => m.userId === user?.id)
+  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
+  const isOwner = currentMember?.role === "owner"
 
   useEffect(() => {
     api<Community[]>("/api/communities")
@@ -177,21 +184,23 @@ export function CommunitiesPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2 mt-2">
-                <input
-                  value={newChannel}
-                  onChange={(e) => setNewChannel(e.target.value)}
-                  placeholder="New channel name"
-                  className="flex-1 h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
-                />
-                <button
-                  onClick={createChannel}
-                  disabled={!newChannel.trim()}
-                  className="h-9 rounded-2xl bg-accent text-white text-sm px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
-                >
-                  Add
-                </button>
-              </div>
+              {canManage && (
+                <div className="flex gap-2 mt-2">
+                  <input
+                    value={newChannel}
+                    onChange={(e) => setNewChannel(e.target.value)}
+                    placeholder="New channel name"
+                    className="flex-1 h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+                  />
+                  <button
+                    onClick={createChannel}
+                    disabled={!newChannel.trim()}
+                    className="h-9 rounded-2xl bg-accent text-white text-sm px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Members */}
@@ -203,11 +212,44 @@ export function CommunitiesPage() {
                     key={m.userId}
                     className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5"
                   >
-                    <Users className="h-4 w-4 text-text-muted shrink-0" />
-                    <span className="text-sm text-text-primary truncate">{m.userId.slice(0, 8)}...</span>
-                    <span className="text-xs text-text-muted capitalize ml-auto bg-bg-primary rounded-xl px-2.5 py-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent text-[10px] font-bold shrink-0">
+                      {m.userId.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-text-primary truncate flex-1">
+                      {m.userId.slice(0, 8)}...
+                      {m.userId === selected?.ownerId && (
+                        <Crown className="h-3 w-3 inline ml-1 text-yellow-400" />
+                      )}
+                    </span>
+                    <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">
                       {m.role}
                     </span>
+                    {canManage && m.userId !== user?.id && m.role !== "owner" && (
+                      <button
+                        onClick={() => api(`/api/communities/${selected?.id}/members/${m.userId}`, { method: "DELETE" }).then(() => {
+                          setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId))
+                        })}
+                        className="text-text-muted hover:text-danger cursor-pointer"
+                        title="Remove member"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {isOwner && m.userId !== user?.id && m.role !== "owner" && (
+                      <select
+                        value={m.role}
+                        onChange={(e) => api(`/api/communities/${selected?.id}/members/${m.userId}/role`, {
+                          method: "PUT",
+                          body: JSON.stringify({ role: e.target.value }),
+                        }).then(() => {
+                          setMembers((prev) => prev.map((mm) => mm.userId === m.userId ? { ...mm, role: e.target.value } : mm))
+                        })}
+                        className="text-xs bg-transparent border border-border rounded-xl px-1.5 py-1 text-text-muted cursor-pointer outline-none"
+                      >
+                        <option value="member">member</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    )}
                   </div>
                 ))}
               </div>
@@ -217,13 +259,15 @@ export function CommunitiesPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-text-primary">Invites</h3>
-                <button
-                  onClick={createInvite}
-                  className="flex items-center gap-1.5 h-8 rounded-2xl bg-accent/10 text-accent text-xs px-3 font-medium hover:bg-accent/20 transition-all cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Generate
-                </button>
+                {canManage && (
+                  <button
+                    onClick={createInvite}
+                    className="flex items-center gap-1.5 h-8 rounded-2xl bg-accent/10 text-accent text-xs px-3 font-medium hover:bg-accent/20 transition-all cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Generate
+                  </button>
+                )}
               </div>
               <div className="space-y-1.5">
                 {invites.map((inv) => (
