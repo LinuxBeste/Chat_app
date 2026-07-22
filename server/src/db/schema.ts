@@ -471,6 +471,59 @@ export const userThemes = pgTable(
   }),
 )
 
+export const fileFolders = pgTable(
+  "file_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    name: text("name").notNull(),
+    parentId: uuid("parent_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("file_folders_user_id_idx").on(table.userId),
+    parentIdIdx: index("file_folders_parent_id_idx").on(table.parentId),
+  }),
+)
+
+export const fileFolderMembers = pgTable(
+  "file_folder_members",
+  {
+    folderId: uuid("folder_id")
+      .references(() => fileFolders.id)
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    permission: text("permission").default("read").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    folderUserUnique: uniqueIndex("file_folder_members_folder_user_idx").on(table.folderId, table.userId),
+    userIdIdx: index("file_folder_members_user_id_idx").on(table.userId),
+  }),
+)
+
+export const filePermissions = pgTable(
+  "file_permissions",
+  {
+    fileId: uuid("file_id")
+      .references(() => attachments.id)
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    permission: text("permission").default("read").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    fileUserUnique: uniqueIndex("file_permissions_file_user_idx").on(table.fileId, table.userId),
+    userIdIdx: index("file_permissions_user_id_idx").on(table.userId),
+  }),
+)
+
 export const calls = pgTable(
   "calls",
   {

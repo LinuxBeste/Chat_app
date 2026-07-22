@@ -120,7 +120,12 @@
     "searchPlaceholder": "Durchsuche Nachrichten, Gruppen...",
     "addFriend": "Freund hinzufügen",
     "friendPending": "Freundschaftsanfrage ausstehend",
-    "newConversation": "Neue Konversation"
+    "newConversation": "Neue Konversation",
+    "dropFile": "Datei zum Hochladen ablegen",
+    "addByUsernameOrId": "Per Benutzername oder ID hinzufügen",
+    "usernameOrIdPlaceholder": "Benutzername oder Benutzer-ID eingeben...",
+    "startConversation": "Konversation starten",
+    "userNotFound": "Benutzer nicht gefunden"
   },
   "calls": {
     "callControls": "Anrufsteuerung",
@@ -934,6 +939,23 @@
       "cozy": "Gemütlich",
       "alternating": "Wechselnd"
     }
+  },
+  "files": {
+    "title": "Dateien",
+    "upload": "Hochladen",
+    "newFolder": "Neuer Ordner",
+    "folders": "Ordner",
+    "deleteFolder": "Ordner löschen",
+    "deleteFolderConfirm": "Diesen Ordner löschen?",
+    "manageAccess": "Zugriff verwalten",
+    "folderAccess": "Ordnerzugriff",
+    "folderNamePlaceholder": "Ordnername...",
+    "dropToUpload": "Dateien zum Hochladen ablegen",
+    "noFiles": "Noch keine Dateien",
+    "dropOrUpload": "Dateien ablegen oder auf Hochladen klicken",
+    "download": "Herunterladen",
+    "cannotPreview": "Vorschau für diesen Dateityp nicht verfügbar",
+    "userIdPlaceholder": "Benutzer-ID eingeben..."
   },
   "setup": {
     "welcome": "Willkommen!",

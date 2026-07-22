@@ -41,7 +41,7 @@ router.get(
         .from(users)
         .where(ilike(users.email, `%${q}%`))
         .limit(10)
-    } else if (q.length >= 3 && /^[a-zA-Z0-9_-]+$/.test(q)) {
+    } else if (/^[0-9a-f-]+$/i.test(q) && q.length >= 8) {
       results = await db
         .select({
           id: users.id,
@@ -52,7 +52,7 @@ router.get(
           status: users.status,
         })
         .from(users)
-        .where(ilike(users.username, `%${q}%`))
+        .where(ilike(users.id, `${q}%`))
         .limit(10)
     } else {
       results = await db

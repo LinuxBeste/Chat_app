@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Avatar } from "../ui/avatar"
 import { api } from "../../lib/api"
-import { Plus, Search, X, MessageSquare, UserPlus, Loader2 } from "lucide-react"
+import { Plus, X, UserPlus, Loader2, AlertCircle } from "lucide-react"
 
 interface Conversation {
   id: string
@@ -16,21 +16,13 @@ interface ConversationListProps {
   onSelect: (id: string) => void
 }
 
-interface UserResult {
-  id: string
-  username: string
-  displayName: string | null
-  avatar: string | null
-  status: string
-}
-
 export function ConversationList({ activeId, onSelect }: ConversationListProps) {
   const { t } = useTranslation()
   const [convs, setConvs] = useState<Conversation[]>([])
   const [showNewConv, setShowNewConv] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<UserResult[]>([])
+  const [input, setInput] = useState("")
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     api<Conversation[]>("/api/conversations")
@@ -38,22 +30,21 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (searchQuery.length < 1) {
-      setSearchResults([])
-      return
-    }
-    const timer = setTimeout(() => {
-      api<UserResult[]>(`/api/friends/search?q=${encodeURIComponent(searchQuery)}`)
-        .then(setSearchResults)
-        .catch(() => setSearchResults([]))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+  const createConversation = async () => {
+    const q = input.trim()
+    if (!q) return
 
-  const createConversation = async (userId: string) => {
     setCreating(true)
+    setError("")
+
     try {
+      let userId = q
+
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) {
+        const lookup = await api<{ id: string }>("/api/friends/lookup?q=" + encodeURIComponent(q))
+        userId = lookup.id
+      }
+
       const conv = await api<Conversation>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [userId] }),
@@ -61,9 +52,12 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
       setConvs((prev) => [conv, ...prev])
       onSelect(conv.id)
       setShowNewConv(false)
-      setSearchQuery("")
-    } catch {}
-    setCreating(false)
+      setInput("")
+    } catch (err: any) {
+      setError(err?.message || t("chat.userNotFound"))
+    } finally {
+      setCreating(false)
+    }
   }
 
   return (
@@ -109,59 +103,42 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
       {showNewConv && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40" onClick={() => setShowNewConv(false)}>
           <div
-            className="w-full max-w-md rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden"
+            className="w-full max-w-sm rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
                 <UserPlus className="h-4 w-4 text-accent" />
-                {t("chat.newConversation")}
+                {t("chat.addByUsernameOrId")}
               </h3>
               <button onClick={() => setShowNewConv(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 mx-5 mb-3 px-4 py-2.5 rounded-2xl border border-border bg-bg-primary">
-              <Search className="h-4 w-4 text-text-muted shrink-0" />
+            <div className="px-5 pb-4 space-y-3">
               <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("chat.searchUsers")}
-                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t("chat.usernameOrIdPlaceholder")}
+                onKeyDown={(e) => e.key === "Enter" && createConversation()}
+                className="w-full h-12 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
                 autoFocus
+                disabled={creating}
               />
-            </div>
-
-            <div className="max-h-72 overflow-y-auto px-5 pb-4 space-y-1">
-              {searchQuery.length >= 1 && searchResults.length === 0 && (
-                <p className="text-sm text-text-muted text-center py-4">{t("chat.noUsersFound")}</p>
+              {error && (
+                <p className="text-xs text-red-400 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {error}
+                </p>
               )}
-              {searchResults.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => createConversation(u.id)}
-                  disabled={creating}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-white/5 transition-all cursor-pointer text-left disabled:opacity-50"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0 overflow-hidden">
-                    {u.avatar ? (
-                      <img src={u.avatar} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      (u.displayName || u.username)[0].toUpperCase()
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary truncate">{u.displayName || u.username}</p>
-                    <p className="text-xs text-text-muted">@{u.username}</p>
-                  </div>
-                  <div className={`h-2 w-2 rounded-full shrink-0 ${
-                    u.status === "online" ? "bg-green-500" :
-                    u.status === "away" ? "bg-yellow-500" :
-                    u.status === "busy" ? "bg-red-500" : "bg-text-muted"
-                  }`} />
-                </button>
-              ))}
+              <button
+                onClick={createConversation}
+                disabled={!input.trim() || creating}
+                className="w-full h-11 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {creating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("chat.adding")}</> : t("chat.startConversation")}
+              </button>
             </div>
           </div>
         </div>

@@ -120,7 +120,12 @@
     "searchPlaceholder": "Search messages, groups...",
     "addFriend": "Add Friend",
     "friendPending": "Friend request pending",
-    "newConversation": "New Conversation"
+    "newConversation": "New Conversation",
+    "dropFile": "Drop file to upload",
+    "addByUsernameOrId": "Add by Username or ID",
+    "usernameOrIdPlaceholder": "Enter username or user ID...",
+    "startConversation": "Start Conversation",
+    "userNotFound": "User not found"
   },
   "calls": {
     "callControls": "Call controls",
@@ -935,6 +940,23 @@
       "cozy": "Cozy",
       "alternating": "Alternating"
     }
+  },
+  "files": {
+    "title": "Files",
+    "upload": "Upload",
+    "newFolder": "New Folder",
+    "folders": "Folders",
+    "deleteFolder": "Delete folder",
+    "deleteFolderConfirm": "Delete this folder?",
+    "manageAccess": "Manage access",
+    "folderAccess": "Folder Access",
+    "folderNamePlaceholder": "Folder name...",
+    "dropToUpload": "Drop files to upload",
+    "noFiles": "No files yet",
+    "dropOrUpload": "Drop files or click Upload to get started",
+    "download": "Download",
+    "cannotPreview": "Preview not available for this file type",
+    "userIdPlaceholder": "Enter user ID..."
   },
   "setup": {
     "welcome": "Welcome!",

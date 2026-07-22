@@ -119,7 +119,12 @@
     "fileType": "Fichier {{ext}}",
     "addFriend": "Ajouter un ami",
     "friendPending": "Demande d'ami en attente",
-    "newConversation": "Nouvelle conversation"
+    "newConversation": "Nouvelle conversation",
+    "dropFile": "Déposer le fichier pour télécharger",
+    "addByUsernameOrId": "Ajouter par nom d'utilisateur ou ID",
+    "usernameOrIdPlaceholder": "Entrez un nom d'utilisateur ou un ID...",
+    "startConversation": "Démarrer la conversation",
+    "userNotFound": "Utilisateur non trouvé"
   },
   "calls": {
     "callControls": "Commandes d'appel",
@@ -879,6 +884,23 @@
       "cozy": "Confortable",
       "alternating": "Alterné"
     }
+  },
+  "files": {
+    "title": "Fichiers",
+    "upload": "Télécharger",
+    "newFolder": "Nouveau dossier",
+    "folders": "Dossiers",
+    "deleteFolder": "Supprimer le dossier",
+    "deleteFolderConfirm": "Supprimer ce dossier ?",
+    "manageAccess": "Gérer l'accès",
+    "folderAccess": "Accès au dossier",
+    "folderNamePlaceholder": "Nom du dossier...",
+    "dropToUpload": "Déposer les fichiers pour télécharger",
+    "noFiles": "Aucun fichier",
+    "dropOrUpload": "Déposez des fichiers ou cliquez sur Télécharger",
+    "download": "Télécharger",
+    "cannotPreview": "Aperçu non disponible pour ce type de fichier",
+    "userIdPlaceholder": "Entrez l'ID utilisateur..."
   },
   "setup": {
     "welcome": "Bienvenue !",

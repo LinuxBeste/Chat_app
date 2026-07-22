@@ -120,7 +120,12 @@
     "searchPlaceholder": "メッセージ、グループを検索...",
     "addFriend": "友達を追加",
     "friendPending": "友達リクエスト保留中",
-    "newConversation": "新しい会話"
+    "newConversation": "新しい会話",
+    "dropFile": "ファイルをドロップしてアップロード",
+    "addByUsernameOrId": "ユーザー名またはIDで追加",
+    "usernameOrIdPlaceholder": "ユーザー名またはユーザーIDを入力...",
+    "startConversation": "会話を開始",
+    "userNotFound": "ユーザーが見つかりません"
   },
   "calls": {
     "callControls": "通話コントロール",
@@ -880,6 +885,23 @@
       "cozy": "コージー",
       "alternating": "交互"
     }
+  },
+  "files": {
+    "title": "ファイル",
+    "upload": "アップロード",
+    "newFolder": "新しいフォルダ",
+    "folders": "フォルダ",
+    "deleteFolder": "フォルダを削除",
+    "deleteFolderConfirm": "このフォルダを削除しますか？",
+    "manageAccess": "アクセス管理",
+    "folderAccess": "フォルダアクセス",
+    "folderNamePlaceholder": "フォルダ名...",
+    "dropToUpload": "ファイルをドロップしてアップロード",
+    "noFiles": "まだファイルがありません",
+    "dropOrUpload": "ファイルをドロップするか、アップロードをクリック",
+    "download": "ダウンロード",
+    "cannotPreview": "このファイルタイプのプレビューは利用できません",
+    "userIdPlaceholder": "ユーザーIDを入力..."
   },
   "setup": {
     "welcome": "ようこそ！",

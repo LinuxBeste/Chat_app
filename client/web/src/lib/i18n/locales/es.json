@@ -120,7 +120,12 @@
     "searchPlaceholder": "Buscar mensajes, grupos...",
     "addFriend": "Añadir amigo",
     "friendPending": "Solicitud de amistad pendiente",
-    "newConversation": "Nueva conversación"
+    "newConversation": "Nueva conversación",
+    "dropFile": "Suelta el archivo para subirlo",
+    "addByUsernameOrId": "Añadir por nombre de usuario o ID",
+    "usernameOrIdPlaceholder": "Ingrese nombre de usuario o ID...",
+    "startConversation": "Iniciar conversación",
+    "userNotFound": "Usuario no encontrado"
   },
   "calls": {
     "callControls": "Controles de llamada",
@@ -880,6 +885,23 @@
       "cozy": "Acogedor",
       "alternating": "Alternado"
     }
+  },
+  "files": {
+    "title": "Archivos",
+    "upload": "Subir",
+    "newFolder": "Nueva carpeta",
+    "folders": "Carpetas",
+    "deleteFolder": "Eliminar carpeta",
+    "deleteFolderConfirm": "¿Eliminar esta carpeta?",
+    "manageAccess": "Gestionar acceso",
+    "folderAccess": "Acceso a carpeta",
+    "folderNamePlaceholder": "Nombre de carpeta...",
+    "dropToUpload": "Suelta archivos para subir",
+    "noFiles": "Sin archivos aún",
+    "dropOrUpload": "Suelta archivos o haz clic en Subir",
+    "download": "Descargar",
+    "cannotPreview": "Vista previa no disponible para este tipo de archivo",
+    "userIdPlaceholder": "Ingrese ID de usuario..."
   },
   "setup": {
     "welcome": "¡Bienvenido!",
