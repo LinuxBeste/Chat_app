@@ -197,7 +197,20 @@
     "open": "未解決",
     "resolved": "解決済み",
     "dismissed": "却下済み",
-    "created": "作成日"
+    "created": "作成日",
+    "admins": "管理者",
+    "adminManagement": "管理者管理",
+    "owner": "オーナー",
+    "notSet": "未設定",
+    "currentAdmins": "現在の管理者",
+    "remove": "削除",
+    "addAdmin": "管理者を追加",
+    "userIdPlaceholder": "ユーザーIDを入力...",
+    "add": "追加",
+    "adminAdded": "管理者を追加しました",
+    "adminRemoved": "管理者を削除しました",
+    "removeAdminConfirm": "この管理者を削除しますか？",
+    "failed": "失敗しました"
   },
   "settings": {
     "title": "設定",

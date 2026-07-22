@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
-import { Shield, Users, MessageSquare, FileText, AlertTriangle, Ban, Trash2 } from "lucide-react"
+import { Shield, Users, MessageSquare, FileText, AlertTriangle, Ban, Trash2, Star, UserPlus, UserX } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 interface Stats {
@@ -39,7 +39,7 @@ interface Ban {
   createdAt: string
 }
 
-type Tab = "overview" | "users" | "reports" | "bans"
+type Tab = "overview" | "users" | "reports" | "bans" | "admins"
 
 export function AdminPage() {
   const { t } = useTranslation()
@@ -48,6 +48,10 @@ export function AdminPage() {
   const [userList, setUserList] = useState<User[]>([])
   const [reportList, setReportList] = useState<AdminReport[]>([])
   const [banList, setBanList] = useState<Ban[]>([])
+  const [ownerId, setOwnerId] = useState<string | null>(null)
+  const [adminIds, setAdminIds] = useState<string[]>([])
+  const [addAdminId, setAddAdminId] = useState("")
+  const [adminMsg, setAdminMsg] = useState("")
 
   useEffect(() => {
     api<Stats>("/api/admin/stats").then(setStats).catch(() => {})
@@ -57,6 +61,11 @@ export function AdminPage() {
     if (tab === "users") api<User[]>("/api/admin/users").then(setUserList).catch(() => {})
     if (tab === "reports") api<AdminReport[]>("/api/admin/reports").then(setReportList).catch(() => {})
     if (tab === "bans") api<Ban[]>("/api/admin/bans").then(setBanList).catch(() => {})
+    if (tab === "admins") {
+      api<{ ownerId: string | null; adminIds: string[] }>("/api/admin/admins")
+        .then((d) => { setOwnerId(d.ownerId); setAdminIds(d.adminIds) })
+        .catch(() => {})
+    }
   }, [tab])
 
   const resolveReport = async (id: string, status: string) => {
@@ -78,11 +87,40 @@ export function AdminPage() {
     setBanList((prev) => prev.filter((b) => b.id !== id))
   }
 
+  const addAdmin = async () => {
+    if (!addAdminId.trim()) return
+    setAdminMsg("")
+    try {
+      const res = await api<{ adminIds: string[] }>("/api/admin/admins", {
+        method: "POST",
+        body: JSON.stringify({ userId: addAdminId.trim() }),
+      })
+      setAdminIds(res.adminIds)
+      setAddAdminId("")
+      setAdminMsg(t("admin.adminAdded"))
+    } catch (err: any) {
+      setAdminMsg(err?.message || t("admin.failed"))
+    }
+  }
+
+  const removeAdmin = async (userId: string) => {
+    if (!confirm(t("admin.removeAdminConfirm"))) return
+    setAdminMsg("")
+    try {
+      const res = await api<{ adminIds: string[] }>(`/api/admin/admins/${userId}`, { method: "DELETE" })
+      setAdminIds(res.adminIds)
+      setAdminMsg(t("admin.adminRemoved"))
+    } catch (err: any) {
+      setAdminMsg(err?.message || t("admin.failed"))
+    }
+  }
+
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: t("admin.overview"), icon: Shield },
     { key: "users", label: t("admin.users"), icon: Users },
     { key: "reports", label: t("admin.reports"), icon: AlertTriangle },
     { key: "bans", label: t("admin.bans"), icon: Ban },
+    { key: "admins", label: t("admin.admins"), icon: Star },
   ]
 
   return (
@@ -139,7 +177,7 @@ export function AdminPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-text-primary truncate">{u.displayName || u.username}</p>
-                    <p className="text-xs text-text-muted">@{u.username} · {u.email}</p>
+                    <p className="text-xs text-text-muted">@{u.username} · ID: {u.id.slice(0, 8)}... · {u.email}</p>
                   </div>
                   <span className="text-xs text-text-muted capitalize">{u.status}</span>
                   <span className="text-xs text-text-muted">{new Date(u.createdAt).toLocaleDateString()}</span>
@@ -217,6 +255,53 @@ export function AdminPage() {
                 </div>
               ))}
               {banList.length === 0 && <p className="text-sm text-text-muted text-center py-4">{t("admin.noBans")}</p>}
+            </div>
+          </div>
+        )}
+
+        {tab === "admins" && (
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary mb-4">{t("admin.adminManagement")}</h1>
+
+            <div className="rounded-2xl border border-border bg-surface p-4 mb-4">
+              <p className="text-sm text-text-muted mb-2">{t("admin.owner")}: <span className="text-text-primary font-mono">{ownerId ? `${ownerId.slice(0, 8)}...` : t("admin.notSet")}</span></p>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              <p className="text-sm font-medium text-text-primary">{t("admin.currentAdmins")} ({adminIds.length})</p>
+              {adminIds.map((id) => (
+                <div key={id} className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
+                  <span className="text-sm text-text-primary font-mono">{id.slice(0, 8)}...</span>
+                  <button
+                    onClick={() => removeAdmin(id)}
+                    className="flex items-center gap-1 text-xs text-danger hover:text-danger/80 cursor-pointer"
+                  >
+                    <UserX className="h-3.5 w-3.5" /> {t("admin.remove")}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <p className="text-sm font-medium text-text-primary mb-3 flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-accent" /> {t("admin.addAdmin")}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={addAdminId}
+                  onChange={(e) => setAddAdminId(e.target.value)}
+                  placeholder={t("admin.userIdPlaceholder")}
+                  className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+                />
+                <button
+                  onClick={addAdmin}
+                  disabled={!addAdminId.trim()}
+                  className="h-10 px-4 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
+                >
+                  {t("admin.add")}
+                </button>
+              </div>
+              {adminMsg && <p className="text-xs text-text-muted mt-2">{adminMsg}</p>}
             </div>
           </div>
         )}

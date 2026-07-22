@@ -197,7 +197,20 @@
     "open": "abierto",
     "resolved": "resuelto",
     "dismissed": "descartado",
-    "created": "Creado"
+    "created": "Creado",
+    "admins": "Administradores",
+    "adminManagement": "Gestión de administradores",
+    "owner": "Propietario",
+    "notSet": "No establecido",
+    "currentAdmins": "Administradores actuales",
+    "remove": "Eliminar",
+    "addAdmin": "Añadir administrador",
+    "userIdPlaceholder": "Ingrese ID de usuario...",
+    "add": "Añadir",
+    "adminAdded": "Administrador añadido",
+    "adminRemoved": "Administrador eliminado",
+    "removeAdminConfirm": "¿Eliminar este administrador?",
+    "failed": "Falló"
   },
   "settings": {
     "title": "Ajustes",

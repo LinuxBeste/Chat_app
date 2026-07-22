@@ -4,13 +4,21 @@ import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
 import { config } from "../config.js"
 import { users, conversations, reports, bans, messages } from "../db/schema.js"
-import { eq, desc, count } from "drizzle-orm"
+import { eq, desc, count, inArray } from "drizzle-orm"
 
 const router: ReturnType<typeof Router> = Router()
 
 const requireAdmin = (req: Request, res: Response, next: () => void) => {
   if (!config.admin.userIds.includes(req.user!.userId)) {
     res.status(403).json({ error: "Admin access required" })
+    return
+  }
+  next()
+}
+
+const requireOwner = (req: Request, res: Response, next: () => void) => {
+  if (req.user!.userId !== config.admin.ownerUserId) {
+    res.status(403).json({ error: "Owner access required" })
     return
   }
   next()
@@ -133,6 +141,65 @@ router.delete(
   catchAsync(async (req: Request, res: Response) => {
     await db.delete(bans).where(eq(bans.id, req.params.id as string))
     res.json({ message: "Ban removed" })
+  }),
+)
+
+router.get(
+  "/admins",
+  authGuard,
+  requireAdmin,
+  catchAsync(async (_req: Request, res: Response) => {
+    if (!config.admin.ownerUserId) {
+      res.json({ ownerId: null, adminIds: config.admin.userIds })
+      return
+    }
+    const ownerId = config.admin.ownerUserId
+    const adminIds = config.admin.userIds.filter((id) => id !== ownerId)
+    res.json({ ownerId, adminIds })
+  }),
+)
+
+router.post(
+  "/admins",
+  authGuard,
+  requireOwner,
+  catchAsync(async (req: Request, res: Response) => {
+    const { userId } = req.body
+    if (!userId) {
+      res.status(400).json({ error: "userId required" })
+      return
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+    if (!user) {
+      res.status(404).json({ error: "User not found" })
+      return
+    }
+    if (config.admin.userIds.includes(userId)) {
+      res.status(409).json({ error: "User is already an admin" })
+      return
+    }
+    config.admin.userIds.push(userId)
+    res.json({ message: "Admin added", adminIds: config.admin.userIds.filter((id) => id !== config.admin.ownerUserId) })
+  }),
+)
+
+router.delete(
+  "/admins/:userId",
+  authGuard,
+  requireOwner,
+  catchAsync(async (req: Request, res: Response) => {
+    const userId = req.params.userId as string
+    if (userId === config.admin.ownerUserId) {
+      res.status(400).json({ error: "Cannot remove owner as admin" })
+      return
+    }
+    const idx = config.admin.userIds.indexOf(userId)
+    if (idx === -1) {
+      res.status(404).json({ error: "User is not an admin" })
+      return
+    }
+    config.admin.userIds.splice(idx, 1)
+    res.json({ message: "Admin removed", adminIds: config.admin.userIds.filter((id) => id !== config.admin.ownerUserId) })
   }),
 )
 

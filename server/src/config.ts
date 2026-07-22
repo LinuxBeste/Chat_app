@@ -54,5 +54,6 @@ export const config = {
 
   admin: {
     userIds: (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean),
+    ownerUserId: process.env.OWNER_USER_ID ?? "",
   },
 } as const

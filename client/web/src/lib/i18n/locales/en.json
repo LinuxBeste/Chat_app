@@ -197,7 +197,20 @@
     "open": "open",
     "resolved": "resolved",
     "dismissed": "dismissed",
-    "created": "Created"
+    "created": "Created",
+    "admins": "Admins",
+    "adminManagement": "Admin Management",
+    "owner": "Owner",
+    "notSet": "Not set",
+    "currentAdmins": "Current Admins",
+    "remove": "Remove",
+    "addAdmin": "Add Admin",
+    "userIdPlaceholder": "Enter user ID...",
+    "add": "Add",
+    "adminAdded": "Admin added",
+    "adminRemoved": "Admin removed",
+    "removeAdminConfirm": "Remove this admin?",
+    "failed": "Failed"
   },
   "settings": {
     "title": "Settings",

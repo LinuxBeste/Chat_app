@@ -2,12 +2,34 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   pull_request:
-    branches: [master]
+    branches: [master, main]
 
 jobs:
-  lint-and-test:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install
+
+      - run: pnpm --filter web run lint
+      - run: pnpm --filter server run lint
+      - run: pnpm --filter web run format:check
+      - run: pnpm --filter server run format:check
+
+  test:
     runs-on: ubuntu-latest
 
     services:
@@ -46,3 +68,4 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chat_app_test
           JWT_SECRET: test-secret
           JWT_REFRESH_SECRET: test-refresh-secret
+      - run: pnpm --filter web run test
