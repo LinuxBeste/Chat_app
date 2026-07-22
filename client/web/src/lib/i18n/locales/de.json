@@ -925,6 +925,9 @@
     "createTheme": "Design erstellen",
     "cancel": "Abbrechen",
     "newThemeBtn": "Neues Design",
+    "presets": "Design-Vorlagen",
+    "modeThemes": "Hell / Dunkel Design",
+    "defaultTheme": "Standard",
     "bubbleStyles": {
       "compact": "Kompakt",
       "cozy": "Gemütlich",

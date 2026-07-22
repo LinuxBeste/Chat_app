@@ -870,6 +870,9 @@
     "createTheme": "Créer le thème",
     "cancel": "Annuler",
     "newThemeBtn": "Nouveau thème",
+    "presets": "Thèmes prédéfinis",
+    "modeThemes": "Thème clair / sombre",
+    "defaultTheme": "Défaut",
     "bubbleStyles": {
       "compact": "Compact",
       "cozy": "Confortable",

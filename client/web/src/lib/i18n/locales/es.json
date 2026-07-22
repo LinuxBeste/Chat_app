@@ -871,6 +871,9 @@
     "createTheme": "Crear tema",
     "cancel": "Cancelar",
     "newThemeBtn": "Nuevo tema",
+    "presets": "Plantillas de tema",
+    "modeThemes": "Tema claro / oscuro",
+    "defaultTheme": "Predeterminado",
     "bubbleStyles": {
       "compact": "Compacto",
       "cozy": "Acogedor",

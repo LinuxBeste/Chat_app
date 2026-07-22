@@ -926,6 +926,9 @@
     "createTheme": "Create Theme",
     "cancel": "Cancel",
     "newThemeBtn": "New Theme",
+    "presets": "Theme Presets",
+    "modeThemes": "Light / Dark Theme",
+    "defaultTheme": "Default",
     "bubbleStyles": {
       "compact": "Compact",
       "cozy": "Cozy",

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
-import { useTheme, type CustomThemeData, type ThemeConfig } from "../../lib/theme-context"
-import { Palette, Check, Trash2, Plus, X, PaintBucket, MessageSquare, Type, Sparkles } from "lucide-react"
+import { useTheme, type CustomThemeData, type ThemeConfig, themePresets } from "../../lib/theme-context"
+import { Palette, Check, Trash2, Plus, X, PaintBucket, MessageSquare, Type, Sparkles, Sun, Moon, Layout } from "lucide-react"
 
 const defaultThemeConfig: ThemeConfig = {
   colors: {
@@ -49,7 +49,7 @@ interface ThemeEditorProps {
 
 export function ThemeEditor({ onClose }: ThemeEditorProps) {
   const { t } = useTranslation()
-  const { customTheme, applyTheme, clearCustomTheme, refreshCustomTheme } = useTheme()
+  const { theme, customTheme, applyTheme, clearCustomTheme, refreshCustomTheme, applyPreset, lightThemeId, darkThemeId, setLightTheme, setDarkTheme } = useTheme()
   const [themes, setThemes] = useState<CustomThemeData[]>([])
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
@@ -116,13 +116,79 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
         {t("themeEditor.customThemes")}
       </h2>
 
+      {/* Theme presets */}
+      <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+        <p className="text-xs font-medium text-text-muted flex items-center gap-1.5">
+          <Layout className="h-3.5 w-3.5" />
+          {t("themeEditor.presets")}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {themePresets.map((preset, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                applyPreset(preset.config)
+              }}
+              className="flex items-center gap-2 p-3 rounded-2xl border border-border hover:border-accent/50 transition-all cursor-pointer text-left"
+              style={{
+                background: preset.config.colors?.["bg-primary"] || "#0F1117",
+              }}
+            >
+              <div
+                className="h-6 w-6 rounded-lg shrink-0"
+                style={{ background: preset.config.colors?.accent || "#7C5CFC" }}
+              />
+              <span className="text-xs font-medium truncate" style={{ color: preset.config.colors?.["text-primary"] || "#fff" }}>
+                {preset.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Light/Dark theme assignment */}
+      <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+        <p className="text-xs font-medium text-text-muted flex items-center gap-1.5">
+          <Sun className="h-3.5 w-3.5" />
+          {t("themeEditor.modeThemes")}
+        </p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Sun className="h-4 w-4 text-yellow-500 shrink-0" />
+            <select
+              value={lightThemeId || ""}
+              onChange={(e) => setLightTheme(e.target.value || null)}
+              className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
+            >
+              <option value="">{t("themeEditor.defaultTheme")}</option>
+              {themes.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-3">
+            <Moon className="h-4 w-4 text-indigo-400 shrink-0" />
+            <select
+              value={darkThemeId || ""}
+              onChange={(e) => setDarkTheme(e.target.value || null)}
+              className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
+            >
+              <option value="">{t("themeEditor.defaultTheme")}</option>
+              {themes.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Existing themes */}
       <div className="space-y-1.5">
-        {themes.map((theme) => {
-          const isActive = customTheme?.id === theme.id
+        {themes.map((themeItem) => {
+          const isActive = customTheme?.id === themeItem.id
           return (
             <div
-              key={theme.id}
+              key={themeItem.id}
               className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
                 isActive ? "border-accent/40 bg-accent/5" : "border-border bg-surface"
               }`}
@@ -132,7 +198,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
                 style={{
                   background: (() => {
                     try {
-                      return JSON.parse(theme.theme).colors?.["accent"] || "#4850BB"
+                      return JSON.parse(themeItem.theme).colors?.["accent"] || "#4850BB"
                     } catch {
                       return "#4850BB"
                     }
@@ -140,10 +206,10 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
                   color: "#fff",
                 }}
               >
-                {theme.name[0]}
+                {themeItem.name[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-text-primary truncate">{theme.name}</p>
+                <p className="text-sm text-text-primary truncate">{themeItem.name}</p>
                 <p className="text-xs text-text-muted">
                   {isActive ? t("themeEditor.active") : t("themeEditor.clickActivate")}
                 </p>
@@ -151,7 +217,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
               <div className="flex items-center gap-1">
                 {!isActive && (
                   <button
-                    onClick={() => activateTheme(theme)}
+                    onClick={() => activateTheme(themeItem)}
                     className="p-2 rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
                     aria-label={t("themeEditor.activateTheme")}
                   >
@@ -159,7 +225,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
                   </button>
                 )}
                 <button
-                  onClick={() => deleteTheme(theme.id)}
+                  onClick={() => deleteTheme(themeItem.id)}
                   className="p-2 rounded-xl text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer"
                   aria-label={t("themeEditor.deleteTheme")}
                 >
@@ -167,8 +233,8 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
                 </button>
               </div>
             </div>
-          )}
-        )}
+          )
+        })}
       </div>
 
       {/* Create new theme */}

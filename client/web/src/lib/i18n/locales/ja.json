@@ -871,6 +871,9 @@
     "createTheme": "テーマを作成",
     "cancel": "キャンセル",
     "newThemeBtn": "新規テーマ",
+    "presets": "テーマプリセット",
+    "modeThemes": "ライト / ダークテーマ",
+    "defaultTheme": "デフォルト",
     "bubbleStyles": {
       "compact": "コンパクト",
       "cozy": "コージー",

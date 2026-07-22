@@ -25,14 +25,117 @@ export interface ThemeConfig {
   statusEmoji?: string
 }
 
+export const themePresets: { name: string; config: ThemeConfig }[] = [
+  {
+    name: "Midnight",
+    config: {
+      colors: {
+        "bg-primary": "#0F1117",
+        "bg-secondary": "#1A1D27",
+        surface: "#232734",
+        border: "#2E3345",
+        accent: "#7C5CFC",
+        "accent-hover": "#8B6DFC",
+        "text-primary": "#E8EAF0",
+        "text-secondary": "#949AAC",
+        "text-muted": "#5C6278",
+      },
+      bubbleStyle: "cozy",
+      borderRadius: 24,
+      statusEmoji: "🌙",
+    },
+  },
+  {
+    name: "Forest",
+    config: {
+      colors: {
+        "bg-primary": "#0F1A12",
+        "bg-secondary": "#1A2A1F",
+        surface: "#243B2A",
+        border: "#2E4D38",
+        accent: "#4ADE80",
+        "accent-hover": "#67E8A0",
+        "text-primary": "#E8F0EA",
+        "text-secondary": "#94A89C",
+        "text-muted": "#5C7868",
+      },
+      bubbleStyle: "compact",
+      borderRadius: 16,
+      statusEmoji: "🌿",
+    },
+  },
+  {
+    name: "Ocean",
+    config: {
+      colors: {
+        "bg-primary": "#0F1A24",
+        "bg-secondary": "#1A2A38",
+        surface: "#243B4D",
+        border: "#2E4D63",
+        accent: "#60A5FA",
+        "accent-hover": "#7DB8FC",
+        "text-primary": "#E8F0F8",
+        "text-secondary": "#94AAB8",
+        "text-muted": "#5C7888",
+      },
+      bubbleStyle: "cozy",
+      borderRadius: 20,
+      statusEmoji: "🌊",
+    },
+  },
+  {
+    name: "Sunset",
+    config: {
+      colors: {
+        "bg-primary": "#1A1210",
+        "bg-secondary": "#2A1E1A",
+        surface: "#3B2A24",
+        border: "#4D382E",
+        accent: "#FB923C",
+        "accent-hover": "#FCA85C",
+        "text-primary": "#F0EAE8",
+        "text-secondary": "#B8A894",
+        "text-muted": "#88785C",
+      },
+      bubbleStyle: "cozy",
+      borderRadius: 24,
+      statusEmoji: "🌅",
+    },
+  },
+  {
+    name: "Lavender",
+    config: {
+      colors: {
+        "bg-primary": "#F8F6FC",
+        "bg-secondary": "#FFFFFF",
+        surface: "#FFFFFF",
+        border: "#E8E4F0",
+        accent: "#8B6CD6",
+        "accent-hover": "#9B7CDE",
+        "text-primary": "#2D2640",
+        "text-secondary": "#7A7090",
+        "text-muted": "#A89CB8",
+      },
+      bubbleStyle: "alternating",
+      borderRadius: 20,
+      statusEmoji: "🌸",
+    },
+  },
+]
+
 interface ThemeContextValue {
   theme: "light" | "dark"
   toggleTheme: () => void
   customTheme: CustomThemeData | null
   themeConfig: ThemeConfig | null
+  lightThemeId: string | null
+  darkThemeId: string | null
+  setLightTheme: (id: string | null) => void
+  setDarkTheme: (id: string | null) => void
   applyTheme: (t: CustomThemeData) => void
   clearCustomTheme: () => void
   refreshCustomTheme: () => Promise<void>
+  applyPreset: (preset: ThemeConfig) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
@@ -45,6 +148,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   })
   const [customTheme, setCustomTheme] = useState<CustomThemeData | null>(null)
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null)
+  const [lightThemeId, setLightThemeId] = useState<string | null>(() => localStorage.getItem("lightThemeId"))
+  const [darkThemeId, setDarkThemeId] = useState<string | null>(() => localStorage.getItem("darkThemeId"))
 
   const applyCssVars = useCallback((tc: ThemeConfig | null) => {
     const root = document.documentElement
@@ -111,10 +216,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [applyTheme, applyCssVars])
 
+  const applyPreset = useCallback(
+    (preset: ThemeConfig) => {
+      setThemeConfig(preset)
+      localStorage.setItem("customTheme", JSON.stringify(preset))
+      applyCssVars(preset)
+    },
+    [applyCssVars],
+  )
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
     localStorage.setItem("theme", theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem("lightThemeId", lightThemeId ?? "")
+  }, [lightThemeId])
+
+  useEffect(() => {
+    localStorage.setItem("darkThemeId", darkThemeId ?? "")
+  }, [darkThemeId])
+
+  useEffect(() => {
+    if (customTheme) {
+      const config: ThemeConfig = JSON.parse(customTheme.theme)
+      applyCssVars(config)
+    }
+  }, [theme, customTheme, applyCssVars])
 
   useEffect(() => {
     refreshCustomTheme()
@@ -124,7 +253,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider
-      value={{ theme, toggleTheme, customTheme, themeConfig, applyTheme, clearCustomTheme, refreshCustomTheme }}
+      value={{
+        theme, toggleTheme, customTheme, themeConfig,
+        lightThemeId, darkThemeId,
+        setLightTheme: (id) => setLightThemeId(id),
+        setDarkTheme: (id) => setDarkThemeId(id),
+        applyTheme, clearCustomTheme, refreshCustomTheme, applyPreset,
+      }}
     >
       {children}
     </ThemeContext.Provider>
