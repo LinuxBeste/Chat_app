@@ -866,5 +866,20 @@
       "cozy": "Acogedor",
       "alternating": "Alternado"
     }
+  },
+  "setup": {
+    "welcome": "¡Bienvenido!",
+    "welcomeDesc": "Configuremos tu cuenta",
+    "welcomeText": "¡Te has registrado! Personalicemos algunas cosas antes de empezar.",
+    "chooseLanguage": "Elegir idioma",
+    "chooseLanguageDesc": "Elige tu idioma preferido para la aplicación",
+    "chooseTheme": "Elegir tema",
+    "chooseThemeDesc": "Elige entre modo claro y oscuro",
+    "displayName": "Nombre para mostrar",
+    "displayNameDesc": "Establece un nombre para mostrar (puedes cambiarlo después)",
+    "displayNamePlaceholder": "Tu nombre para mostrar...",
+    "next": "Siguiente",
+    "skip": "Saltar",
+    "finish": "Finalizar configuración"
   }
 }

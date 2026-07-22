@@ -866,5 +866,20 @@
       "cozy": "コージー",
       "alternating": "交互"
     }
+  },
+  "setup": {
+    "welcome": "ようこそ！",
+    "welcomeDesc": "セットアップを始めましょう",
+    "welcomeText": "登録が完了しました！開始前にいくつかの設定をカスタマイズしましょう。",
+    "chooseLanguage": "言語を選択",
+    "chooseLanguageDesc": "アプリの言語を選択してください",
+    "chooseTheme": "テーマを選択",
+    "chooseThemeDesc": "ライトモードとダークモードから選択",
+    "displayName": "表示名",
+    "displayNameDesc": "表示名を設定（後で変更可能）",
+    "displayNamePlaceholder": "表示名を入力...",
+    "next": "次へ",
+    "skip": "スキップ",
+    "finish": "セットアップ完了"
   }
 }

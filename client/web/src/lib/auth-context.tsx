@@ -16,9 +16,11 @@ interface User {
 interface AuthState {
   user: User | null
   loading: boolean
+  needsSetup: boolean
   login: (email: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
+  completeSetup: () => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -26,6 +28,7 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [needsSetup, setNeedsSetup] = useState(false)
 
   const fetchMe = useCallback(async () => {
     try {
@@ -58,13 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (username: string, email: string, password: string) => {
-    const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/register", {
+    const data = await api<{ user: User; accessToken: string; refreshToken: string; needsSetup?: boolean }>("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ username, email, password }),
     })
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)
     wsClient.connect()
+    if (data.needsSetup) setNeedsSetup(true)
+  }, [])
+
+  const completeSetup = useCallback(() => {
+    setNeedsSetup(false)
   }, [])
 
   const logout = useCallback(() => {
@@ -73,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, loading, needsSetup, login, register, logout, completeSetup }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

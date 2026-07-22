@@ -920,5 +920,20 @@
       "cozy": "Gemütlich",
       "alternating": "Wechselnd"
     }
+  },
+  "setup": {
+    "welcome": "Willkommen!",
+    "welcomeDesc": "Lass uns dich einrichten",
+    "welcomeText": "Du bist angemeldet! Lass uns ein paar Dinge anpassen, bevor es losgeht.",
+    "chooseLanguage": "Sprache wählen",
+    "chooseLanguageDesc": "Wähle deine bevorzugte Sprache",
+    "chooseTheme": "Design wählen",
+    "chooseThemeDesc": "Wähle zwischen hellem und dunklem Modus",
+    "displayName": "Anzeigename",
+    "displayNameDesc": "Lege einen Anzeigenamen fest (kann später geändert werden)",
+    "displayNamePlaceholder": "Dein Anzeigename...",
+    "next": "Weiter",
+    "skip": "Überspringen",
+    "finish": "Einrichtung abschließen"
   }
 }

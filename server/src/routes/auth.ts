@@ -84,6 +84,7 @@ router.post("/register", validate(registerSchema), async (req: Request, res: Res
       user: { id: user.id, username: user.username, email: user.email },
       accessToken,
       refreshToken,
+      needsSetup: true,
     })
     log.info({ userId: user.id, username: user.username }, "User registered")
   } catch (err) {

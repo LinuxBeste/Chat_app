@@ -921,5 +921,20 @@
       "cozy": "Cozy",
       "alternating": "Alternating"
     }
+  },
+  "setup": {
+    "welcome": "Welcome!",
+    "welcomeDesc": "Let's get you set up",
+    "welcomeText": "You're all signed up! Let's customize a few things before you get started.",
+    "chooseLanguage": "Choose Language",
+    "chooseLanguageDesc": "Pick your preferred language for the app",
+    "chooseTheme": "Choose Theme",
+    "chooseThemeDesc": "Pick between light and dark mode",
+    "displayName": "Display Name",
+    "displayNameDesc": "Set a display name (you can change it later)",
+    "displayNamePlaceholder": "Your display name...",
+    "next": "Next",
+    "skip": "Skip",
+    "finish": "Finish Setup"
   }
 }

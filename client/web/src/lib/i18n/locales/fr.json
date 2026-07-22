@@ -865,5 +865,20 @@
       "cozy": "Confortable",
       "alternating": "Alterné"
     }
+  },
+  "setup": {
+    "welcome": "Bienvenue !",
+    "welcomeDesc": "Configurons votre compte",
+    "welcomeText": "Vous êtes inscrit ! Personnalisons quelques éléments avant de commencer.",
+    "chooseLanguage": "Choisir la langue",
+    "chooseLanguageDesc": "Choisissez votre langue préférée pour l'application",
+    "chooseTheme": "Choisir le thème",
+    "chooseThemeDesc": "Choisissez entre le mode clair et sombre",
+    "displayName": "Nom d'affichage",
+    "displayNameDesc": "Définissez un nom d'affichage (modifiable plus tard)",
+    "displayNamePlaceholder": "Votre nom d'affichage...",
+    "next": "Suivant",
+    "skip": "Passer",
+    "finish": "Terminer la configuration"
   }
 }

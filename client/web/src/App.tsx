@@ -3,10 +3,11 @@ import { ThemeProvider } from "./lib/theme-context"
 import { NotificationProvider } from "./lib/notification-context"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
 import { LoginPage } from "./components/auth/login-page"
+import { SetupDialog } from "./components/auth/setup-dialog"
 import "./lib/i18n"
 
 function AppContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, needsSetup } = useAuth()
 
   if (loading) {
     return (
@@ -18,7 +19,12 @@ function AppContent() {
 
   if (!user) return <LoginPage />
 
-  return <DashboardLayout />
+  return (
+    <>
+      <DashboardLayout />
+      {needsSetup && <SetupDialog />}
+    </>
+  )
 }
 
 export default function App() {
