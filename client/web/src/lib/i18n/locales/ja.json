@@ -107,7 +107,9 @@
     "channelConversation": "チャンネル",
     "membersCount": "{{count}} メンバー",
     "fileType": "{{ext}} ファイル",
-    "searchPlaceholder": "メッセージ、グループを検索..."
+    "searchPlaceholder": "メッセージ、グループを検索...",
+    "addFriend": "友達を追加",
+    "friendPending": "友達リクエスト保留中"
   },
   "calls": {
     "callControls": "通話コントロール",

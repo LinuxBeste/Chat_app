@@ -107,7 +107,9 @@
     "channelConversation": "Channel",
     "membersCount": "{{count}} members",
     "fileType": "{{ext}} file",
-    "searchPlaceholder": "Search messages, groups..."
+    "searchPlaceholder": "Search messages, groups...",
+    "addFriend": "Add Friend",
+    "friendPending": "Friend request pending"
   },
   "calls": {
     "callControls": "Call controls",

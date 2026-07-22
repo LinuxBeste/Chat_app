@@ -106,7 +106,9 @@
     "groupConversation": "Conversation de groupe",
     "channelConversation": "Canal",
     "membersCount": "{{count}} membres",
-    "fileType": "Fichier {{ext}}"
+    "fileType": "Fichier {{ext}}",
+    "addFriend": "Ajouter un ami",
+    "friendPending": "Demande d'ami en attente"
   },
   "calls": {
     "callControls": "Commandes d'appel",

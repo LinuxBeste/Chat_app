@@ -107,7 +107,9 @@
     "channelConversation": "Canal",
     "membersCount": "{{count}} miembros",
     "fileType": "Archivo {{ext}}",
-    "searchPlaceholder": "Buscar mensajes, grupos..."
+    "searchPlaceholder": "Buscar mensajes, grupos...",
+    "addFriend": "Añadir amigo",
+    "friendPending": "Solicitud de amistad pendiente"
   },
   "calls": {
     "callControls": "Controles de llamada",

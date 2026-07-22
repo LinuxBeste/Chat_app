@@ -4,7 +4,7 @@ import { MessageInput, type AttachmentData } from "./message-input"
 import { CallOverlay } from "./call-overlay"
 import { AddParticipantsModal } from "./add-participants-modal"
 import { Avatar } from "../ui/avatar"
-import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download, Plus, Users } from "lucide-react"
+import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download, Plus, Users, UserPlus } from "lucide-react"
 import { api } from "../../lib/api"
 import { wsClient } from "../../lib/ws"
 
@@ -56,6 +56,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [editText, setEditText] = useState("")
   const [showAddPeople, setShowAddPeople] = useState(false)
   const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null)
+  const [friendStatus, setFriendStatus] = useState<string | null>(null)
+  const [addingFriend, setAddingFriend] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -132,6 +134,35 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     }
   }, [editingMessageId])
 
+  useEffect(() => {
+    if (!isGroup && otherSender) {
+      const otherId = otherSender.senderId
+      api<{ status: string }>(`/api/friends/status/${otherId}`)
+        .then((res) => setFriendStatus(res.status))
+        .catch(() => setFriendStatus(null))
+    } else {
+      setFriendStatus(null)
+    }
+  }, [conversationId, messages])
+
+  const handleAddFriend = async () => {
+    if (!otherSender || addingFriend) return
+    setAddingFriend(true)
+    try {
+      await api("/api/friends/requests", {
+        method: "POST",
+        body: JSON.stringify({ friendId: otherSender.senderId }),
+      })
+      setFriendStatus("pending")
+    } catch (err: any) {
+      if (err?.message?.includes("already exists")) {
+        setFriendStatus("pending")
+      }
+    } finally {
+      setAddingFriend(false)
+    }
+  }
+
   const handleSend = useCallback(
     (content: string, messageType?: string, attachment?: AttachmentData) => {
       wsClient.send("message:send", { conversationId, content, messageType, attachment })
@@ -195,6 +226,21 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
+          {!isGroup && otherSender && friendStatus && friendStatus !== "accepted" && friendStatus !== "self" && (
+            <button
+              onClick={handleAddFriend}
+              disabled={addingFriend || friendStatus === "pending"}
+              aria-label={friendStatus === "pending" ? t("chat.friendPending") : t("chat.addFriend")}
+              className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                friendStatus === "pending"
+                  ? "text-yellow-400 bg-yellow-500/10"
+                  : "text-text-muted hover:text-accent hover:bg-accent/10"
+              }`}
+              title={friendStatus === "pending" ? t("chat.friendPending") : t("chat.addFriend")}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
           {isGroup && canManage && (
             <button
               onClick={() => setShowAddPeople(true)}
