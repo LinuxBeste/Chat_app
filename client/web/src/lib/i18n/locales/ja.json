@@ -41,7 +41,17 @@
     "success": "成功",
     "failed": "失敗",
     "none": "なし",
-    "default": "デフォルト"
+    "default": "デフォルト",
+    "saving": "保存中..."
+  },
+  "profile": {
+    "title": "プロフィール",
+    "changeAvatar": "アバターを変更",
+    "displayName": "表示名",
+    "displayNamePlaceholder": "表示名を入力",
+    "bio": "自己紹介",
+    "bioPlaceholder": "自分について教えてください...",
+    "saveChanges": "変更を保存"
   },
   "auth": {
     "welcomeBack": "おかえりなさい",

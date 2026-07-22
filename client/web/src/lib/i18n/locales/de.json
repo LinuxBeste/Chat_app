@@ -41,7 +41,17 @@
     "success": "Erfolgreich",
     "failed": "Fehlgeschlagen",
     "none": "Keine",
-    "default": "Standard"
+    "default": "Standard",
+    "saving": "Speichern..."
+  },
+  "profile": {
+    "title": "Profil",
+    "changeAvatar": "Avatar ändern",
+    "displayName": "Anzeigename",
+    "displayNamePlaceholder": "Dein Anzeigename",
+    "bio": "Bio",
+    "bioPlaceholder": "Erzähl uns etwas über dich...",
+    "saveChanges": "Änderungen speichern"
   },
   "auth": {
     "welcomeBack": "Willkommen zurück",

@@ -1,12 +1,41 @@
 import { Router, Request, Response } from "express"
 import type { Router as RouterType } from "express"
 import { z } from "zod"
+import multer from "multer"
+import { existsSync, mkdirSync } from "fs"
+import { join, dirname } from "path"
+import { fileURLToPath } from "url"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
+import { config } from "../config.js"
 import { users, userPreferences } from "../db/schema.js"
 import { eq, ilike, or, and, ne } from "drizzle-orm"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const uploadDir = join(__dirname, "..", "..", config.uploads.dir)
+
+if (!existsSync(uploadDir)) {
+  mkdirSync(uploadDir, { recursive: true })
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (_req, file, cb) => {
+    const ext = file.originalname.split(".").pop() || "jpg"
+    cb(null, `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`)
+  },
+})
+
+const upload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true)
+    else cb(new Error("Only image files are allowed"))
+  },
+})
 
 const router: RouterType = Router()
 
@@ -69,6 +98,27 @@ router.put(
       customStatus: updated.customStatus,
       status: updated.status,
     })
+  }),
+)
+
+router.post(
+  "/avatar",
+  authGuard,
+  upload.single("avatar"),
+  catchAsync(async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" })
+      return
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`
+    const [updated] = await db
+      .update(users)
+      .set({ avatar: avatarUrl })
+      .where(eq(users.id, req.user!.userId))
+      .returning()
+
+    res.json({ avatar: updated.avatar })
   }),
 )
 

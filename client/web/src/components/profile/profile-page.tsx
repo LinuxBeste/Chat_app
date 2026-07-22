@@ -1,18 +1,25 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
+import { useTranslation } from "react-i18next"
+import { Camera, Loader2 } from "lucide-react"
 
 export function ProfilePage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [displayName, setDisplayName] = useState("")
   const [bio, setBio] = useState("")
+  const [avatar, setAvatar] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    api<{ displayName: string | null; bio?: string }>("/api/users/me")
+    api<{ displayName: string | null; bio?: string; avatar?: string | null }>("/api/users/me")
       .then((u) => {
         setDisplayName(u.displayName ?? "")
         setBio(u.bio ?? "")
+        setAvatar(u.avatar ?? null)
       })
       .catch(() => {})
   }, [])
@@ -28,14 +35,51 @@ export function ProfilePage() {
     setSaving(false)
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("avatar", file)
+      const res = await api<{ avatar: string }>("/api/users/avatar", {
+        method: "POST",
+        body: formData,
+      })
+      setAvatar(res.avatar)
+    } catch {}
+    setUploading(false)
+  }
+
   return (
     <div className="flex h-full items-start justify-center overflow-y-auto p-8">
       <div className="w-full max-w-lg space-y-6">
-        <h1 className="text-lg font-semibold text-text-primary">Profile</h1>
+        <h1 className="text-lg font-semibold text-text-primary">{t("profile.title")}</h1>
 
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white text-xl font-bold shrink-0">
-            {(displayName || user?.username)?.[0]?.toUpperCase() ?? "?"}
+          <div className="relative group">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white text-xl font-bold shrink-0 overflow-hidden">
+              {avatar ? (
+                <img src={avatar} alt="" className="h-full w-full object-cover" />
+              ) : (
+                (displayName || user?.username)?.[0]?.toUpperCase() ?? "?"
+              )}
+            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              aria-label={t("profile.changeAvatar")}
+            >
+              {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
           </div>
           <div>
             <p className="text-sm font-medium text-text-primary">{user?.username}</p>
@@ -45,20 +89,20 @@ export function ProfilePage() {
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-text-muted block mb-1">Display Name</label>
+            <label className="text-xs text-text-muted block mb-1">{t("profile.displayName")}</label>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Display Name"
+              placeholder={t("profile.displayNamePlaceholder")}
               className="w-full h-10 rounded-2xl border border-border bg-surface px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
             />
           </div>
           <div>
-            <label className="text-xs text-text-muted block mb-1">Bio</label>
+            <label className="text-xs text-text-muted block mb-1">{t("profile.bio")}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
+              placeholder={t("profile.bioPlaceholder")}
               rows={3}
               className="w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 resize-none"
             />
@@ -68,7 +112,7 @@ export function ProfilePage() {
             disabled={saving}
             className="w-full h-10 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? t("common.saving") : t("profile.saveChanges")}
           </button>
         </div>
       </div>
