@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { useToast } from "../../lib/toast-context"
 import {
   FileText, Image, Film, Music, Archive, Download, Upload, FolderPlus,
-  Folder, X, Loader2, Trash2, Users,
+  Folder, X, Loader2, Trash2, Users, Edit3, Check, FolderOpen,
 } from "lucide-react"
 
 interface FileItem {
@@ -62,6 +62,10 @@ export function FilesPage() {
   const [showFolderMembers, setShowFolderMembers] = useState<string | null>(null)
   const [addMemberId, setAddMemberId] = useState("")
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const [renamingFileId, setRenamingFileId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [movingFileId, setMovingFileId] = useState<string | null>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -173,6 +177,41 @@ export function FilesPage() {
 
   const getFolderFiles = () => {
     return selectedFolderId ? files.filter((f) => f.folderId === selectedFolderId) : files.filter((f) => !f.folderId)
+  }
+
+  const startRename = (file: FileItem) => {
+    setRenamingFileId(file.id)
+    setRenameValue(file.filename)
+    setTimeout(() => renameInputRef.current?.select(), 0)
+  }
+
+  const confirmRename = async () => {
+    if (!renamingFileId || !renameValue.trim()) return
+    try {
+      const updated = await api<FileItem>(`/api/files/${renamingFileId}/rename`, {
+        method: "PUT",
+        body: JSON.stringify({ filename: renameValue.trim() }),
+      })
+      setFiles((prev) => prev.map((f) => (f.id === renamingFileId ? { ...f, filename: updated.filename } : f)))
+    } catch { /* ignore */ }
+    setRenamingFileId(null)
+    setRenameValue("")
+  }
+
+  const cancelRename = () => {
+    setRenamingFileId(null)
+    setRenameValue("")
+  }
+
+  const moveToFolder = async (fileId: string, folderId: string | null) => {
+    try {
+      const updated = await api<FileItem>(`/api/files/${fileId}/move`, {
+        method: "PUT",
+        body: JSON.stringify({ folderId }),
+      })
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)))
+    } catch { /* ignore */ }
+    setMovingFileId(null)
   }
 
   const handleDragStart = (e: React.DragEvent, fileId: string) => {
@@ -368,21 +407,89 @@ export function FilesPage() {
                 {fileIcon(f.mimeType)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{f.filename}</p>
-                <p className="text-xs text-text-muted">
-                  {formatSize(f.size)} · {f.mimeType}
-                </p>
+                {renamingFileId === f.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={renameInputRef}
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") confirmRename()
+                        if (e.key === "Escape") cancelRename()
+                      }}
+                      className="flex-1 h-8 rounded-xl border border-accent bg-bg-primary px-2 text-sm text-text-primary outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); confirmRename() }}
+                      className="p-1.5 rounded-lg text-accent hover:bg-accent/10 transition-all cursor-pointer"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); cancelRename() }}
+                      className="p-1.5 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-text-primary truncate">{f.filename}</p>
+                    <p className="text-xs text-text-muted">
+                      {formatSize(f.size)} · {f.mimeType}
+                    </p>
+                  </>
+                )}
               </div>
-              <a
-                href={`${BASE_URL}${f.url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 transition-all"
-                aria-label={t("files.download")}
-              >
-                <Download className="h-4 w-4" />
-              </a>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); startRename(f) }}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
+                  aria-label={t("files.rename")}
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                </button>
+                {movingFileId === f.id ? (
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === "__root__") moveToFolder(f.id, null)
+                        else if (val) moveToFolder(f.id, val)
+                        else setMovingFileId(null)
+                      }}
+                      className="h-8 rounded-xl border border-accent bg-bg-primary px-2 text-xs text-text-primary outline-none cursor-pointer"
+                      autoFocus
+                    >
+                      <option value="">{t("files.moveTo")}</option>
+                      <option value="__root__">{t("files.rootFolder")}</option>
+                      {folders.map((folder) => (
+                        <option key={folder.id} value={folder.id}>{folder.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMovingFileId(f.id) }}
+                    className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
+                    aria-label={t("files.moveToFolder")}
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <a
+                  href={`${BASE_URL}${f.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 transition-all"
+                  aria-label={t("files.download")}
+                >
+                  <Download className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           ))
         )}

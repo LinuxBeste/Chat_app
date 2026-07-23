@@ -42,7 +42,7 @@ export const themePresets: { name: string; config: ThemeConfig }[] = [
       },
       bubbleStyle: "cozy",
       borderRadius: 24,
-      statusEmoji: "🌙",
+      statusEmoji: "",
     },
   },
   {
@@ -61,7 +61,7 @@ export const themePresets: { name: string; config: ThemeConfig }[] = [
       },
       bubbleStyle: "compact",
       borderRadius: 16,
-      statusEmoji: "🌿",
+      statusEmoji: "",
     },
   },
   {
@@ -80,7 +80,7 @@ export const themePresets: { name: string; config: ThemeConfig }[] = [
       },
       bubbleStyle: "cozy",
       borderRadius: 20,
-      statusEmoji: "🌊",
+      statusEmoji: "",
     },
   },
   {
@@ -99,7 +99,7 @@ export const themePresets: { name: string; config: ThemeConfig }[] = [
       },
       bubbleStyle: "cozy",
       borderRadius: 24,
-      statusEmoji: "🌅",
+      statusEmoji: "",
     },
   },
   {
@@ -118,7 +118,7 @@ export const themePresets: { name: string; config: ThemeConfig }[] = [
       },
       bubbleStyle: "alternating",
       borderRadius: 20,
-      statusEmoji: "🌸",
+      statusEmoji: "",
     },
   },
 ]
@@ -248,17 +248,40 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [darkThemeId])
 
   useEffect(() => {
-    if (customTheme) {
+    if (customTheme && theme === "dark") {
       const config: ThemeConfig = JSON.parse(customTheme.theme)
       applyCssVars(config)
+    } else if (!customTheme && theme === "dark" && themeConfig) {
+      applyCssVars(themeConfig)
+    } else if (theme === "light") {
+      applyCssVars(null)
     }
-  }, [theme, customTheme, applyCssVars])
+  }, [theme, customTheme, themeConfig, applyCssVars])
 
   useEffect(() => {
     refreshCustomTheme()
   }, [refreshCustomTheme])
 
-  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"))
+  const toggleTheme = () => {
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark"
+      if (customTheme) {
+        const config: ThemeConfig = JSON.parse(customTheme.theme)
+        if (next === "light") {
+          applyCssVars(null)
+        } else {
+          applyCssVars(config)
+        }
+      } else if (themeConfig) {
+        if (next === "light") {
+          applyCssVars(null)
+        } else {
+          applyCssVars(themeConfig)
+        }
+      }
+      return next
+    })
+  }
 
   return (
     <ThemeContext.Provider

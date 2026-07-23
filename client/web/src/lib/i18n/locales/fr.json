@@ -348,6 +348,17 @@
       "securityAlerts": "Alertes de sécurité",
       "securityAlertsDesc": "Être averti des nouvelles connexions depuis des appareils inconnus"
     },
+    "status": {
+      "oneliner": "Statut en une ligne",
+      "customStatus": "Statut personnalisé",
+      "customStatusDesc": "Un court message affiché à côté de votre nom",
+      "customStatusPlaceholder": "Quoi de neuf ?",
+      "set": "Définir",
+      "statusEmoji": "Emoji de statut",
+      "statusEmojiDesc": "Remplacer le point coloré par un emoji (tous les statuts)",
+      "resetToDot": "Réinitialiser au point coloré",
+      "saved": "Emoji de statut enregistré"
+    },
     "appearance": {
       "title": "Apparence",
       "themeMode": "Mode du thème",
@@ -886,7 +897,10 @@
       "nodeJs": "Node.js",
       "license": "Licence",
       "repository": "Dépôt"
-    }
+    },
+    "search": "Rechercher paramètres...",
+    "searchResults": "Résultats de recherche",
+    "noResults": "Aucun paramètre trouvé"
   },
   "themeEditor": {
     "customThemes": "Thèmes personnalisés",
@@ -937,7 +951,11 @@
     "dropOrUpload": "Déposez des fichiers ou cliquez sur Télécharger",
     "download": "Télécharger",
     "cannotPreview": "Aperçu non disponible pour ce type de fichier",
-    "userIdPlaceholder": "Entrez l'ID utilisateur..."
+    "userIdPlaceholder": "Entrez l'ID utilisateur...",
+    "rename": "Renommer",
+    "moveTo": "Déplacer vers...",
+    "rootFolder": "Dossier racine",
+    "moveToFolder": "Déplacer dans un dossier"
   },
   "setup": {
     "welcome": "Bienvenue !",

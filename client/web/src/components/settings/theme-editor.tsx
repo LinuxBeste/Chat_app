@@ -47,9 +47,9 @@ interface ThemeEditorProps {
   onClose?: () => void
 }
 
-export function ThemeEditor({ onClose }: ThemeEditorProps) {
+export function ThemeEditor(_props: ThemeEditorProps) {
   const { t } = useTranslation()
-  const { theme, customTheme, applyTheme, clearCustomTheme, refreshCustomTheme, applyPreset, lightThemeId, darkThemeId, setLightTheme, setDarkTheme } = useTheme()
+  const { customTheme, applyTheme, clearCustomTheme, applyPreset, lightThemeId, darkThemeId, setLightTheme, setDarkTheme } = useTheme()
   const [themes, setThemes] = useState<CustomThemeData[]>([])
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
@@ -90,7 +90,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
     } catch {}
   }
 
-  const setColor = (key: keyof NonNullable<ThemeConfig["colors"]>, value: string) => {
+  const setColor = (key: string, value: string) => {
     setConfig((prev) => ({
       ...prev,
       colors: { ...prev.colors, [key]: value },
@@ -269,13 +269,13 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
                 <div key={key} className="flex items-center gap-2">
                   <input
                     type="color"
-                    value={config.colors?.[key] ?? "#000000"}
+                    value={(config.colors as Record<string, string>)?.[key] ?? "#000000"}
                     onChange={(e) => setColor(key, e.target.value)}
                     className="h-8 w-8 rounded-lg border border-border cursor-pointer shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-text-primary truncate">{label}</p>
-                    <p className="text-[10px] text-text-muted font-mono">{config.colors?.[key] ?? ""}</p>
+                    <p className="text-[10px] text-text-muted font-mono">{(config.colors as Record<string, string>)?.[key] ?? ""}</p>
                   </div>
                 </div>
               ))}

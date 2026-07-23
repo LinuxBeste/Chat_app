@@ -54,7 +54,21 @@ router.post(
             .from(conversations)
             .where(eq(conversations.id, existing.id))
             .limit(1)
-          res.json(fullConv)
+
+          const other = await db
+            .select({
+              id: users.id,
+              username: users.username,
+              displayName: users.displayName,
+              avatar: users.avatar,
+              customStatus: users.customStatus,
+            })
+            .from(participants)
+            .innerJoin(users, eq(users.id, participants.userId))
+            .where(and(eq(participants.conversationId, existing.id), sql`${participants.userId} != ${req.user!.userId}`))
+            .limit(1)
+
+          res.json({ ...fullConv, otherUser: other[0] ?? null })
           return
         }
       }
@@ -72,7 +86,24 @@ router.post(
         })),
       )
 
-      res.status(201).json(conv)
+      if (type === "dm") {
+        const other = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar,
+            customStatus: users.customStatus,
+          })
+          .from(participants)
+          .innerJoin(users, eq(users.id, participants.userId))
+          .where(and(eq(participants.conversationId, conv.id), sql`${participants.userId} != ${req.user!.userId}`))
+          .limit(1)
+
+        res.status(201).json({ ...conv, otherUser: other[0] ?? null })
+      } else {
+        res.status(201).json(conv)
+      }
     } catch (err) {
       log.error({ err }, "Create conversation failed")
       res.status(500).json({ error: "Internal server error" })
@@ -84,6 +115,7 @@ router.get(
   "/",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.userId
     const convs = await db
       .select({
         id: conversations.id,
@@ -93,7 +125,7 @@ router.get(
       })
       .from(conversations)
       .innerJoin(participants, eq(participants.conversationId, conversations.id))
-      .where(eq(participants.userId, req.user!.userId))
+      .where(eq(participants.userId, userId))
       .orderBy(desc(conversations.createdAt))
 
     const seen = new Set<string>()
@@ -103,7 +135,31 @@ router.get(
       return true
     })
 
-    res.json(unique)
+    const enriched = await Promise.all(
+      unique.map(async (conv) => {
+        if (conv.type !== "dm") return conv
+
+        const other = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar,
+            customStatus: users.customStatus,
+          })
+          .from(participants)
+          .innerJoin(users, eq(users.id, participants.userId))
+          .where(and(eq(participants.conversationId, conv.id), sql`${participants.userId} != ${userId}`))
+          .limit(1)
+
+        return {
+          ...conv,
+          otherUser: other[0] ?? null,
+        }
+      }),
+    )
+
+    res.json(enriched)
   }),
 )
 

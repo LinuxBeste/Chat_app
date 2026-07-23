@@ -5,12 +5,23 @@ import { ProfilePage } from "./profile-page"
 
 const mockUser = { id: "user-1", username: "testuser", email: "test@test.com", displayName: "Test User" }
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: { changeLanguage: vi.fn(), language: "en" },
+  }),
+}))
+
 vi.mock("../../lib/api", () => ({
   api: vi.fn(),
 }))
 
 vi.mock("../../lib/auth-context", () => ({
   useAuth: vi.fn(() => ({ user: mockUser })),
+}))
+
+vi.mock("../../lib/toast-context", () => ({
+  useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
 import { api } from "../../lib/api"
@@ -23,7 +34,7 @@ describe("ProfilePage", () => {
 
   it("displays the profile heading", async () => {
     render(<ProfilePage />)
-    expect(screen.getByText("Profile")).toBeInTheDocument()
+    expect(screen.getByText("profile.title")).toBeInTheDocument()
   })
 
   it("shows user email from auth context", () => {
@@ -77,7 +88,7 @@ describe("ProfilePage", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("Test User")).toBeInTheDocument()
     })
-    await user.click(screen.getByText("Save Changes"))
+    await user.click(screen.getByText("profile.saveChanges"))
     expect(api).toHaveBeenCalledWith("/api/users/me", {
       method: "PUT",
       body: JSON.stringify({ displayName: "Test User", bio: "Hello world" }),
@@ -92,7 +103,7 @@ describe("ProfilePage", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("Test User")).toBeInTheDocument()
     })
-    await user.click(screen.getByText("Save Changes"))
-    expect(screen.getByText("Saving...")).toBeInTheDocument()
+    await user.click(screen.getByText("profile.saveChanges"))
+    expect(screen.getByText("common.saving")).toBeInTheDocument()
   })
 })

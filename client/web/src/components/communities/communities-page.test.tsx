@@ -18,6 +18,10 @@ vi.mock("react-i18next", async () => {
   }
 })
 
+vi.mock("../../lib/auth-context", () => ({
+  useAuth: vi.fn(() => ({ user: { id: "u1", username: "test" } })),
+}))
+
 const mockCommunities = [
   {
     id: "comm-1",

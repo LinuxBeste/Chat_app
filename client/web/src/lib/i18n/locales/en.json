@@ -118,7 +118,6 @@
     "channelConversation": "Channel",
     "membersCount": "{{count}} members",
     "fileType": "{{ext}} file",
-    "searchPlaceholder": "Search messages, groups...",
     "addFriend": "Add Friend",
     "friendPending": "Friend request pending",
     "newConversation": "New Conversation",
@@ -349,6 +348,17 @@
       "securityAlerts": "Security Alerts",
       "securityAlertsDesc": "Get notified of new logins from unknown devices"
     },
+    "status": {
+      "oneliner": "One-Liner Status",
+      "customStatus": "Custom Status",
+      "customStatusDesc": "A short message displayed next to your name",
+      "customStatusPlaceholder": "What's on your mind?",
+      "set": "Set",
+      "statusEmoji": "Status Emoji",
+      "statusEmojiDesc": "Replace the colored dot with an emoji (all statuses)",
+      "resetToDot": "Reset to colored dot",
+      "saved": "Status emoji saved"
+    },
     "appearance": {
       "title": "Appearance",
       "themeMode": "Theme Mode",
@@ -546,7 +556,6 @@
         "accent": "Accent",
         "modern": "Modern",
         "classic": "Classic",
-        "default": "Default",
         "underlined": "Underlined",
         "fade": "Fade",
         "slide": "Slide",
@@ -942,7 +951,10 @@
       "nodeJs": "Node.js",
       "license": "License",
       "repository": "Repository"
-    }
+    },
+    "search": "Search settings...",
+    "searchResults": "Search Results",
+    "noResults": "No settings found"
   },
   "themeEditor": {
     "customThemes": "Custom Themes",
@@ -993,7 +1005,11 @@
     "dropOrUpload": "Drop files or click Upload to get started",
     "download": "Download",
     "cannotPreview": "Preview not available for this file type",
-    "userIdPlaceholder": "Enter user ID..."
+    "userIdPlaceholder": "Enter user ID...",
+    "rename": "Rename",
+    "moveTo": "Move to...",
+    "rootFolder": "Root folder",
+    "moveToFolder": "Move to folder"
   },
   "setup": {
     "welcome": "Welcome!",

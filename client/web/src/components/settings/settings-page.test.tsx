@@ -7,6 +7,7 @@ const mockUser = { id: "user-1", username: "testuser", email: "test@test.com", d
 vi.mock("../../lib/api", () => ({
   api: vi.fn((url: string) => {
     if (url === "/api/users/preferences") return Promise.resolve({})
+    if (url === "/api/users/me") return Promise.resolve({ customStatus: "" })
     return Promise.resolve([])
   }),
 }))
@@ -25,6 +26,7 @@ vi.mock("../../lib/theme-context", () => ({
     clearCustomTheme: vi.fn(),
     refreshCustomTheme: vi.fn(),
   })),
+  themePresets: [],
 }))
 
 vi.mock("react-i18next", async () => {
@@ -109,6 +111,7 @@ describe("SettingsPage", () => {
 
   it("shows 2FA section when switching to security tab", async () => {
     vi.mocked(api)
+      .mockResolvedValueOnce({ customStatus: "" })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ enabled: false })
       .mockResolvedValueOnce([])
@@ -120,6 +123,7 @@ describe("SettingsPage", () => {
 
   it("shows Enable 2FA button when 2FA is disabled", async () => {
     vi.mocked(api)
+      .mockResolvedValueOnce({ customStatus: "" })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ enabled: false })
       .mockResolvedValueOnce([])
@@ -133,6 +137,7 @@ describe("SettingsPage", () => {
 
   it("shows Disable 2FA button when 2FA is enabled", async () => {
     vi.mocked(api)
+      .mockResolvedValueOnce({ customStatus: "" })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ enabled: true })
       .mockResolvedValueOnce([])
@@ -149,6 +154,7 @@ describe("SettingsPage", () => {
       { id: "log-1", ip: "192.168.1.1", userAgent: "Chrome 120", success: "true", createdAt: new Date().toISOString() },
     ]
     vi.mocked(api)
+      .mockResolvedValueOnce({ customStatus: "" })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ enabled: false })
       .mockResolvedValueOnce(loginEntries)
@@ -162,6 +168,7 @@ describe("SettingsPage", () => {
 
   it("shows session controls on security tab", async () => {
     vi.mocked(api)
+      .mockResolvedValueOnce({ customStatus: "" })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ enabled: false })
       .mockResolvedValueOnce([])

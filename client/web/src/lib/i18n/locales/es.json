@@ -118,7 +118,6 @@
     "channelConversation": "Canal",
     "membersCount": "{{count}} miembros",
     "fileType": "Archivo {{ext}}",
-    "searchPlaceholder": "Buscar mensajes, grupos...",
     "addFriend": "Añadir amigo",
     "friendPending": "Solicitud de amistad pendiente",
     "newConversation": "Nueva conversación",
@@ -348,6 +347,17 @@
       "never": "Nunca",
       "securityAlerts": "Alertas de seguridad",
       "securityAlertsDesc": "Recibir notificación de nuevos inicios de sesión desde dispositivos desconocidos"
+    },
+    "status": {
+      "oneliner": "Estado en una línea",
+      "customStatus": "Estado personalizado",
+      "customStatusDesc": "Un mensaje corto mostrado junto a tu nombre",
+      "customStatusPlaceholder": "¿Qué piensas?",
+      "set": "Establecer",
+      "statusEmoji": "Emoji de estado",
+      "statusEmojiDesc": "Reemplazar el punto de color con un emoji (todos los estados)",
+      "resetToDot": "Restablecer al punto de color",
+      "saved": "Emoji de estado guardado"
     },
     "appearance": {
       "title": "Apariencia",
@@ -887,7 +897,10 @@
       "nodeJs": "Node.js",
       "license": "Licencia",
       "repository": "Repositorio"
-    }
+    },
+    "search": "Buscar ajustes...",
+    "searchResults": "Resultados de búsqueda",
+    "noResults": "No se encontraron ajustes"
   },
   "themeEditor": {
     "customThemes": "Temas personalizados",
@@ -938,7 +951,11 @@
     "dropOrUpload": "Suelta archivos o haz clic en Subir",
     "download": "Descargar",
     "cannotPreview": "Vista previa no disponible para este tipo de archivo",
-    "userIdPlaceholder": "Ingrese ID de usuario..."
+    "userIdPlaceholder": "Ingrese ID de usuario...",
+    "rename": "Renombrar",
+    "moveTo": "Mover a...",
+    "rootFolder": "Carpeta raíz",
+    "moveToFolder": "Mover a carpeta"
   },
   "setup": {
     "welcome": "¡Bienvenido!",

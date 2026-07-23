@@ -9,10 +9,10 @@ import { useTranslation } from "react-i18next"
 import {
   User, Shield, Palette, Bell, Lock, Info, History, Key, Check, Copy, Smartphone,
   Moon, Sun, Eye, LogOut, Mail, Globe, MessageSquare, Volume2, Send,
-  Monitor, Music, Camera, Mic, Video, Terminal,
+  Monitor, Music, Camera, Mic, Video, Terminal, MessageCircle,
   BookOpen, Sliders, Cloud, Zap, Type, Image, FileText, Hash,
   Clock, Calendar, Ruler, Layers, Headphones, Mic2,
-  Phone, Trash2, Square, Grid3X3,
+  Phone, Trash2, Square, Grid3X3, Search, Sparkles,
 } from "lucide-react"
 
 interface TOTPStatus { enabled: boolean }
@@ -251,9 +251,9 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
   )
 }
 
-function Row({ label, desc, control }: { label: string; desc: string; control: React.ReactNode }) {
+function Row({ label, desc, control, id }: { label: string; desc: string; control: React.ReactNode; id?: string }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex items-center justify-between gap-4" id={id}>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-text-primary truncate">{label}</p>
         <p className="text-xs text-text-muted truncate">{desc}</p>
@@ -284,6 +284,7 @@ export function SettingsPage() {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [tab, setTab] = useState<SettingsTab>("account")
+  const [searchQuery, setSearchQuery] = useState("")
   const [totpStatus, setTotpStatus] = useState<TOTPStatus | null>(null)
   const [loginHistory, setLoginHistory] = useState<LoginEntry[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -295,6 +296,20 @@ export function SettingsPage() {
   const [verifyMsg, setVerifyMsg] = useState("")
   const [sendingVerification, setSendingVerification] = useState(false)
   const [prefs, setPrefs] = useState<Preferences>(defaultPrefs)
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!highlightedKey) return
+    const el = document.getElementById(highlightedKey)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      el.classList.add("ring-2", "ring-accent/50", "rounded-2xl", "transition-all", "duration-1000")
+      setTimeout(() => {
+        el.classList.remove("ring-2", "ring-accent/50", "rounded-2xl")
+        setHighlightedKey(null)
+      }, 2500)
+    }
+  }, [tab, highlightedKey])
 
   useEffect(() => {
     api<Preferences>("/api/users/preferences")
@@ -321,6 +336,73 @@ export function SettingsPage() {
     }
     try { await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(next) }) } catch { /* */ }
   }, [prefs])
+
+  const [statusEmojiLocal, setStatusEmojiLocal] = useState("")
+  const [statusEmojiSaveMsg, setStatusEmojiSaveMsg] = useState("")
+  const [customStatusText, setCustomStatusText] = useState("")
+  const [savingCustomStatus, setSavingCustomStatus] = useState(false)
+  const [customStatusMsg, setCustomStatusMsg] = useState("")
+
+  useEffect(() => {
+    api<{ customStatus: string | null }>("/api/users/me")
+      .then((u) => setCustomStatusText(u.customStatus ?? ""))
+      .catch(() => {})
+  }, [])
+
+  const saveCustomStatus = async () => {
+    setSavingCustomStatus(true)
+    try {
+      await api("/api/users/me", {
+        method: "PUT",
+        body: JSON.stringify({ customStatus: customStatusText }),
+      })
+      setCustomStatusMsg(t("settings.status.saved"))
+      setTimeout(() => setCustomStatusMsg(""), 2000)
+    } catch { /* */ }
+    setSavingCustomStatus(false)
+  }
+
+  useEffect(() => {
+    const activeTheme = localStorage.getItem("customThemeId")
+    if (activeTheme) {
+      const stored = localStorage.getItem("customTheme")
+      if (stored) {
+        try {
+          const config = JSON.parse(stored)
+          setStatusEmojiLocal(config.statusEmoji ?? "")
+        } catch { /* */ }
+      }
+    }
+  }, [])
+
+  const saveStatusEmoji = async (emoji: string) => {
+    try {
+      const active = await api<{ id: string; theme: string; name?: string } | null>("/api/themes/active")
+      if (active) {
+        const themeConfig = JSON.parse(active.theme)
+        themeConfig.statusEmoji = emoji
+        await api(`/api/themes/${active.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ name: active.name || "Custom Theme", theme: themeConfig }),
+        })
+        localStorage.setItem("customTheme", JSON.stringify(themeConfig))
+        setStatusEmojiSaveMsg(t("settings.status.saved"))
+        setTimeout(() => setStatusEmojiSaveMsg(""), 2000)
+      }
+    } catch { /* */ }
+  }
+
+  const clearStatusEmoji = () => {
+    setStatusEmojiLocal("")
+    saveStatusEmoji("")
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveStatusEmoji(statusEmojiLocal)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [statusEmojiLocal])
 
   useEffect(() => {
     if (tab === "security") {
@@ -358,6 +440,136 @@ export function SettingsPage() {
     return ua.slice(0, 30)
   }
 
+  const settingsSearchIndex = [
+    // Account
+    { key: "settings.account.username", tab: "account" as SettingsTab, label: t("settings.account.username") },
+    { key: "settings.account.displayName", tab: "account" as SettingsTab, label: t("settings.account.displayName") },
+    { key: "settings.account.email", tab: "account" as SettingsTab, label: t("settings.account.email") },
+    { key: "settings.account.emailVerification", tab: "account" as SettingsTab, label: t("settings.account.emailVerification") },
+    { key: "settings.account.activeSessions", tab: "account" as SettingsTab, label: t("settings.account.activeSessions") },
+    { key: "settings.account.dangerZone", tab: "account" as SettingsTab, label: t("settings.account.dangerZone") },
+    { key: "settings.account.memberSince", tab: "account" as SettingsTab, label: t("settings.account.memberSince") },
+    // Security
+    { key: "settings.security.twoFactor", tab: "security" as SettingsTab, label: t("settings.security.twoFactor") },
+    { key: "settings.security.loginHistory", tab: "security" as SettingsTab, label: t("settings.security.loginHistory") },
+    { key: "settings.security.sessionTimeout", tab: "security" as SettingsTab, label: t("settings.security.sessionTimeout") },
+    { key: "settings.security.securityAlerts", tab: "security" as SettingsTab, label: t("settings.security.securityAlerts") },
+    { key: "settings.security.twoFactor", tab: "security" as SettingsTab, label: t("settings.security.twoFactor"), keywords: ["2fa", "totp"] },
+    // Status
+    { key: "settings.status.customStatus", tab: "appearance" as SettingsTab, label: t("settings.status.oneliner"), keywords: ["status", "oneliner", "custom", "bio", "about"] },
+    { key: "settings.status.statusEmoji", tab: "appearance" as SettingsTab, label: t("themeEditor.statusEmoji"), keywords: ["status", "emoji", "dot", "presence", "looks"] },
+    // Appearance
+    { key: "settings.appearance.darkMode", tab: "appearance" as SettingsTab, label: t("settings.appearance.darkMode") },
+    { key: "settings.appearance.themeMode", tab: "appearance" as SettingsTab, label: t("settings.appearance.themeMode") },
+    { key: "settings.appearance.accentColor", tab: "appearance" as SettingsTab, label: t("settings.appearance.accentColor") },
+    { key: "settings.appearance.secondaryColor", tab: "appearance" as SettingsTab, label: t("settings.appearance.secondaryColor") },
+    { key: "settings.appearance.glassMorphism", tab: "appearance" as SettingsTab, label: t("settings.appearance.glassMorphism") },
+    { key: "settings.appearance.backgroundPattern", tab: "appearance" as SettingsTab, label: t("settings.appearance.backgroundPattern") },
+    { key: "settings.appearance.backgroundBlur", tab: "appearance" as SettingsTab, label: t("settings.appearance.backgroundBlur") },
+    { key: "settings.appearance.saturation", tab: "appearance" as SettingsTab, label: t("settings.appearance.saturation") },
+    { key: "settings.appearance.contrast", tab: "appearance" as SettingsTab, label: t("settings.appearance.contrast") },
+    { key: "settings.appearance.brightness", tab: "appearance" as SettingsTab, label: t("settings.appearance.brightness") },
+    { key: "settings.appearance.fontFamily", tab: "appearance" as SettingsTab, label: t("settings.appearance.fontFamily") },
+    { key: "settings.appearance.monospaceFont", tab: "appearance" as SettingsTab, label: t("settings.appearance.monospaceFont") },
+    { key: "settings.appearance.fontSize", tab: "appearance" as SettingsTab, label: t("settings.appearance.fontSize") },
+    { key: "settings.appearance.codeFontSize", tab: "appearance" as SettingsTab, label: t("settings.appearance.codeFontSize") },
+    { key: "settings.appearance.codeBackground", tab: "appearance" as SettingsTab, label: t("settings.appearance.codeBackground") },
+    { key: "settings.appearance.defaultRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.defaultRadius") },
+    { key: "settings.appearance.buttonRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.buttonRadius") },
+    { key: "settings.appearance.inputRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.inputRadius") },
+    { key: "settings.appearance.chatBubbleRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.chatBubbleRadius") },
+    { key: "settings.appearance.avatarRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.avatarRadius") },
+    { key: "settings.appearance.modalRadius", tab: "appearance" as SettingsTab, label: t("settings.appearance.modalRadius") },
+    { key: "settings.appearance.sidebarWidth", tab: "appearance" as SettingsTab, label: t("settings.appearance.sidebarWidth") },
+    { key: "settings.appearance.compactMode", tab: "appearance" as SettingsTab, label: t("settings.appearance.compactMode") },
+    { key: "settings.appearance.showTimestamps", tab: "appearance" as SettingsTab, label: t("settings.appearance.showTimestamps") },
+    { key: "settings.appearance.chatBubbleStyle", tab: "appearance" as SettingsTab, label: t("settings.appearance.chatBubbleStyle") },
+    { key: "settings.appearance.avatarStyle", tab: "appearance" as SettingsTab, label: t("settings.appearance.avatarStyle") },
+    { key: "settings.appearance.avatarSize", tab: "appearance" as SettingsTab, label: t("settings.appearance.avatarSize") },
+    { key: "settings.appearance.animatedEmoji", tab: "appearance" as SettingsTab, label: t("settings.appearance.animatedEmoji") },
+    { key: "settings.appearance.reduceMotion", tab: "appearance" as SettingsTab, label: t("settings.appearance.reduceMotion") },
+    { key: "settings.appearance.reduceTransparency", tab: "appearance" as SettingsTab, label: t("settings.appearance.reduceTransparency") },
+    { key: "settings.appearance.accentColor", tab: "appearance" as SettingsTab, label: t("settings.appearance.accentColor"), keywords: ["color"] },
+    { key: "settings.appearance.typography", tab: "appearance" as SettingsTab, label: t("settings.appearance.typography"), keywords: ["font"] },
+    { key: "settings.appearance.corners", tab: "appearance" as SettingsTab, label: t("settings.appearance.corners"), keywords: ["radius"] },
+    { key: "settings.appearance.layout", tab: "appearance" as SettingsTab, label: t("settings.appearance.layout"), keywords: ["sidebar", "spacing"] },
+    { key: "settings.appearance.messageDisplay", tab: "appearance" as SettingsTab, label: t("settings.appearance.messageDisplay"), keywords: ["bubble", "timestamps"] },
+    { key: "settings.appearance.animations", tab: "appearance" as SettingsTab, label: t("settings.appearance.animations"), keywords: ["motion", "animation"] },
+    { key: "themeEditor.statusEmoji", tab: "appearance" as SettingsTab, label: t("themeEditor.statusEmoji"), keywords: ["status", "looks", "presence", "emoji", "dot", "online", "away", "busy"] },
+    // Notifications
+    { key: "settings.notifications.messages", tab: "notifications" as SettingsTab, label: t("settings.notifications.messages") },
+    { key: "settings.notifications.pushNotifications", tab: "notifications" as SettingsTab, label: t("settings.notifications.pushNotifications") },
+    { key: "settings.notifications.desktopNotifications", tab: "notifications" as SettingsTab, label: t("settings.notifications.desktopNotifications") },
+    { key: "settings.notifications.notificationSound", tab: "notifications" as SettingsTab, label: t("settings.notifications.notificationSound") },
+    { key: "settings.notifications.dnd", tab: "notifications" as SettingsTab, label: t("settings.notifications.dnd"), keywords: ["do not disturb"] },
+    // Privacy
+    { key: "settings.privacy.readReceipts", tab: "privacy" as SettingsTab, label: t("settings.privacy.readReceipts") },
+    { key: "settings.privacy.showOnlineStatus", tab: "privacy" as SettingsTab, label: t("settings.privacy.showOnlineStatus") },
+    { key: "settings.privacy.blockedMuted", tab: "privacy" as SettingsTab, label: t("settings.privacy.blockedMuted") },
+    { key: "settings.privacy.safetyAlerts", tab: "privacy" as SettingsTab, label: t("settings.privacy.safetyAlerts") },
+    { key: "settings.privacy.directMessages", tab: "privacy" as SettingsTab, label: t("settings.privacy.directMessages"), keywords: ["dm"] },
+    // Chat
+    { key: "settings.chat.enterToSend", tab: "chat" as SettingsTab, label: t("settings.chat.enterToSend") },
+    { key: "settings.chat.showTypingIndicators", tab: "chat" as SettingsTab, label: t("settings.chat.showTypingIndicators") },
+    { key: "settings.chat.autoPlayMedia", tab: "chat" as SettingsTab, label: t("settings.chat.autoPlayMedia") },
+    { key: "settings.chat.imagePreviews", tab: "chat" as SettingsTab, label: t("settings.chat.imagePreviews") },
+    { key: "settings.chat.linkPreviews", tab: "chat" as SettingsTab, label: t("settings.chat.linkPreviews") },
+    { key: "settings.chat.emojiSuggestions", tab: "chat" as SettingsTab, label: t("settings.chat.emojiSuggestions") },
+    { key: "settings.chat.spellCheck", tab: "chat" as SettingsTab, label: t("settings.chat.spellCheck") },
+    // Calls
+    { key: "settings.calls.ringtone", tab: "calls" as SettingsTab, label: t("settings.calls.ringtone") },
+    { key: "settings.calls.videoQuality", tab: "calls" as SettingsTab, label: t("settings.calls.videoQuality") },
+    { key: "settings.calls.audioInput", tab: "calls" as SettingsTab, label: t("settings.calls.audioInput"), keywords: ["microphone"] },
+    { key: "settings.calls.audioOutput", tab: "calls" as SettingsTab, label: t("settings.calls.audioOutput"), keywords: ["speaker"] },
+    { key: "settings.calls.videoInput", tab: "calls" as SettingsTab, label: t("settings.calls.videoInput"), keywords: ["camera"] },
+    // Media
+    { key: "settings.media.imageQuality", tab: "media" as SettingsTab, label: t("settings.media.imageQuality") },
+    { key: "settings.media.videoAutoplay", tab: "media" as SettingsTab, label: t("settings.media.videoAutoplay") },
+    { key: "settings.media.gifAutoplay", tab: "media" as SettingsTab, label: t("settings.media.gifAutoplay") },
+    { key: "settings.media.stickerSuggestions", tab: "media" as SettingsTab, label: t("settings.media.stickerSuggestions") },
+    // Audio & Video
+    { key: "settings.audio-video.noiseSuppression", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.noiseSuppression"), keywords: ["noise"] },
+    { key: "settings.audio-video.echoCancellation", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.echoCancellation"), keywords: ["echo"] },
+    { key: "settings.audio-video.backgroundBlur", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.backgroundBlur"), keywords: ["blur"] },
+    { key: "settings.audio-video.virtualBackground", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.virtualBackground") },
+    // Accessibility
+    { key: "settings.accessibility.reduceMotion", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.reduceMotion"), keywords: ["motion"] },
+    { key: "settings.accessibility.reduceTransparency", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.reduceTransparency"), keywords: ["transparency"] },
+    { key: "settings.accessibility.colorBlindMode", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.colorBlindMode") },
+    { key: "settings.accessibility.highContrast", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.highContrast"), keywords: ["contrast"] },
+    { key: "settings.accessibility.screenReader", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.screenReader"), keywords: ["reader"] },
+    // Reader
+    { key: "settings.reader.fontSize", tab: "reader" as SettingsTab, label: t("settings.reader.fontSize") },
+    { key: "settings.reader.lineHeight", tab: "reader" as SettingsTab, label: t("settings.reader.lineHeight") },
+    { key: "settings.reader.columnWidth", tab: "reader" as SettingsTab, label: t("settings.reader.columnWidth") },
+    { key: "settings.reader.theme", tab: "reader" as SettingsTab, label: t("settings.reader.theme") },
+    // Language
+    { key: "settings.language.interface", tab: "language" as SettingsTab, label: t("settings.language.interface") },
+    { key: "settings.language.translation", tab: "language" as SettingsTab, label: t("settings.language.translation") },
+    { key: "settings.language.timezone", tab: "language" as SettingsTab, label: t("settings.language.timezone") },
+    { key: "settings.language.timeFormat", tab: "language" as SettingsTab, label: t("settings.language.timeFormat") },
+    { key: "settings.language.dateFormat", tab: "language" as SettingsTab, label: t("settings.language.dateFormat") },
+    // Advanced
+    { key: "settings.advanced.developerMode", tab: "advanced" as SettingsTab, label: t("settings.advanced.developerMode") },
+    { key: "settings.advanced.experimentalFeatures", tab: "advanced" as SettingsTab, label: t("settings.advanced.experimentalFeatures") },
+    { key: "settings.advanced.cache", tab: "advanced" as SettingsTab, label: t("settings.advanced.cache"), keywords: ["cache"] },
+    // About
+    { key: "settings.about.version", tab: "about" as SettingsTab, label: t("settings.about.version") },
+    { key: "settings.about.license", tab: "about" as SettingsTab, label: t("settings.about.license") },
+    { key: "settings.about.privacyPolicy", tab: "about" as SettingsTab, label: t("settings.about.privacyPolicy") },
+    { key: "settings.about.termsOfService", tab: "about" as SettingsTab, label: t("settings.about.termsOfService") },
+    { key: "settings.about.credits", tab: "about" as SettingsTab, label: t("settings.about.credits") },
+  ]
+
+  const searchResults = searchQuery.trim()
+    ? settingsSearchIndex.filter((item) => {
+        const q = searchQuery.toLowerCase()
+        if (item.label.toLowerCase().includes(q)) return true
+        if (item.keywords?.some((k) => k.toLowerCase().includes(q))) return true
+        return false
+      })
+    : []
+
   const grouped = tabs.reduce((acc, tab) => {
     const g = tab.group ?? t("settings.groups.general")
     if (!acc[g]) acc[g] = []
@@ -370,22 +582,22 @@ export function SettingsPage() {
       <nav className="w-52 shrink-0 border-r border-border bg-bg-secondary p-3 space-y-1 flex flex-col overflow-y-auto">
         <div className="px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider">{t("settings.title")}</div>
         {Object.entries(grouped).map(([group, items]) => (
-          <div key={group} className="mb-2">
-            <p className="px-3 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{group}</p>
-            {items.map((t) => {
-              const Icon = t.icon
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                    tab === t.id ? "bg-accent/10 text-accent" : "text-text-secondary hover:text-text-primary hover:bg-white/5"
-                  }`}>
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-        ))}
+            <div key={group} className="mb-2">
+              <p className="px-3 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{group}</p>
+              {items.map((t) => {
+                const Icon = t.icon
+                return (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                      tab === t.id ? "bg-accent/10 text-accent" : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                    }`}>
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         <div className="mt-auto pt-3 border-t border-border">
           <button onClick={logout}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-danger hover:bg-danger/5 transition-all cursor-pointer">
@@ -395,17 +607,58 @@ export function SettingsPage() {
       </nav>
 
       <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4 pb-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("settings.search")}
+              className="w-full h-9 rounded-2xl border border-border bg-bg-primary pl-9 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+            />
+          </div>
+        </div>
         <div className="max-w-2xl mx-auto p-6 space-y-8">
+
+          {searchQuery.trim() ? (
+            <div className="space-y-4">
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.searchResults")} (<span className="text-text-muted">{searchResults.length}</span>)</h1>
+              {searchResults.length === 0 ? (
+                <p className="text-sm text-text-muted">{t("settings.noResults")}</p>
+              ) : (
+                searchResults.map((r, i) => {
+                  const tabDef = tabs.find((t) => t.id === r.tab)
+                  const Icon = tabDef?.icon
+                  return (
+                    <button
+                      key={`${r.tab}-${r.label}-${i}`}
+                      onClick={() => { setTab(r.tab); setSearchQuery(""); setHighlightedKey(r.key) }}
+                      className="w-full flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 hover:bg-white/[0.02] transition-all cursor-pointer text-left"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0">
+                        {Icon && <Icon className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary">{r.label}</p>
+                        <p className="text-xs text-text-muted">{tabDef?.label}</p>
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          ) : (
+            <>
 
           {/* === ACCOUNT === */}
           {tab === "account" && (
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.account.title")}</h1>
               <Section icon={User} title={t("settings.account.profileInfo")}>
-                <Row label={t("settings.account.username")} desc={t("settings.account.usernameDesc")} control={<span className="text-sm text-text-primary font-medium">@{user?.username}</span>} />
-                <Row label={t("settings.account.displayName")} desc={t("settings.account.displayNameDesc")} control={<span className="text-sm text-text-primary">{user?.displayName || t("settings.account.fallback")}</span>} />
-                <Row label={t("settings.account.email")} desc={t("settings.account.emailDesc")} control={<span className="text-sm text-text-primary">{user?.email}</span>} />
-                <Row label={t("settings.account.memberSince")} desc={t("settings.account.memberSinceDesc")} control={<span className="text-sm text-text-muted">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : t("settings.account.fallback")}</span>} />
+                <Row id="settings.account.username" label={t("settings.account.username")} desc={t("settings.account.usernameDesc")} control={<span className="text-sm text-text-primary font-medium">@{user?.username}</span>} />
+                <Row id="settings.account.displayName" label={t("settings.account.displayName")} desc={t("settings.account.displayNameDesc")} control={<span className="text-sm text-text-primary">{user?.displayName || t("settings.account.fallback")}</span>} />
+                <Row id="settings.account.email" label={t("settings.account.email")} desc={t("settings.account.emailDesc")} control={<span className="text-sm text-text-primary">{user?.email}</span>} />
+                <Row id="settings.account.memberSince" label={t("settings.account.memberSince")} desc={t("settings.account.memberSinceDesc")} control={<span className="text-sm text-text-muted">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : t("settings.account.fallback")}</span>} />
               </Section>
               <Section icon={Mail} title={t("settings.account.emailVerification")}>
                 <div className="flex items-center justify-between">
@@ -441,7 +694,7 @@ export function SettingsPage() {
                 ))}
               </Section>
               <Section icon={Trash2} title={t("settings.account.dangerZone")}>
-                <Row label={t("settings.account.deleteAccount")} desc={t("settings.account.deleteDesc")}
+                <Row id="settings.account.deleteAccount" label={t("settings.account.deleteAccount")} desc={t("settings.account.deleteDesc")}
                   control={<button className="text-xs h-8 px-4 rounded-2xl bg-danger/10 text-danger font-medium hover:bg-danger/20 transition-all cursor-pointer">{t("settings.account.delete")}</button>} />
               </Section>
             </>
@@ -504,9 +757,9 @@ export function SettingsPage() {
                 ))}
               </Section>
               <Section icon={Lock} title={t("settings.security.sessionControls")}>
-                <Row label={t("settings.security.sessionTimeout")} desc={t("settings.security.sessionTimeoutDesc")}
+                <Row id="settings.security.sessionTimeout" label={t("settings.security.sessionTimeout")} desc={t("settings.security.sessionTimeoutDesc")}
                   control={<Select value={prefs.sessionTimeout ?? "30"} onChange={(v) => updatePref("sessionTimeout", v)} options={[{ value: "15", label: t("settings.security.15min") }, { value: "30", label: t("settings.security.30min") }, { value: "60", label: t("settings.security.1hour") }, { value: "never", label: t("settings.security.never") }]} />} />
-                <Row label={t("settings.security.securityAlerts")} desc={t("settings.security.securityAlertsDesc")}
+                <Row id="settings.security.securityAlerts" label={t("settings.security.securityAlerts")} desc={t("settings.security.securityAlertsDesc")}
                   control={<Toggle checked={prefs.securityAlerts ?? true} onChange={(v) => updatePref("securityAlerts", v)} />} />
               </Section>
             </>
@@ -518,8 +771,8 @@ export function SettingsPage() {
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.appearance.title")}</h1>
 
               <Section icon={theme === "dark" ? Moon : Sun} title={t("settings.appearance.themeMode")}>
-                <Row label={t("settings.appearance.darkMode")} desc={t("settings.appearance.darkModeDesc")} control={<Toggle checked={theme === "dark"} onChange={toggleTheme} />} />
-                <Row label={t("settings.appearance.accentColor")} desc={t("settings.appearance.accentColorDesc")} control={
+                <Row id="settings.appearance.darkMode" label={t("settings.appearance.darkMode")} desc={t("settings.appearance.darkModeDesc")} control={<Toggle checked={theme === "dark"} onChange={toggleTheme} />} />
+                <Row id="settings.appearance.accentColor" label={t("settings.appearance.accentColor")} desc={t("settings.appearance.accentColorDesc")} control={
                   <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                     {["#6366f1", "#8b5cf6", "#d946ef", "#ec4899", "#f43f5e", "#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6"].map((c) => (
                       <button key={c} onClick={() => updatePref("accentColor", c)}
@@ -527,7 +780,7 @@ export function SettingsPage() {
                         style={{ backgroundColor: c }} />
                     ))}
                   </div>} />
-                <Row label={t("settings.appearance.secondaryColor")} desc={t("settings.appearance.secondaryColorDesc")} control={
+                <Row id="settings.appearance.secondaryColor" label={t("settings.appearance.secondaryColor")} desc={t("settings.appearance.secondaryColorDesc")} control={
                   <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                     {["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#14b8a6", "#22c55e", "#eab308", "#f97316"].map((c) => (
                       <button key={c} onClick={() => updatePref("secondaryColor", c)}
@@ -535,77 +788,77 @@ export function SettingsPage() {
                         style={{ backgroundColor: c }} />
                     ))}
                   </div>} />
-                <Row label={t("settings.appearance.glassMorphism")} desc={t("settings.appearance.glassMorphismDesc")} control={<Toggle checked={prefs.glassMorphism ?? false} onChange={(v) => updatePref("glassMorphism", v)} />} />
-                <Row label={t("settings.appearance.backgroundPattern")} desc={t("settings.appearance.backgroundPatternDesc")}
+                <Row id="settings.appearance.glassMorphism" label={t("settings.appearance.glassMorphism")} desc={t("settings.appearance.glassMorphismDesc")} control={<Toggle checked={prefs.glassMorphism ?? false} onChange={(v) => updatePref("glassMorphism", v)} />} />
+                <Row id="settings.appearance.backgroundPattern" label={t("settings.appearance.backgroundPattern")} desc={t("settings.appearance.backgroundPatternDesc")}
                   control={<Select value={prefs.backgroundPattern ?? "none"} onChange={(v) => updatePref("backgroundPattern", v)} options={[
                     { value: "none", label: t("settings.appearance.patterns.none") }, { value: "dots", label: t("settings.appearance.patterns.dots") }, { value: "grid", label: t("settings.appearance.patterns.grid") }, { value: "waves", label: t("settings.appearance.patterns.waves") },
                   ]} />} />
-                <Row label={t("settings.appearance.backgroundBlur")} desc={t("settings.appearance.backgroundBlurDesc")} control={<SliderControl value={prefs.backgroundBlur ?? 0} min={0} max={24} step={2} onChange={(v) => updatePref("backgroundBlur", v)} />} />
-                <Row label={t("settings.appearance.saturation")} desc={t("settings.appearance.saturationDesc")} control={<SliderControl value={prefs.saturation ?? 100} min={0} max={200} onChange={(v) => updatePref("saturation", v)} />} />
-                <Row label={t("settings.appearance.contrast")} desc={t("settings.appearance.contrastDesc")} control={<SliderControl value={prefs.contrast ?? 100} min={50} max={150} onChange={(v) => updatePref("contrast", v)} />} />
-                <Row label={t("settings.appearance.brightness")} desc={t("settings.appearance.brightnessDesc")} control={<SliderControl value={prefs.brightness ?? 100} min={50} max={150} onChange={(v) => updatePref("brightness", v)} />} />
+                <Row id="settings.appearance.backgroundBlur" label={t("settings.appearance.backgroundBlur")} desc={t("settings.appearance.backgroundBlurDesc")} control={<SliderControl value={prefs.backgroundBlur ?? 0} min={0} max={24} step={2} onChange={(v) => updatePref("backgroundBlur", v)} />} />
+                <Row id="settings.appearance.saturation" label={t("settings.appearance.saturation")} desc={t("settings.appearance.saturationDesc")} control={<SliderControl value={prefs.saturation ?? 100} min={0} max={200} onChange={(v) => updatePref("saturation", v)} />} />
+                <Row id="settings.appearance.contrast" label={t("settings.appearance.contrast")} desc={t("settings.appearance.contrastDesc")} control={<SliderControl value={prefs.contrast ?? 100} min={50} max={150} onChange={(v) => updatePref("contrast", v)} />} />
+                <Row id="settings.appearance.brightness" label={t("settings.appearance.brightness")} desc={t("settings.appearance.brightnessDesc")} control={<SliderControl value={prefs.brightness ?? 100} min={50} max={150} onChange={(v) => updatePref("brightness", v)} />} />
               </Section>
 
               <Section icon={Type} title={t("settings.appearance.typography")}>
-                <Row label={t("settings.appearance.fontFamily")} desc={t("settings.appearance.fontFamilyDesc")}
+                <Row id="settings.appearance.fontFamily" label={t("settings.appearance.fontFamily")} desc={t("settings.appearance.fontFamilyDesc")}
                   control={<Select value={prefs.fontFamily ?? "system"} onChange={(v) => updatePref("fontFamily", v)} options={[
                     { value: "system", label: t("settings.appearance.fonts.system") }, { value: "sans", label: t("settings.appearance.fonts.sansSerif") },
                     { value: "serif", label: t("settings.appearance.fonts.serif") }, { value: "mono", label: t("settings.appearance.fonts.monospace") },
                     { value: "inter", label: t("settings.appearance.fonts.inter") }, { value: "roboto", label: t("settings.appearance.fonts.roboto") },
                     { value: "poppins", label: t("settings.appearance.fonts.poppins") }, { value: "noto", label: t("settings.appearance.fonts.notoSans") },
                   ]} />} />
-                <Row label={t("settings.appearance.monospaceFont")} desc={t("settings.appearance.monospaceFontDesc")}
+                <Row id="settings.appearance.monospaceFont" label={t("settings.appearance.monospaceFont")} desc={t("settings.appearance.monospaceFontDesc")}
                   control={<Select value={prefs.monospaceFont ?? "monospace"} onChange={(v) => updatePref("monospaceFont", v)} options={[
                     { value: "monospace", label: t("settings.appearance.fonts.defaultMono") }, { value: "jetbrains", label: t("settings.appearance.fonts.jetbrainsMono") },
                     { value: "fira", label: t("settings.appearance.fonts.firaCode") }, { value: "source", label: t("settings.appearance.fonts.sourceCodePro") },
                     { value: "cascadia", label: t("settings.appearance.fonts.cascadiaCode") },
                   ]} />} />
-                <Row label={t("settings.appearance.fontSize")} desc={t("settings.appearance.fontSizeDesc")}
+                <Row id="settings.appearance.fontSize" label={t("settings.appearance.fontSize")} desc={t("settings.appearance.fontSizeDesc")}
                   control={<Select value={prefs.fontSize ?? "medium"} onChange={(v) => updatePref("fontSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") },
                     { value: "large", label: t("settings.appearance.options.large") }, { value: "xlarge", label: t("settings.appearance.options.xlarge") },
                   ]} />} />
-                <Row label={t("settings.appearance.codeFontSize")} desc={t("settings.appearance.codeFontSizeDesc")}
+                <Row id="settings.appearance.codeFontSize" label={t("settings.appearance.codeFontSize")} desc={t("settings.appearance.codeFontSizeDesc")}
                   control={<Select value={prefs.codeFontSize ?? "medium"} onChange={(v) => updatePref("codeFontSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
-                <Row label={t("settings.appearance.codeBackground")} desc={t("settings.appearance.codeBackgroundDesc")} control={
+                <Row id="settings.appearance.codeBackground" label={t("settings.appearance.codeBackground")} desc={t("settings.appearance.codeBackgroundDesc")} control={
                   <input type="color" value={prefs.codeBackground ?? "#1e1e2e"} onChange={(e) => updatePref("codeBackground", e.target.value)}
                     className="h-8 w-12 rounded-lg cursor-pointer bg-transparent border-0" />} />
               </Section>
 
               <Section icon={Square} title={t("settings.appearance.corners")}>
-                <Row label={t("settings.appearance.defaultRadius")} desc={t("settings.appearance.defaultRadiusDesc")}
+                <Row id="settings.appearance.defaultRadius" label={t("settings.appearance.defaultRadius")} desc={t("settings.appearance.defaultRadiusDesc")}
                   control={<Select value={prefs.borderRadius ?? "medium"} onChange={(v) => updatePref("borderRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
                   ]} />} />
-                <Row label={t("settings.appearance.buttonRadius")} desc={t("settings.appearance.buttonRadiusDesc")}
+                <Row id="settings.appearance.buttonRadius" label={t("settings.appearance.buttonRadius")} desc={t("settings.appearance.buttonRadiusDesc")}
                   control={<Select value={prefs.buttonRadius ?? "medium"} onChange={(v) => updatePref("buttonRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
                   ]} />} />
-                <Row label={t("settings.appearance.inputRadius")} desc={t("settings.appearance.inputRadiusDesc")}
+                <Row id="settings.appearance.inputRadius" label={t("settings.appearance.inputRadius")} desc={t("settings.appearance.inputRadiusDesc")}
                   control={<Select value={prefs.inputRadius ?? "medium"} onChange={(v) => updatePref("inputRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
                   ]} />} />
-                <Row label={t("settings.appearance.chatBubbleRadius")} desc={t("settings.appearance.chatBubbleRadiusDesc")}
+                <Row id="settings.appearance.chatBubbleRadius" label={t("settings.appearance.chatBubbleRadius")} desc={t("settings.appearance.chatBubbleRadiusDesc")}
                   control={<Select value={prefs.chatBubbleRadius ?? "large"} onChange={(v) => updatePref("chatBubbleRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
                   ]} />} />
-                <Row label={t("settings.appearance.avatarRadius")} desc={t("settings.appearance.avatarRadiusDesc")}
+                <Row id="settings.appearance.avatarRadius" label={t("settings.appearance.avatarRadius")} desc={t("settings.appearance.avatarRadiusDesc")}
                   control={<Select value={prefs.avatarRadius ?? "full"} onChange={(v) => updatePref("avatarRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.square") }, { value: "small", label: t("settings.appearance.options.rounded") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "full", label: t("settings.appearance.options.circle") },
                   ]} />} />
-                <Row label={t("settings.appearance.modalRadius")} desc={t("settings.appearance.modalRadiusDesc")}
+                <Row id="settings.appearance.modalRadius" label={t("settings.appearance.modalRadius")} desc={t("settings.appearance.modalRadiusDesc")}
                   control={<Select value={prefs.modalRadius ?? "large"} onChange={(v) => updatePref("modalRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
                   ]} />} />
-                <Row label={t("settings.appearance.cardRadius")} desc={t("settings.appearance.cardRadiusDesc")}
+                <Row id="settings.appearance.cardRadius" label={t("settings.appearance.cardRadius")} desc={t("settings.appearance.cardRadiusDesc")}
                   control={<Select value={prefs.cardRadius ?? "medium"} onChange={(v) => updatePref("cardRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.full") },
@@ -613,22 +866,22 @@ export function SettingsPage() {
               </Section>
 
               <Section icon={Layers} title={t("settings.appearance.shadows")}>
-                <Row label={t("settings.appearance.shadowIntensity")} desc={t("settings.appearance.shadowIntensityDesc")}
+                <Row id="settings.appearance.shadowIntensity" label={t("settings.appearance.shadowIntensity")} desc={t("settings.appearance.shadowIntensityDesc")}
                   control={<Select value={prefs.shadowIntensity ?? "medium"} onChange={(v) => updatePref("shadowIntensity", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "light", label: t("settings.appearance.options.light") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "strong", label: t("settings.appearance.options.strong") },
                   ]} />} />
-                <Row label={t("settings.appearance.borderWidth")} desc={t("settings.appearance.borderWidthDesc")}
+                <Row id="settings.appearance.borderWidth" label={t("settings.appearance.borderWidth")} desc={t("settings.appearance.borderWidthDesc")}
                   control={<Select value={prefs.borderWidth ?? "normal"} onChange={(v) => updatePref("borderWidth", v)} options={[
                     { value: "none", label: t("settings.appearance.options.none") }, { value: "thin", label: t("settings.appearance.options.thin") },
                     { value: "normal", label: t("settings.appearance.options.normal") }, { value: "thick", label: t("settings.appearance.options.thick") },
                   ]} />} />
-                <Row label={t("settings.appearance.hoverScale")} desc={t("settings.appearance.hoverScaleDesc")} control={<SliderControl value={prefs.hoverScale ?? 1.05} min={1} max={1.2} step={0.01} onChange={(v) => updatePref("hoverScale", v)} />} />
-                <Row label={t("settings.appearance.transitionDuration")} desc={t("settings.appearance.transitionDurationDesc")}
+                <Row id="settings.appearance.hoverScale" label={t("settings.appearance.hoverScale")} desc={t("settings.appearance.hoverScaleDesc")} control={<SliderControl value={prefs.hoverScale ?? 1.05} min={1} max={1.2} step={0.01} onChange={(v) => updatePref("hoverScale", v)} />} />
+                <Row id="settings.appearance.transitionDuration" label={t("settings.appearance.transitionDuration")} desc={t("settings.appearance.transitionDurationDesc")}
                   control={<Select value={prefs.transitionDuration ?? "normal"} onChange={(v) => updatePref("transitionDuration", v)} options={[
                     { value: "fast", label: t("settings.appearance.options.fast") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "slow", label: t("settings.appearance.options.slow") },
                   ]} />} />
-                <Row label={t("settings.appearance.animationSpeed")} desc={t("settings.appearance.animationSpeedDesc")}
+                <Row id="settings.appearance.animationSpeed" label={t("settings.appearance.animationSpeed")} desc={t("settings.appearance.animationSpeedDesc")}
                   control={<Select value={prefs.animationSpeed ?? "normal"} onChange={(v) => updatePref("animationSpeed", v)} options={[
                     { value: "none", label: t("settings.appearance.options.off") }, { value: "slow", label: t("settings.appearance.options.slow") },
                     { value: "normal", label: t("settings.appearance.options.normal") }, { value: "fast", label: t("settings.appearance.options.fast") },
@@ -636,174 +889,227 @@ export function SettingsPage() {
               </Section>
 
               <Section icon={Grid3X3} title={t("settings.appearance.layout")}>
-                <Row label={t("settings.appearance.sidebarPosition")} desc={t("settings.appearance.sidebarPositionDesc")}
+                <Row id="settings.appearance.sidebarPosition" label={t("settings.appearance.sidebarPosition")} desc={t("settings.appearance.sidebarPositionDesc")}
                   control={<Select value={prefs.sidebarPosition ?? "left"} onChange={(v) => updatePref("sidebarPosition", v)} options={[
                     { value: "left", label: t("settings.appearance.options.small") }, { value: "right", label: t("settings.appearance.options.medium") },
                   ]} />} />
-                <Row label={t("settings.appearance.sidebarWidth")} desc={t("settings.appearance.sidebarWidthDesc")}
+                <Row id="settings.appearance.sidebarWidth" label={t("settings.appearance.sidebarWidth")} desc={t("settings.appearance.sidebarWidthDesc")}
                   control={<Select value={prefs.sidebarWidth ?? "default"} onChange={(v) => updatePref("sidebarWidth", v)} options={[
                     { value: "narrow", label: t("settings.appearance.options.narrow") }, { value: "default", label: t("settings.appearance.options.default") }, { value: "wide", label: t("settings.appearance.options.wide") },
                   ]} />} />
-                <Row label={t("settings.appearance.memberListWidth")} desc={t("settings.appearance.memberListWidthDesc")}
+                <Row id="settings.appearance.memberListWidth" label={t("settings.appearance.memberListWidth")} desc={t("settings.appearance.memberListWidthDesc")}
                   control={<Select value={prefs.memberListWidth ?? "default"} onChange={(v) => updatePref("memberListWidth", v)} options={[
                     { value: "narrow", label: t("settings.appearance.options.narrow") }, { value: "default", label: t("settings.appearance.options.default") }, { value: "wide", label: t("settings.appearance.options.wide") },
                   ]} />} />
-                <Row label={t("settings.appearance.compactMode")} desc={t("settings.appearance.compactModeDesc")} control={<Toggle checked={prefs.compactMode ?? false} onChange={(v) => updatePref("compactMode", v)} />} />
-                <Row label={t("settings.appearance.messageSpacing")} desc={t("settings.appearance.messageSpacingDesc")}
+                <Row id="settings.appearance.compactMode" label={t("settings.appearance.compactMode")} desc={t("settings.appearance.compactModeDesc")} control={<Toggle checked={prefs.compactMode ?? false} onChange={(v) => updatePref("compactMode", v)} />} />
+                <Row id="settings.appearance.messageSpacing" label={t("settings.appearance.messageSpacing")} desc={t("settings.appearance.messageSpacingDesc")}
                   control={<Select value={prefs.messageSpacing ?? "normal"} onChange={(v) => updatePref("messageSpacing", v)} options={[
                     { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
                   ]} />} />
-                <Row label={t("settings.appearance.sectionSpacing")} desc={t("settings.appearance.sectionSpacingDesc")}
+                <Row id="settings.appearance.sectionSpacing" label={t("settings.appearance.sectionSpacing")} desc={t("settings.appearance.sectionSpacingDesc")}
                   control={<Select value={prefs.sectionSpacing ?? "normal"} onChange={(v) => updatePref("sectionSpacing", v)} options={[
                     { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
                   ]} />} />
-                <Row label={t("settings.appearance.elementGap")} desc={t("settings.appearance.elementGapDesc")}
+                <Row id="settings.appearance.elementGap" label={t("settings.appearance.elementGap")} desc={t("settings.appearance.elementGapDesc")}
                   control={<Select value={prefs.elementGap ?? "normal"} onChange={(v) => updatePref("elementGap", v)} options={[
                     { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "wide", label: t("settings.appearance.options.wide") },
                   ]} />} />
-                <Row label={t("settings.appearance.listDensity")} desc={t("settings.appearance.listDensityDesc")}
+                <Row id="settings.appearance.listDensity" label={t("settings.appearance.listDensity")} desc={t("settings.appearance.listDensityDesc")}
                   control={<Select value={prefs.listDensity ?? "normal"} onChange={(v) => updatePref("listDensity", v)} options={[
                     { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
                   ]} />} />
-                <Row label={t("settings.appearance.channelListDensity")} desc={t("settings.appearance.channelListDensityDesc")}
+                <Row id="settings.appearance.channelListDensity" label={t("settings.appearance.channelListDensity")} desc={t("settings.appearance.channelListDensityDesc")}
                   control={<Select value={prefs.channelListDensity ?? "normal"} onChange={(v) => updatePref("channelListDensity", v)} options={[
                     { value: "compact", label: t("settings.appearance.options.compact") }, { value: "normal", label: t("settings.appearance.options.normal") }, { value: "relaxed", label: t("settings.appearance.options.relaxed") },
                   ]} />} />
-                <Row label={t("settings.appearance.showHeader")} desc={t("settings.appearance.showHeaderDesc")} control={<Toggle checked={prefs.showHeader ?? true} onChange={(v) => updatePref("showHeader", v)} />} />
-                <Row label={t("settings.appearance.showFooter")} desc={t("settings.appearance.showFooterDesc")} control={<Toggle checked={prefs.showFooter ?? false} onChange={(v) => updatePref("showFooter", v)} />} />
+                <Row id="settings.appearance.showHeader" label={t("settings.appearance.showHeader")} desc={t("settings.appearance.showHeaderDesc")} control={<Toggle checked={prefs.showHeader ?? true} onChange={(v) => updatePref("showHeader", v)} />} />
+                <Row id="settings.appearance.showFooter" label={t("settings.appearance.showFooter")} desc={t("settings.appearance.showFooterDesc")} control={<Toggle checked={prefs.showFooter ?? false} onChange={(v) => updatePref("showFooter", v)} />} />
               </Section>
 
               <Section icon={MessageSquare} title={t("settings.appearance.messageDisplay")}>
-                <Row label={t("settings.appearance.chatBubbleStyle")} desc={t("settings.appearance.chatBubbleStyleDesc")}
+                <Row id="settings.appearance.chatBubbleStyle" label={t("settings.appearance.chatBubbleStyle")} desc={t("settings.appearance.chatBubbleStyleDesc")}
                   control={<Select value={prefs.chatBubbleStyle ?? "rounded"} onChange={(v) => updatePref("chatBubbleStyle", v)} options={[
                     { value: "rounded", label: t("settings.appearance.options.rounded") }, { value: "flat", label: t("settings.appearance.options.flat") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
                   ]} />} />
-                <Row label={t("settings.appearance.chatBubbleCorner")} desc={t("settings.appearance.chatBubbleCornerDesc")}
+                <Row id="settings.appearance.chatBubbleCorner" label={t("settings.appearance.chatBubbleCorner")} desc={t("settings.appearance.chatBubbleCornerDesc")}
                   control={<Select value={prefs.chatBubbleRadius ?? "large"} onChange={(v) => updatePref("chatBubbleRadius", v)} options={[
                     { value: "none", label: t("settings.appearance.options.square") }, { value: "small", label: t("settings.appearance.options.small") },
                     { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "full", label: t("settings.appearance.options.pill") },
                   ]} />} />
-                <Row label={t("settings.appearance.dateSeparator")} desc={t("settings.appearance.dateSeparatorDesc")}
+                <Row id="settings.appearance.dateSeparator" label={t("settings.appearance.dateSeparator")} desc={t("settings.appearance.dateSeparatorDesc")}
                   control={<Select value={prefs.dateSeparator ?? "full"} onChange={(v) => updatePref("dateSeparator", v)} options={[
                     { value: "full", label: t("settings.appearance.options.fullDate") }, { value: "short", label: t("settings.appearance.options.short") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.dateStyle")} desc={t("settings.appearance.dateStyleDesc")}
+                <Row id="settings.appearance.dateStyle" label={t("settings.appearance.dateStyle")} desc={t("settings.appearance.dateStyleDesc")}
                   control={<Select value={prefs.dateSeparatorStyle ?? "pill"} onChange={(v) => updatePref("dateSeparatorStyle", v)} options={[
                     { value: "pill", label: t("settings.appearance.options.pill") }, { value: "line", label: t("settings.appearance.options.line") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
                   ]} />} />
-                <Row label={t("settings.appearance.senderName")} desc={t("settings.appearance.senderNameDesc")}
+                <Row id="settings.appearance.senderName" label={t("settings.appearance.senderName")} desc={t("settings.appearance.senderNameDesc")}
                   control={<Select value={prefs.senderNameFormat ?? "full"} onChange={(v) => updatePref("senderNameFormat", v)} options={[
                     { value: "full", label: t("settings.appearance.options.fullName") }, { value: "first", label: t("settings.appearance.options.firstName") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.timeFormat")} desc={t("settings.appearance.timeFormatDesc")}
+                <Row id="settings.appearance.timeFormat" label={t("settings.appearance.timeFormat")} desc={t("settings.appearance.timeFormatDesc")}
                   control={<Select value={prefs.timeFormat ?? "12h"} onChange={(v) => updatePref("timeFormat", v)} options={[
                     { value: "12h", label: t("settings.appearance.options.small") }, { value: "24h", label: t("settings.appearance.options.medium") },
                   ]} />} />
-                <Row label={t("settings.appearance.showTimestamps")} desc={t("settings.appearance.showTimestampsDesc")}
+                <Row id="settings.appearance.showTimestamps" label={t("settings.appearance.showTimestamps")} desc={t("settings.appearance.showTimestampsDesc")}
                   control={<Select value={prefs.showTimestamps ?? "always"} onChange={(v) => updatePref("showTimestamps", v)} options={[
                     { value: "always", label: t("settings.appearance.options.always") }, { value: "hover", label: t("settings.appearance.options.onHover") }, { value: "off", label: t("settings.appearance.options.off") },
                   ]} />} />
-                <Row label={t("settings.appearance.animatedEmoji")} desc={t("settings.appearance.animatedEmojiDesc")} control={<Toggle checked={prefs.animatedEmoji ?? true} onChange={(v) => updatePref("animatedEmoji", v)} />} />
-                <Row label={t("settings.appearance.imagePreviewSize")} desc={t("settings.appearance.imagePreviewSizeDesc")}
+                <Row id="settings.appearance.animatedEmoji" label={t("settings.appearance.animatedEmoji")} desc={t("settings.appearance.animatedEmojiDesc")} control={<Toggle checked={prefs.animatedEmoji ?? true} onChange={(v) => updatePref("animatedEmoji", v)} />} />
+                <Row id="settings.appearance.imagePreviewSize" label={t("settings.appearance.imagePreviewSize")} desc={t("settings.appearance.imagePreviewSizeDesc")}
                   control={<Select value={prefs.imagePreviewSize ?? "medium"} onChange={(v) => updatePref("imagePreviewSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
-                <Row label={t("settings.appearance.avatarSizeList")} desc={t("settings.appearance.avatarSizeListDesc")}
+                <Row id="settings.appearance.avatarSizeList" label={t("settings.appearance.avatarSizeList")} desc={t("settings.appearance.avatarSizeListDesc")}
                   control={<Select value={prefs.avatarSize ?? "medium"} onChange={(v) => updatePref("avatarSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
-                <Row label={t("settings.appearance.avatarSizeChat")} desc={t("settings.appearance.avatarSizeChatDesc")}
+                <Row id="settings.appearance.avatarSizeChat" label={t("settings.appearance.avatarSizeChat")} desc={t("settings.appearance.avatarSizeChatDesc")}
                   control={<Select value={prefs.avatarChatSize ?? "medium"} onChange={(v) => updatePref("avatarChatSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
-                <Row label={t("settings.appearance.avatarPresenceDot")} desc={t("settings.appearance.avatarPresenceDotDesc")}
+                <Row id="settings.appearance.avatarPresenceDot" label={t("settings.appearance.avatarPresenceDot")} desc={t("settings.appearance.avatarPresenceDotDesc")}
                   control={<Select value={prefs.avatarPresenceSize ?? "small"} onChange={(v) => updatePref("avatarPresenceSize", v)} options={[
                     { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
               </Section>
 
               <Section icon={Hash} title={t("settings.appearance.contentStyling")}>
-                <Row label={t("settings.appearance.codeBlockTheme")} desc={t("settings.appearance.codeBlockThemeDesc")}
+                <Row id="settings.appearance.codeBlockTheme" label={t("settings.appearance.codeBlockTheme")} desc={t("settings.appearance.codeBlockThemeDesc")}
                   control={<Select value={prefs.codeBlockTheme ?? "dark"} onChange={(v) => updatePref("codeBlockTheme", v)} options={[
                     { value: "light", label: t("settings.appearance.options.small") }, { value: "dark", label: t("settings.appearance.options.medium") }, { value: "auto", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.inlineCodeStyle")} desc={t("settings.appearance.inlineCodeStyleDesc")}
+                <Row id="settings.appearance.inlineCodeStyle" label={t("settings.appearance.inlineCodeStyle")} desc={t("settings.appearance.inlineCodeStyleDesc")}
                   control={<Select value={prefs.inlineCodeStyle ?? "modern"} onChange={(v) => updatePref("inlineCodeStyle", v)} options={[
                     { value: "modern", label: t("settings.appearance.options.modern") }, { value: "classic", label: t("settings.appearance.options.classic") }, { value: "minimal", label: t("settings.appearance.options.minimal") },
                   ]} />} />
-                <Row label={t("settings.appearance.linkStyle")} desc={t("settings.appearance.linkStyleDesc")}
+                <Row id="settings.appearance.linkStyle" label={t("settings.appearance.linkStyle")} desc={t("settings.appearance.linkStyleDesc")}
                   control={<Select value={prefs.linkStyle ?? "both"} onChange={(v) => updatePref("linkStyle", v)} options={[
                     { value: "underline", label: t("settings.appearance.options.underline") }, { value: "colored", label: t("settings.appearance.options.colored") }, { value: "both", label: t("settings.appearance.options.both") },
                   ]} />} />
-                <Row label={t("settings.appearance.mentionStyle")} desc={t("settings.appearance.mentionStyleDesc")}
+                <Row id="settings.appearance.mentionStyle" label={t("settings.appearance.mentionStyle")} desc={t("settings.appearance.mentionStyleDesc")}
                   control={<Select value={prefs.mentionStyle ?? "highlight"} onChange={(v) => updatePref("mentionStyle", v)} options={[
                     { value: "highlight", label: t("settings.appearance.options.highlight") }, { value: "bold", label: t("settings.appearance.options.bold") }, { value: "both", label: t("settings.appearance.options.both") },
                   ]} />} />
-                <Row label={t("settings.appearance.spoilerStyle")} desc={t("settings.appearance.spoilerStyleDesc")}
+                <Row id="settings.appearance.spoilerStyle" label={t("settings.appearance.spoilerStyle")} desc={t("settings.appearance.spoilerStyleDesc")}
                   control={<Select value={prefs.spoilerStyle ?? "blur"} onChange={(v) => updatePref("spoilerStyle", v)} options={[
                     { value: "blur", label: t("settings.appearance.options.blur") }, { value: "hidden", label: t("settings.appearance.options.hidden") }, { value: "reveal", label: t("settings.appearance.options.revealClick") },
                   ]} />} />
-                <Row label={t("settings.appearance.blockquoteStyle")} desc={t("settings.appearance.blockquoteStyleDesc")}
+                <Row id="settings.appearance.blockquoteStyle" label={t("settings.appearance.blockquoteStyle")} desc={t("settings.appearance.blockquoteStyleDesc")}
                   control={<Select value={prefs.blockquoteStyle ?? "line"} onChange={(v) => updatePref("blockquoteStyle", v)} options={[
                     { value: "line", label: t("settings.appearance.options.line") }, { value: "accent", label: t("settings.appearance.options.accent") }, { value: "modern", label: t("settings.appearance.options.modern") },
                   ]} />} />
-                <Row label={t("settings.appearance.headingStyle")} desc={t("settings.appearance.headingStyleDesc")}
+                <Row id="settings.appearance.headingStyle" label={t("settings.appearance.headingStyle")} desc={t("settings.appearance.headingStyleDesc")}
                   control={<Select value={prefs.headingStyle ?? "default"} onChange={(v) => updatePref("headingStyle", v)} options={[
                     { value: "default", label: t("settings.appearance.options.default") }, { value: "accent", label: t("settings.appearance.options.accent") }, { value: "underlined", label: t("settings.appearance.options.underlined") },
                   ]} />} />
               </Section>
 
               <Section icon={Sliders} title={t("settings.appearance.scrollbar")}>
-                <Row label={t("settings.appearance.scrollbarStyle")} desc={t("settings.appearance.scrollbarStyleDesc")}
+                <Row id="settings.appearance.scrollbarStyle" label={t("settings.appearance.scrollbarStyle")} desc={t("settings.appearance.scrollbarStyleDesc")}
                   control={<Select value={prefs.scrollbarStyle ?? "default"} onChange={(v) => updatePref("scrollbarStyle", v)} options={[
                     { value: "default", label: t("settings.appearance.options.default") }, { value: "thin", label: t("settings.appearance.options.thin") }, { value: "hidden", label: t("settings.appearance.options.hidden") },
                   ]} />} />
-                <Row label={t("settings.appearance.scrollbarWidth")} desc={t("settings.appearance.scrollbarWidthDesc")} control={<SliderControl value={prefs.scrollbarWidth ?? 8} min={4} max={20} onChange={(v) => updatePref("scrollbarWidth", v)} />} />
-                <Row label={t("settings.appearance.scrollBehavior")} desc={t("settings.appearance.scrollBehaviorDesc")}
+                <Row id="settings.appearance.scrollbarWidth" label={t("settings.appearance.scrollbarWidth")} desc={t("settings.appearance.scrollbarWidthDesc")} control={<SliderControl value={prefs.scrollbarWidth ?? 8} min={4} max={20} onChange={(v) => updatePref("scrollbarWidth", v)} />} />
+                <Row id="settings.appearance.scrollBehavior" label={t("settings.appearance.scrollBehavior")} desc={t("settings.appearance.scrollBehaviorDesc")}
                   control={<Select value={prefs.scrollBehavior ?? "smooth"} onChange={(v) => updatePref("scrollBehavior", v)} options={[
                     { value: "smooth", label: t("settings.appearance.options.small") }, { value: "instant", label: t("settings.appearance.options.medium") },
                   ]} />} />
-                <Row label={t("settings.appearance.stickyHeader")} desc={t("settings.appearance.stickyHeaderDesc")} control={<Toggle checked={prefs.stickyHeader ?? true} onChange={(v) => updatePref("stickyHeader", v)} />} />
+                <Row id="settings.appearance.stickyHeader" label={t("settings.appearance.stickyHeader")} desc={t("settings.appearance.stickyHeaderDesc")} control={<Toggle checked={prefs.stickyHeader ?? true} onChange={(v) => updatePref("stickyHeader", v)} />} />
               </Section>
 
               <Section icon={Zap} title={t("settings.appearance.animations")}>
-                <Row label={t("settings.appearance.reduceMotion")} desc={t("settings.appearance.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
-                <Row label={t("settings.appearance.reduceTransparency")} desc={t("settings.appearance.reduceTransparencyDesc")} control={<Toggle checked={prefs.reduceTransparency ?? false} onChange={(v) => updatePref("reduceTransparency", v)} />} />
-                <Row label={t("settings.appearance.pageTransition")} desc={t("settings.appearance.pageTransitionDesc")}
+                <Row id="settings.appearance.reduceMotion" label={t("settings.appearance.reduceMotion")} desc={t("settings.appearance.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
+                <Row id="settings.appearance.reduceTransparency" label={t("settings.appearance.reduceTransparency")} desc={t("settings.appearance.reduceTransparencyDesc")} control={<Toggle checked={prefs.reduceTransparency ?? false} onChange={(v) => updatePref("reduceTransparency", v)} />} />
+                <Row id="settings.appearance.pageTransition" label={t("settings.appearance.pageTransition")} desc={t("settings.appearance.pageTransitionDesc")}
                   control={<Select value={prefs.pageTransition ?? "fade"} onChange={(v) => updatePref("pageTransition", v)} options={[
                     { value: "fade", label: t("settings.appearance.options.fade") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.messageAnimation")} desc={t("settings.appearance.messageAnimationDesc")}
+                <Row id="settings.appearance.messageAnimation" label={t("settings.appearance.messageAnimation")} desc={t("settings.appearance.messageAnimationDesc")}
                   control={<Select value={prefs.messageAnimation ?? "fade"} onChange={(v) => updatePref("messageAnimation", v)} options={[
                     { value: "fade", label: t("settings.appearance.options.fade") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.modalAnimation")} desc={t("settings.appearance.modalAnimationDesc")}
+                <Row id="settings.appearance.modalAnimation" label={t("settings.appearance.modalAnimation")} desc={t("settings.appearance.modalAnimationDesc")}
                   control={<Select value={prefs.modalAnimation ?? "scale"} onChange={(v) => updatePref("modalAnimation", v)} options={[
                     { value: "fade", label: t("settings.appearance.options.fade") }, { value: "scale", label: t("settings.appearance.options.scale") }, { value: "slide", label: t("settings.appearance.options.slide") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.hoverEffect")} desc={t("settings.appearance.hoverEffectDesc")}
+                <Row id="settings.appearance.hoverEffect" label={t("settings.appearance.hoverEffect")} desc={t("settings.appearance.hoverEffectDesc")}
                   control={<Select value={prefs.hoverAnimation ?? "lift"} onChange={(v) => updatePref("hoverAnimation", v)} options={[
                     { value: "scale", label: t("settings.appearance.options.scale") }, { value: "glow", label: t("settings.appearance.options.glow") }, { value: "lift", label: t("settings.appearance.options.lift") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.reactionAnimation")} desc={t("settings.appearance.reactionAnimationDesc")}
+                <Row id="settings.appearance.reactionAnimation" label={t("settings.appearance.reactionAnimation")} desc={t("settings.appearance.reactionAnimationDesc")}
                   control={<Select value={prefs.reactionAnimation ?? "pop"} onChange={(v) => updatePref("reactionAnimation", v)} options={[
                     { value: "bounce", label: t("settings.appearance.options.bounce") }, { value: "pop", label: t("settings.appearance.options.pop") }, { value: "fade", label: t("settings.appearance.options.fade") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.skeletonStyle")} desc={t("settings.appearance.skeletonStyleDesc")}
+                <Row id="settings.appearance.skeletonStyle" label={t("settings.appearance.skeletonStyle")} desc={t("settings.appearance.skeletonStyleDesc")}
                   control={<Select value={prefs.skeletonStyle ?? "shimmer"} onChange={(v) => updatePref("skeletonStyle", v)} options={[
                     { value: "shimmer", label: t("settings.appearance.options.shimmer") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
-                <Row label={t("settings.appearance.typingIndicator")} desc={t("settings.appearance.typingIndicatorDesc")}
+                <Row id="settings.appearance.typingIndicator" label={t("settings.appearance.typingIndicator")} desc={t("settings.appearance.typingIndicatorDesc")}
                   control={<Select value={prefs.typingIndicatorStyle ?? "dots"} onChange={(v) => updatePref("typingIndicatorStyle", v)} options={[
                     { value: "dots", label: t("settings.appearance.options.bouncingDots") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "text", label: t("settings.appearance.options.textOnly") },
                   ]} />} />
-                <Row label={t("settings.appearance.badgeStyle")} desc={t("settings.appearance.badgeStyleDesc")}
+                <Row id="settings.appearance.badgeStyle" label={t("settings.appearance.badgeStyle")} desc={t("settings.appearance.badgeStyleDesc")}
                   control={<Select value={prefs.badgeStyle ?? "pill"} onChange={(v) => updatePref("badgeStyle", v)} options={[
                     { value: "dot", label: t("settings.appearance.options.dot") }, { value: "pill", label: t("settings.appearance.options.pill") }, { value: "number", label: t("settings.appearance.options.number") },
                   ]} />} />
               </Section>
 
-              <ThemeEditor />
+              <Section icon={MessageCircle} title={t("settings.status.oneliner")}>
+                <div className="flex items-center justify-between gap-4" id="settings.status.customStatus">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-text-primary truncate">{t("settings.status.customStatus")}</p>
+                    <p className="text-xs text-text-muted truncate">{t("settings.status.customStatusDesc")}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <input
+                      value={customStatusText}
+                      onChange={(e) => setCustomStatusText(e.target.value)}
+                      placeholder={t("settings.status.customStatusPlaceholder")}
+                      maxLength={80}
+                      className="h-8 w-44 rounded-xl border border-border bg-bg-primary px-2.5 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+                    />
+                    <button
+                      onClick={saveCustomStatus}
+                      disabled={savingCustomStatus}
+                      className="h-8 rounded-xl bg-accent text-white text-xs px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      {t("settings.status.set")}
+                    </button>
+                  </div>
+                </div>
+                {customStatusMsg && (
+                  <p className="text-xs text-accent mt-1">{customStatusMsg}</p>
+                )}
+              </Section>
+
+              <Section icon={Sparkles} title={t("settings.status.statusEmoji")}>
+                <div className="flex items-center justify-between gap-4" id="settings.status.statusEmoji">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-text-primary truncate">{t("themeEditor.statusEmoji")}</p>
+                    <p className="text-xs text-text-muted truncate">{t("settings.status.statusEmojiDesc")}</p>
+                  </div>
+                  <input
+                    value={statusEmojiLocal}
+                    onChange={(e) => setStatusEmojiLocal(e.target.value)}
+                    placeholder={t("themeEditor.statusEmojiPlaceholder")}
+                    maxLength={2}
+                    className="h-8 w-16 rounded-xl border border-border bg-bg-primary px-2.5 text-center text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+                  />
+                </div>
+                <button
+                  onClick={clearStatusEmoji}
+                  className="text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                >
+                  {t("settings.status.resetToDot")}
+                </button>
+                {statusEmojiSaveMsg && (
+                  <p className="text-xs text-accent mt-1">{statusEmojiSaveMsg}</p>
+                )}
+              </Section>
+
+              <div id="themeEditor.statusEmoji"><ThemeEditor /></div>
             </>
           )}
 
@@ -812,26 +1118,26 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.notifications.title")}</h1>
               <Section icon={Bell} title={t("settings.notifications.pushInApp")}>
-                <Row label={t("settings.notifications.messages")} desc={t("settings.notifications.messagesDesc")} control={<Toggle checked={prefs.messageNotifications ?? true} onChange={(v) => updatePref("messageNotifications", v)} />} />
-                <Row label={t("settings.notifications.groupInvites")} desc={t("settings.notifications.groupInvitesDesc")} control={<Toggle checked={prefs.groupInvites ?? true} onChange={(v) => updatePref("groupInvites", v)} />} />
-                <Row label={t("settings.notifications.communityUpdates")} desc={t("settings.notifications.communityUpdatesDesc")} control={<Toggle checked={prefs.communityUpdates ?? true} onChange={(v) => updatePref("communityUpdates", v)} />} />
-                <Row label={t("settings.notifications.eventReminders")} desc={t("settings.notifications.eventRemindersDesc")} control={<Toggle checked={prefs.eventReminders ?? true} onChange={(v) => updatePref("eventReminders", v)} />} />
-                <Row label={t("settings.notifications.callAlerts")} desc={t("settings.notifications.callAlertsDesc")} control={<Toggle checked={prefs.callAlerts ?? true} onChange={(v) => updatePref("callAlerts", v)} />} />
+                <Row id="settings.notifications.messages" label={t("settings.notifications.messages")} desc={t("settings.notifications.messagesDesc")} control={<Toggle checked={prefs.messageNotifications ?? true} onChange={(v) => updatePref("messageNotifications", v)} />} />
+                <Row id="settings.notifications.groupInvites" label={t("settings.notifications.groupInvites")} desc={t("settings.notifications.groupInvitesDesc")} control={<Toggle checked={prefs.groupInvites ?? true} onChange={(v) => updatePref("groupInvites", v)} />} />
+                <Row id="settings.notifications.communityUpdates" label={t("settings.notifications.communityUpdates")} desc={t("settings.notifications.communityUpdatesDesc")} control={<Toggle checked={prefs.communityUpdates ?? true} onChange={(v) => updatePref("communityUpdates", v)} />} />
+                <Row id="settings.notifications.eventReminders" label={t("settings.notifications.eventReminders")} desc={t("settings.notifications.eventRemindersDesc")} control={<Toggle checked={prefs.eventReminders ?? true} onChange={(v) => updatePref("eventReminders", v)} />} />
+                <Row id="settings.notifications.callAlerts" label={t("settings.notifications.callAlerts")} desc={t("settings.notifications.callAlertsDesc")} control={<Toggle checked={prefs.callAlerts ?? true} onChange={(v) => updatePref("callAlerts", v)} />} />
               </Section>
               <Section icon={Monitor} title={t("settings.notifications.delivery")}>
-                <Row label={t("settings.notifications.desktopNotifications")} desc={t("settings.notifications.desktopNotificationsDesc")} control={<Toggle checked={prefs.desktopNotifications ?? true} onChange={(v) => updatePref("desktopNotifications", v)} />} />
-                <Row label={t("settings.notifications.pushNotifications")} desc={t("settings.notifications.pushNotificationsDesc")} control={<Toggle checked={prefs.pushNotifications ?? true} onChange={(v) => updatePref("pushNotifications", v)} />} />
-                <Row label={t("settings.notifications.messagePreview")} desc={t("settings.notifications.messagePreviewDesc")} control={<Toggle checked={prefs.messagePreview ?? true} onChange={(v) => updatePref("messagePreview", v)} />} />
+                <Row id="settings.notifications.desktopNotifications" label={t("settings.notifications.desktopNotifications")} desc={t("settings.notifications.desktopNotificationsDesc")} control={<Toggle checked={prefs.desktopNotifications ?? true} onChange={(v) => updatePref("desktopNotifications", v)} />} />
+                <Row id="settings.notifications.pushNotifications" label={t("settings.notifications.pushNotifications")} desc={t("settings.notifications.pushNotificationsDesc")} control={<Toggle checked={prefs.pushNotifications ?? true} onChange={(v) => updatePref("pushNotifications", v)} />} />
+                <Row id="settings.notifications.messagePreview" label={t("settings.notifications.messagePreview")} desc={t("settings.notifications.messagePreviewDesc")} control={<Toggle checked={prefs.messagePreview ?? true} onChange={(v) => updatePref("messagePreview", v)} />} />
               </Section>
               <Section icon={Volume2} title={t("settings.notifications.sounds")}>
-                <Row label={t("settings.notifications.notificationSound")} desc={t("settings.notifications.notificationSoundDesc")} control={<Toggle checked={prefs.notificationSound ?? true} onChange={(v) => updatePref("notificationSound", v)} />} />
-                <Row label={t("settings.notifications.sound")} desc={t("settings.notifications.soundDesc")}
+                <Row id="settings.notifications.notificationSound" label={t("settings.notifications.notificationSound")} desc={t("settings.notifications.notificationSoundDesc")} control={<Toggle checked={prefs.notificationSound ?? true} onChange={(v) => updatePref("notificationSound", v)} />} />
+                <Row id="settings.notifications.sound" label={t("settings.notifications.sound")} desc={t("settings.notifications.soundDesc")}
                   control={<Select value={prefs.notificationSoundName ?? "default"} onChange={(v) => updatePref("notificationSoundName", v)}
                     options={[{ value: "default", label: t("settings.notifications.soundOptions.default") }, { value: "chime", label: t("settings.notifications.soundOptions.chime") }, { value: "pop", label: t("settings.notifications.soundOptions.pop") }, { value: "bell", label: t("settings.notifications.soundOptions.bell") }, { value: "none", label: t("common.none") }]} />} />
-                <Row label={t("settings.notifications.volume")} desc={t("settings.notifications.volumeDesc")} control={<SliderControl value={prefs.notificationVolume ?? 80} min={0} max={100} onChange={(v) => updatePref("notificationVolume", v)} />} />
+                <Row id="settings.notifications.volume" label={t("settings.notifications.volume")} desc={t("settings.notifications.volumeDesc")} control={<SliderControl value={prefs.notificationVolume ?? 80} min={0} max={100} onChange={(v) => updatePref("notificationVolume", v)} />} />
               </Section>
               <Section icon={Clock} title={t("settings.notifications.quietHours")}>
-                <Row label={t("settings.notifications.doNotDisturb")} desc={t("settings.notifications.doNotDisturbDesc")} control={<Toggle checked={prefs.dndEnabled ?? false} onChange={(v) => updatePref("dndEnabled", v)} />} />
+                <Row id="settings.notifications.doNotDisturb" label={t("settings.notifications.doNotDisturb")} desc={t("settings.notifications.doNotDisturbDesc")} control={<Toggle checked={prefs.dndEnabled ?? false} onChange={(v) => updatePref("dndEnabled", v)} />} />
                 {prefs.dndEnabled && (
                   <div className="flex gap-2">
                     <input type="time" className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none" />
@@ -841,9 +1147,9 @@ export function SettingsPage() {
                 )}
               </Section>
               <Section icon={Bell} title={t("settings.notifications.advanced")}>
-                <Row label={t("settings.notifications.mentionsOnly")} desc={t("settings.notifications.mentionsOnlyDesc")} control={<Toggle checked={prefs.mentionOnly ?? false} onChange={(v) => updatePref("mentionOnly", v)} />} />
-                <Row label={t("settings.notifications.badgeCount")} desc={t("settings.notifications.badgeCountDesc")} control={<Toggle checked={prefs.badgeCount ?? true} onChange={(v) => updatePref("badgeCount", v)} />} />
-                <Row label={t("settings.notifications.keywordAlerts")} desc={t("settings.notifications.keywordAlertsDesc")}
+                <Row id="settings.notifications.mentionsOnly" label={t("settings.notifications.mentionsOnly")} desc={t("settings.notifications.mentionsOnlyDesc")} control={<Toggle checked={prefs.mentionOnly ?? false} onChange={(v) => updatePref("mentionOnly", v)} />} />
+                <Row id="settings.notifications.badgeCount" label={t("settings.notifications.badgeCount")} desc={t("settings.notifications.badgeCountDesc")} control={<Toggle checked={prefs.badgeCount ?? true} onChange={(v) => updatePref("badgeCount", v)} />} />
+                <Row id="settings.notifications.keywordAlerts" label={t("settings.notifications.keywordAlerts")} desc={t("settings.notifications.keywordAlertsDesc")}
                   control={<input value={prefs.keywordAlerts ?? ""} onChange={(e) => updatePref("keywordAlerts", e.target.value)} placeholder={t("settings.notifications.keywordsPlaceholder")}
                     className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 max-w-[160px]" />} />
               </Section>
@@ -855,22 +1161,22 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.privacy.title")}</h1>
               <Section icon={Eye} title={t("settings.privacy.presence")}>
-                <Row label={t("settings.privacy.showOnlineStatus")} desc={t("settings.privacy.showOnlineStatusDesc")} control={<Toggle checked={prefs.showOnlineStatus ?? true} onChange={(v) => updatePref("showOnlineStatus", v)} />} />
-                <Row label={t("settings.privacy.showPresence")} desc={t("settings.privacy.showPresenceDesc")} control={<Toggle checked={prefs.showPresence ?? true} onChange={(v) => updatePref("showPresence", v)} />} />
-                <Row label={t("settings.privacy.shareActivity")} desc={t("settings.privacy.shareActivityDesc")} control={<Toggle checked={prefs.shareActivity ?? true} onChange={(v) => updatePref("shareActivity", v)} />} />
+                <Row id="settings.privacy.showOnlineStatus" label={t("settings.privacy.showOnlineStatus")} desc={t("settings.privacy.showOnlineStatusDesc")} control={<Toggle checked={prefs.showOnlineStatus ?? true} onChange={(v) => updatePref("showOnlineStatus", v)} />} />
+                <Row id="settings.privacy.showPresence" label={t("settings.privacy.showPresence")} desc={t("settings.privacy.showPresenceDesc")} control={<Toggle checked={prefs.showPresence ?? true} onChange={(v) => updatePref("showPresence", v)} />} />
+                <Row id="settings.privacy.shareActivity" label={t("settings.privacy.shareActivity")} desc={t("settings.privacy.shareActivityDesc")} control={<Toggle checked={prefs.shareActivity ?? true} onChange={(v) => updatePref("shareActivity", v)} />} />
               </Section>
               <Section icon={MessageSquare} title={t("settings.privacy.messages")}>
-                <Row label={t("settings.privacy.readReceipts")} desc={t("settings.privacy.readReceiptsDesc")} control={<Toggle checked={prefs.readReceipts ?? true} onChange={(v) => updatePref("readReceipts", v)} />} />
-                <Row label={t("settings.privacy.allowFriendRequests")} desc={t("settings.privacy.allowFriendRequestsDesc")}
+                <Row id="settings.privacy.readReceipts" label={t("settings.privacy.readReceipts")} desc={t("settings.privacy.readReceiptsDesc")} control={<Toggle checked={prefs.readReceipts ?? true} onChange={(v) => updatePref("readReceipts", v)} />} />
+                <Row id="settings.privacy.allowFriendRequests" label={t("settings.privacy.allowFriendRequests")} desc={t("settings.privacy.allowFriendRequestsDesc")}
                   control={<Select value={prefs.allowFriendRequests ? "everyone" : "off"} onChange={(v) => updatePref("allowFriendRequests", v === "everyone")}
                     options={[{ value: "everyone", label: t("settings.privacy.everyone") }, { value: "friends", label: t("settings.privacy.friendsOnly") }, { value: "off", label: t("settings.privacy.off") }]} />} />
-                <Row label={t("settings.privacy.directMessages")} desc={t("settings.privacy.directMessagesDesc")}
+                <Row id="settings.privacy.directMessages" label={t("settings.privacy.directMessages")} desc={t("settings.privacy.directMessagesDesc")}
                   control={<Select value={prefs.dmFrom ?? "everyone"} onChange={(v) => updatePref("dmFrom", v)}
                     options={[{ value: "everyone", label: t("settings.privacy.everyone") }, { value: "friends", label: t("settings.privacy.friendsOnly") }, { value: "off", label: t("settings.privacy.off") }]} />} />
               </Section>
               <Section icon={Shield} title={t("settings.privacy.safety")}>
-                <Row label={t("settings.privacy.explicitFilter")} desc={t("settings.privacy.explicitFilterDesc")} control={<Toggle checked={prefs.explicitFilter ?? true} onChange={(v) => updatePref("explicitFilter", v)} />} />
-                <Row label={t("settings.privacy.safetyAlerts")} desc={t("settings.privacy.safetyAlertsDesc")} control={<Toggle checked={prefs.safetyAlerts ?? true} onChange={(v) => updatePref("safetyAlerts", v)} />} />
+                <Row id="settings.privacy.explicitFilter" label={t("settings.privacy.explicitFilter")} desc={t("settings.privacy.explicitFilterDesc")} control={<Toggle checked={prefs.explicitFilter ?? true} onChange={(v) => updatePref("explicitFilter", v)} />} />
+                <Row id="settings.privacy.safetyAlerts" label={t("settings.privacy.safetyAlerts")} desc={t("settings.privacy.safetyAlertsDesc")} control={<Toggle checked={prefs.safetyAlerts ?? true} onChange={(v) => updatePref("safetyAlerts", v)} />} />
               </Section>
               <Section icon={Lock} title={t("settings.privacy.blockedMuted")}>
                 <p className="text-sm text-text-muted">{t("settings.privacy.noBlocked")}</p>
@@ -883,22 +1189,22 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.chat.title")}</h1>
               <Section icon={Send} title={t("settings.chat.messaging")}>
-                <Row label={t("settings.chat.enterToSend")} desc={t("settings.chat.enterToSendDesc")} control={<Toggle checked={prefs.enterToSend ?? true} onChange={(v) => updatePref("enterToSend", v)} />} />
-                <Row label={t("settings.chat.typingIndicators")} desc={t("settings.chat.typingIndicatorsDesc")} control={<Toggle checked={prefs.showTypingIndicators ?? true} onChange={(v) => updatePref("showTypingIndicators", v)} />} />
-                <Row label={t("settings.chat.messageGrouping")} desc={t("settings.chat.messageGroupingDesc")} control={<Toggle checked={prefs.messageGrouping ?? true} onChange={(v) => updatePref("messageGrouping", v)} />} />
-                <Row label={t("settings.chat.replyPreview")} desc={t("settings.chat.replyPreviewDesc")} control={<Toggle checked={prefs.replyPreview ?? true} onChange={(v) => updatePref("replyPreview", v)} />} />
+                <Row id="settings.chat.enterToSend" label={t("settings.chat.enterToSend")} desc={t("settings.chat.enterToSendDesc")} control={<Toggle checked={prefs.enterToSend ?? true} onChange={(v) => updatePref("enterToSend", v)} />} />
+                <Row id="settings.chat.typingIndicators" label={t("settings.chat.typingIndicators")} desc={t("settings.chat.typingIndicatorsDesc")} control={<Toggle checked={prefs.showTypingIndicators ?? true} onChange={(v) => updatePref("showTypingIndicators", v)} />} />
+                <Row id="settings.chat.messageGrouping" label={t("settings.chat.messageGrouping")} desc={t("settings.chat.messageGroupingDesc")} control={<Toggle checked={prefs.messageGrouping ?? true} onChange={(v) => updatePref("messageGrouping", v)} />} />
+                <Row id="settings.chat.replyPreview" label={t("settings.chat.replyPreview")} desc={t("settings.chat.replyPreviewDesc")} control={<Toggle checked={prefs.replyPreview ?? true} onChange={(v) => updatePref("replyPreview", v)} />} />
               </Section>
               <Section icon={Hash} title={t("settings.chat.content")}>
-                <Row label={t("settings.chat.imagePreviews")} desc={t("settings.chat.imagePreviewsDesc")} control={<Toggle checked={prefs.imagePreviews ?? true} onChange={(v) => updatePref("imagePreviews", v)} />} />
-                <Row label={t("settings.chat.linkPreviews")} desc={t("settings.chat.linkPreviewsDesc")} control={<Toggle checked={prefs.linkPreviews ?? true} onChange={(v) => updatePref("linkPreviews", v)} />} />
-                <Row label={t("settings.chat.emojiSuggestions")} desc={t("settings.chat.emojiSuggestionsDesc")} control={<Toggle checked={prefs.emojiSuggestions ?? true} onChange={(v) => updatePref("emojiSuggestions", v)} />} />
-                <Row label={t("settings.chat.stickerSuggestions")} desc={t("settings.chat.stickerSuggestionsDesc")} control={<Toggle checked={prefs.stickerSuggestions ?? true} onChange={(v) => updatePref("stickerSuggestions", v)} />} />
-                <Row label={t("settings.chat.markdownPreview")} desc={t("settings.chat.markdownPreviewDesc")} control={<Toggle checked={prefs.markdownPreview ?? true} onChange={(v) => updatePref("markdownPreview", v)} />} />
-                <Row label={t("settings.chat.inlineCodePreview")} desc={t("settings.chat.inlineCodePreviewDesc")} control={<Toggle checked={prefs.inlineCodePreview ?? true} onChange={(v) => updatePref("inlineCodePreview", v)} />} />
+                <Row id="settings.chat.imagePreviews" label={t("settings.chat.imagePreviews")} desc={t("settings.chat.imagePreviewsDesc")} control={<Toggle checked={prefs.imagePreviews ?? true} onChange={(v) => updatePref("imagePreviews", v)} />} />
+                <Row id="settings.chat.linkPreviews" label={t("settings.chat.linkPreviews")} desc={t("settings.chat.linkPreviewsDesc")} control={<Toggle checked={prefs.linkPreviews ?? true} onChange={(v) => updatePref("linkPreviews", v)} />} />
+                <Row id="settings.chat.emojiSuggestions" label={t("settings.chat.emojiSuggestions")} desc={t("settings.chat.emojiSuggestionsDesc")} control={<Toggle checked={prefs.emojiSuggestions ?? true} onChange={(v) => updatePref("emojiSuggestions", v)} />} />
+                <Row id="settings.chat.stickerSuggestions" label={t("settings.chat.stickerSuggestions")} desc={t("settings.chat.stickerSuggestionsDesc")} control={<Toggle checked={prefs.stickerSuggestions ?? true} onChange={(v) => updatePref("stickerSuggestions", v)} />} />
+                <Row id="settings.chat.markdownPreview" label={t("settings.chat.markdownPreview")} desc={t("settings.chat.markdownPreviewDesc")} control={<Toggle checked={prefs.markdownPreview ?? true} onChange={(v) => updatePref("markdownPreview", v)} />} />
+                <Row id="settings.chat.inlineCodePreview" label={t("settings.chat.inlineCodePreview")} desc={t("settings.chat.inlineCodePreviewDesc")} control={<Toggle checked={prefs.inlineCodePreview ?? true} onChange={(v) => updatePref("inlineCodePreview", v)} />} />
               </Section>
               <Section icon={Type} title={t("settings.chat.input")}>
-                <Row label={t("settings.chat.spellCheck")} desc={t("settings.chat.spellCheckDesc")} control={<Toggle checked={prefs.spellCheck ?? true} onChange={(v) => updatePref("spellCheck", v)} />} />
-                <Row label={t("settings.chat.autoCorrect")} desc={t("settings.chat.autoCorrectDesc")} control={<Toggle checked={prefs.autoCorrect ?? false} onChange={(v) => updatePref("autoCorrect", v)} />} />
+                <Row id="settings.chat.spellCheck" label={t("settings.chat.spellCheck")} desc={t("settings.chat.spellCheckDesc")} control={<Toggle checked={prefs.spellCheck ?? true} onChange={(v) => updatePref("spellCheck", v)} />} />
+                <Row id="settings.chat.autoCorrect" label={t("settings.chat.autoCorrect")} desc={t("settings.chat.autoCorrectDesc")} control={<Toggle checked={prefs.autoCorrect ?? false} onChange={(v) => updatePref("autoCorrect", v)} />} />
               </Section>
             </>
           )}
@@ -908,33 +1214,33 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.calls.title")}</h1>
               <Section icon={Phone} title={t("settings.calls.audio")}>
-                <Row label={t("settings.calls.defaultMic")} desc={t("settings.calls.defaultMicDesc")}
+                <Row id="settings.calls.defaultMic" label={t("settings.calls.defaultMic")} desc={t("settings.calls.defaultMicDesc")}
                   control={<Select value={prefs.defaultMic ?? "default"} onChange={(v) => updatePref("defaultMic", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "mic1", label: t("settings.calls.deviceOptions.builtinMic") }, { value: "mic2", label: t("settings.calls.deviceOptions.externalMic") }]} />} />
-                <Row label={t("settings.calls.defaultSpeaker")} desc={t("settings.calls.defaultSpeakerDesc")}
+                <Row id="settings.calls.defaultSpeaker" label={t("settings.calls.defaultSpeaker")} desc={t("settings.calls.defaultSpeakerDesc")}
                   control={<Select value={prefs.defaultSpeaker ?? "default"} onChange={(v) => updatePref("defaultSpeaker", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "spk1", label: t("settings.calls.deviceOptions.builtinSpeakers") }, { value: "spk2", label: t("settings.calls.deviceOptions.headphones") }]} />} />
-                <Row label={t("settings.calls.echoCancellation")} desc={t("settings.calls.echoCancellationDesc")} control={<Toggle checked={prefs.echoCancellation ?? true} onChange={(v) => updatePref("echoCancellation", v)} />} />
-                <Row label={t("settings.calls.noiseSuppression")} desc={t("settings.calls.noiseSuppressionDesc")} control={<Toggle checked={prefs.noiseSuppression ?? true} onChange={(v) => updatePref("noiseSuppression", v)} />} />
-                <Row label={t("settings.calls.autoGainControl")} desc={t("settings.calls.autoGainControlDesc")} control={<Toggle checked={prefs.autoGainControl ?? true} onChange={(v) => updatePref("autoGainControl", v)} />} />
+                <Row id="settings.calls.echoCancellation" label={t("settings.calls.echoCancellation")} desc={t("settings.calls.echoCancellationDesc")} control={<Toggle checked={prefs.echoCancellation ?? true} onChange={(v) => updatePref("echoCancellation", v)} />} />
+                <Row id="settings.calls.noiseSuppression" label={t("settings.calls.noiseSuppression")} desc={t("settings.calls.noiseSuppressionDesc")} control={<Toggle checked={prefs.noiseSuppression ?? true} onChange={(v) => updatePref("noiseSuppression", v)} />} />
+                <Row id="settings.calls.autoGainControl" label={t("settings.calls.autoGainControl")} desc={t("settings.calls.autoGainControlDesc")} control={<Toggle checked={prefs.autoGainControl ?? true} onChange={(v) => updatePref("autoGainControl", v)} />} />
               </Section>
               <Section icon={Video} title={t("settings.calls.video")}>
-                <Row label={t("settings.calls.camera")} desc={t("settings.calls.cameraDesc")}
+                <Row id="settings.calls.camera" label={t("settings.calls.camera")} desc={t("settings.calls.cameraDesc")}
                   control={<Select value={prefs.camera ?? "default"} onChange={(v) => updatePref("camera", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "cam1", label: t("settings.calls.deviceOptions.builtinCamera") }, { value: "cam2", label: t("settings.calls.deviceOptions.externalCamera") }]} />} />
-                <Row label={t("settings.calls.videoQuality")} desc={t("settings.calls.videoQualityDesc")}
+                <Row id="settings.calls.videoQuality" label={t("settings.calls.videoQuality")} desc={t("settings.calls.videoQualityDesc")}
                   control={<Select value={prefs.videoQuality ?? "720p"} onChange={(v) => updatePref("videoQuality", v)}
                     options={[{ value: "480p", label: t("settings.calls.videoQualityOptions.480p") }, { value: "720p", label: t("settings.calls.videoQualityOptions.720p") }, { value: "1080p", label: t("settings.calls.videoQualityOptions.1080p") }]} />} />
-                <Row label={t("settings.calls.backgroundBlur")} desc={t("settings.calls.backgroundBlurDesc")} control={<Toggle checked={prefs.videoBackgroundBlur ?? false} onChange={(v) => updatePref("videoBackgroundBlur", v)} />} />
-                <Row label={t("settings.calls.pictureInPicture")} desc={t("settings.calls.pictureInPictureDesc")} control={<Toggle checked={prefs.pictureInPicture ?? true} onChange={(v) => updatePref("pictureInPicture", v)} />} />
+                <Row id="settings.calls.backgroundBlur" label={t("settings.calls.backgroundBlur")} desc={t("settings.calls.backgroundBlurDesc")} control={<Toggle checked={prefs.videoBackgroundBlur ?? false} onChange={(v) => updatePref("videoBackgroundBlur", v)} />} />
+                <Row id="settings.calls.pictureInPicture" label={t("settings.calls.pictureInPicture")} desc={t("settings.calls.pictureInPictureDesc")} control={<Toggle checked={prefs.pictureInPicture ?? true} onChange={(v) => updatePref("pictureInPicture", v)} />} />
               </Section>
               <Section icon={Sliders} title={t("settings.calls.advanced")}>
-                <Row label={t("settings.calls.pushToTalk")} desc={t("settings.calls.pushToTalkDesc")} control={<Toggle checked={prefs.pushToTalk ?? false} onChange={(v) => updatePref("pushToTalk", v)} />} />
-                <Row label={t("settings.calls.voiceActivity")} desc={t("settings.calls.voiceActivityDesc")} control={<SliderControl value={prefs.voiceActivityThreshold ?? 50} min={0} max={100} onChange={(v) => updatePref("voiceActivityThreshold", v)} />} />
-                <Row label={t("settings.calls.ringtone")} desc={t("settings.calls.ringtoneDesc")}
+                <Row id="settings.calls.pushToTalk" label={t("settings.calls.pushToTalk")} desc={t("settings.calls.pushToTalkDesc")} control={<Toggle checked={prefs.pushToTalk ?? false} onChange={(v) => updatePref("pushToTalk", v)} />} />
+                <Row id="settings.calls.voiceActivity" label={t("settings.calls.voiceActivity")} desc={t("settings.calls.voiceActivityDesc")} control={<SliderControl value={prefs.voiceActivityThreshold ?? 50} min={0} max={100} onChange={(v) => updatePref("voiceActivityThreshold", v)} />} />
+                <Row id="settings.calls.ringtone" label={t("settings.calls.ringtone")} desc={t("settings.calls.ringtoneDesc")}
                   control={<Select value={prefs.ringtone ?? "default"} onChange={(v) => updatePref("ringtone", v)}
                     options={[{ value: "default", label: t("settings.calls.ringtoneOptions.default") }, { value: "classic", label: t("settings.calls.ringtoneOptions.classic") }, { value: "digital", label: t("settings.calls.ringtoneOptions.digital") }, { value: "none", label: t("common.none") }]} />} />
-                <Row label={t("settings.calls.callRecording")} desc={t("settings.calls.callRecordingDesc")} control={<Toggle checked={prefs.callRecording ?? false} onChange={(v) => updatePref("callRecording", v)} />} />
+                <Row id="settings.calls.callRecording" label={t("settings.calls.callRecording")} desc={t("settings.calls.callRecordingDesc")} control={<Toggle checked={prefs.callRecording ?? false} onChange={(v) => updatePref("callRecording", v)} />} />
               </Section>
             </>
           )}
@@ -944,25 +1250,25 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.media.title")}</h1>
               <Section icon={Image} title={t("settings.media.imagesVideo")}>
-                <Row label={t("settings.media.autoPlayMedia")} desc={t("settings.media.autoPlayMediaDesc")} control={<Toggle checked={prefs.autoPlayMedia ?? true} onChange={(v) => updatePref("autoPlayMedia", v)} />} />
-                <Row label={t("settings.media.gifAutoplay")} desc={t("settings.media.gifAutoplayDesc")} control={<Toggle checked={prefs.gifAutoplay ?? true} onChange={(v) => updatePref("gifAutoplay", v)} />} />
-                <Row label={t("settings.media.videoAutoplay")} desc={t("settings.media.videoAutoplayDesc")} control={<Toggle checked={prefs.videoAutoplay ?? true} onChange={(v) => updatePref("videoAutoplay", v)} />} />
-                <Row label={t("settings.media.imageQuality")} desc={t("settings.media.imageQualityDesc")}
+                <Row id="settings.media.autoPlayMedia" label={t("settings.media.autoPlayMedia")} desc={t("settings.media.autoPlayMediaDesc")} control={<Toggle checked={prefs.autoPlayMedia ?? true} onChange={(v) => updatePref("autoPlayMedia", v)} />} />
+                <Row id="settings.media.gifAutoplay" label={t("settings.media.gifAutoplay")} desc={t("settings.media.gifAutoplayDesc")} control={<Toggle checked={prefs.gifAutoplay ?? true} onChange={(v) => updatePref("gifAutoplay", v)} />} />
+                <Row id="settings.media.videoAutoplay" label={t("settings.media.videoAutoplay")} desc={t("settings.media.videoAutoplayDesc")} control={<Toggle checked={prefs.videoAutoplay ?? true} onChange={(v) => updatePref("videoAutoplay", v)} />} />
+                <Row id="settings.media.imageQuality" label={t("settings.media.imageQuality")} desc={t("settings.media.imageQualityDesc")}
                   control={<Select value={prefs.imageQuality ?? "high"} onChange={(v) => updatePref("imageQuality", v)}
                     options={[{ value: "low", label: t("settings.media.qualityOptions.low") }, { value: "medium", label: t("settings.media.qualityOptions.medium") }, { value: "high", label: t("settings.media.qualityOptions.high") }]} />} />
-                <Row label={t("settings.media.imageSaveQuality")} desc={t("settings.media.imageSaveQualityDesc")} control={<SliderControl value={prefs.imageSaveQuality ?? 90} min={10} max={100} step={5} onChange={(v) => updatePref("imageSaveQuality", v)} />} />
+                <Row id="settings.media.imageSaveQuality" label={t("settings.media.imageSaveQuality")} desc={t("settings.media.imageSaveQualityDesc")} control={<SliderControl value={prefs.imageSaveQuality ?? 90} min={10} max={100} step={5} onChange={(v) => updatePref("imageSaveQuality", v)} />} />
               </Section>
               <Section icon={FileText} title={t("settings.media.files")}>
-                <Row label={t("settings.media.autoDownload")} desc={t("settings.media.autoDownloadDesc")} control={<Toggle checked={prefs.autoDownloadFiles ?? false} onChange={(v) => updatePref("autoDownloadFiles", v)} />} />
-                <Row label={t("settings.media.maxFileSize")} desc={t("settings.media.maxFileSizeDesc")}
+                <Row id="settings.media.autoDownload" label={t("settings.media.autoDownload")} desc={t("settings.media.autoDownloadDesc")} control={<Toggle checked={prefs.autoDownloadFiles ?? false} onChange={(v) => updatePref("autoDownloadFiles", v)} />} />
+                <Row id="settings.media.maxFileSize" label={t("settings.media.maxFileSize")} desc={t("settings.media.maxFileSizeDesc")}
                   control={<Select value={String(prefs.maxFileSize ?? 25)} onChange={(v) => updatePref("maxFileSize", parseInt(v))}
                     options={[{ value: "10", label: t("settings.media.fileSizeOptions.10") }, { value: "25", label: t("settings.media.fileSizeOptions.25") }, { value: "50", label: t("settings.media.fileSizeOptions.50") }, { value: "100", label: t("settings.media.fileSizeOptions.100") }]} />} />
-                <Row label={t("settings.media.downloadLocation")} desc={t("settings.media.downloadLocationDesc")}
+                <Row id="settings.media.downloadLocation" label={t("settings.media.downloadLocation")} desc={t("settings.media.downloadLocationDesc")}
                   control={<Select value={prefs.downloadLocation ?? "default"} onChange={(v) => updatePref("downloadLocation", v)}
                     options={[{ value: "default", label: t("common.default") }, { value: "custom", label: t("settings.appearance.options.small") }]} />} />
               </Section>
               <Section icon={Music} title={t("settings.media.voiceMessages")}>
-                <Row label={t("settings.media.voiceQuality")} desc={t("settings.media.voiceQualityDesc")}
+                <Row id="settings.media.voiceQuality" label={t("settings.media.voiceQuality")} desc={t("settings.media.voiceQualityDesc")}
                   control={<Select value={prefs.voiceMessageQuality ?? "medium"} onChange={(v) => updatePref("voiceMessageQuality", v)}
                     options={[{ value: "low", label: t("settings.media.qualityOptions.low") }, { value: "medium", label: t("settings.media.qualityOptions.medium") }, { value: "high", label: t("settings.media.qualityOptions.high") }]} />} />
               </Section>
@@ -974,24 +1280,24 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.audioVideo.title")}</h1>
               <Section icon={Mic} title={t("settings.audioVideo.inputDevices")}>
-                <Row label={t("settings.audioVideo.inputDevice")} desc={t("settings.audioVideo.inputDeviceDesc")}
+                <Row id="settings.audioVideo.inputDevice" label={t("settings.audioVideo.inputDevice")} desc={t("settings.audioVideo.inputDeviceDesc")}
                   control={<Select value={prefs.inputDevice ?? "default"} onChange={(v) => updatePref("inputDevice", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "mic1", label: t("settings.audioVideo.deviceOptions.builtinMic") }, { value: "mic2", label: t("settings.audioVideo.deviceOptions.externalMic") }]} />} />
-                <Row label={t("settings.audioVideo.micSensitivity")} desc={t("settings.audioVideo.micSensitivityDesc")} control={<SliderControl value={prefs.micSensitivity ?? 80} min={0} max={100} onChange={(v) => updatePref("micSensitivity", v)} />} />
+                <Row id="settings.audioVideo.micSensitivity" label={t("settings.audioVideo.micSensitivity")} desc={t("settings.audioVideo.micSensitivityDesc")} control={<SliderControl value={prefs.micSensitivity ?? 80} min={0} max={100} onChange={(v) => updatePref("micSensitivity", v)} />} />
               </Section>
               <Section icon={Headphones} title={t("settings.audioVideo.outputDevices")}>
-                <Row label={t("settings.audioVideo.outputDevice")} desc={t("settings.audioVideo.outputDeviceDesc")}
+                <Row id="settings.audioVideo.outputDevice" label={t("settings.audioVideo.outputDevice")} desc={t("settings.audioVideo.outputDeviceDesc")}
                   control={<Select value={prefs.outputDevice ?? "default"} onChange={(v) => updatePref("outputDevice", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "spk1", label: t("settings.calls.deviceOptions.builtinSpeakers") }, { value: "spk2", label: t("settings.calls.deviceOptions.headphones") }]} />} />
               </Section>
               <Section icon={Camera} title={t("settings.audioVideo.videoDevices")}>
-                <Row label={t("settings.audioVideo.camera")} desc={t("settings.audioVideo.cameraDesc")}
+                <Row id="settings.audioVideo.camera" label={t("settings.audioVideo.camera")} desc={t("settings.audioVideo.cameraDesc")}
                   control={<Select value={prefs.camera ?? "default"} onChange={(v) => updatePref("camera", v)}
                     options={[{ value: "default", label: t("settings.calls.deviceOptions.systemDefault") }, { value: "cam1", label: t("settings.calls.deviceOptions.builtinCamera") }]} />} />
-                <Row label={t("settings.audioVideo.resolution")} desc={t("settings.audioVideo.resolutionDesc")}
+                <Row id="settings.audioVideo.resolution" label={t("settings.audioVideo.resolution")} desc={t("settings.audioVideo.resolutionDesc")}
                   control={<Select value={prefs.videoResolution ?? "1280x720"} onChange={(v) => updatePref("videoResolution", v)}
                     options={[{ value: "640x480", label: t("settings.audioVideo.resolutionOptions.640x480") }, { value: "1280x720", label: t("settings.audioVideo.resolutionOptions.1280x720") }, { value: "1920x1080", label: t("settings.audioVideo.resolutionOptions.1920x1080") }]} />} />
-                <Row label={t("settings.audioVideo.frameRate")} desc={t("settings.audioVideo.frameRateDesc")}
+                <Row id="settings.audioVideo.frameRate" label={t("settings.audioVideo.frameRate")} desc={t("settings.audioVideo.frameRateDesc")}
                   control={<Select value={String(prefs.frameRate ?? 30)} onChange={(v) => updatePref("frameRate", parseInt(v))}
                     options={[{ value: "15", label: t("settings.audioVideo.framerateOptions.15") }, { value: "24", label: t("settings.audioVideo.framerateOptions.24") }, { value: "30", label: t("settings.audioVideo.framerateOptions.30") }, { value: "60", label: t("settings.audioVideo.framerateOptions.60") }]} />} />
               </Section>
@@ -1003,24 +1309,24 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.accessibility.title")}</h1>
               <Section icon={Eye} title={t("settings.accessibility.vision")}>
-                <Row label={t("settings.accessibility.highContrast")} desc={t("settings.accessibility.highContrastDesc")} control={<Toggle checked={prefs.highContrast ?? false} onChange={(v) => updatePref("highContrast", v)} />} />
-                <Row label={t("settings.accessibility.colorBlindMode")} desc={t("settings.accessibility.colorBlindModeDesc")}
+                <Row id="settings.accessibility.highContrast" label={t("settings.accessibility.highContrast")} desc={t("settings.accessibility.highContrastDesc")} control={<Toggle checked={prefs.highContrast ?? false} onChange={(v) => updatePref("highContrast", v)} />} />
+                <Row id="settings.accessibility.colorBlindMode" label={t("settings.accessibility.colorBlindMode")} desc={t("settings.accessibility.colorBlindModeDesc")}
                   control={<Select value={prefs.colorBlindMode ?? "off"} onChange={(v) => updatePref("colorBlindMode", v)}
                     options={[{ value: "off", label: t("settings.accessibility.colorBlindOptions.off") }, { value: "deuteranopia", label: t("settings.accessibility.colorBlindOptions.deuteranopia") }, { value: "protanopia", label: t("settings.accessibility.colorBlindOptions.protanopia") }, { value: "tritanopia", label: t("settings.accessibility.colorBlindOptions.tritanopia") }]} />} />
-                <Row label={t("settings.accessibility.fontSize")} desc={t("settings.accessibility.fontSizeDesc")}
+                <Row id="settings.accessibility.fontSize" label={t("settings.accessibility.fontSize")} desc={t("settings.accessibility.fontSizeDesc")}
                   control={<Select value={prefs.fontSize ?? "medium"} onChange={(v) => updatePref("fontSize", v)}
                     options={[{ value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") }, { value: "xlarge", label: t("settings.appearance.options.xlarge") }]} />} />
-                <Row label={t("settings.accessibility.lineHeight")} desc={t("settings.accessibility.lineHeightDesc")} control={<SliderControl value={prefs.lineHeight ?? 1.5} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineHeight", v)} />} />
-                <Row label={t("settings.accessibility.letterSpacing")} desc={t("settings.accessibility.letterSpacingDesc")} control={<SliderControl value={prefs.letterSpacing ?? 0} min={0} max={5} step={0.5} onChange={(v) => updatePref("letterSpacing", v)} />} />
+                <Row id="settings.accessibility.lineHeight" label={t("settings.accessibility.lineHeight")} desc={t("settings.accessibility.lineHeightDesc")} control={<SliderControl value={prefs.lineHeight ?? 1.5} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineHeight", v)} />} />
+                <Row id="settings.accessibility.letterSpacing" label={t("settings.accessibility.letterSpacing")} desc={t("settings.accessibility.letterSpacingDesc")} control={<SliderControl value={prefs.letterSpacing ?? 0} min={0} max={5} step={0.5} onChange={(v) => updatePref("letterSpacing", v)} />} />
               </Section>
               <Section icon={Smartphone} title={t("settings.accessibility.interaction")}>
-                <Row label={t("settings.accessibility.screenReader")} desc={t("settings.accessibility.screenReaderDesc")} control={<Toggle checked={prefs.screenReader ?? false} onChange={(v) => updatePref("screenReader", v)} />} />
-                <Row label={t("settings.accessibility.focusIndicators")} desc={t("settings.accessibility.focusIndicatorsDesc")} control={<Toggle checked={prefs.focusIndicators ?? true} onChange={(v) => updatePref("focusIndicators", v)} />} />
-                <Row label={t("settings.accessibility.reduceMotion")} desc={t("settings.accessibility.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
-                <Row label={t("settings.accessibility.stickyHeaders")} desc={t("settings.accessibility.stickyHeadersDesc")} control={<Toggle checked={prefs.stickyHeaders ?? true} onChange={(v) => updatePref("stickyHeaders", v)} />} />
+                <Row id="settings.accessibility.screenReader" label={t("settings.accessibility.screenReader")} desc={t("settings.accessibility.screenReaderDesc")} control={<Toggle checked={prefs.screenReader ?? false} onChange={(v) => updatePref("screenReader", v)} />} />
+                <Row id="settings.accessibility.focusIndicators" label={t("settings.accessibility.focusIndicators")} desc={t("settings.accessibility.focusIndicatorsDesc")} control={<Toggle checked={prefs.focusIndicators ?? true} onChange={(v) => updatePref("focusIndicators", v)} />} />
+                <Row id="settings.accessibility.reduceMotion" label={t("settings.accessibility.reduceMotion")} desc={t("settings.accessibility.reduceMotionDesc")} control={<Toggle checked={prefs.reduceMotion ?? false} onChange={(v) => updatePref("reduceMotion", v)} />} />
+                <Row id="settings.accessibility.stickyHeaders" label={t("settings.accessibility.stickyHeaders")} desc={t("settings.accessibility.stickyHeadersDesc")} control={<Toggle checked={prefs.stickyHeaders ?? true} onChange={(v) => updatePref("stickyHeaders", v)} />} />
               </Section>
               <Section icon={MessageSquare} title={t("settings.accessibility.chat")}>
-                <Row label={t("settings.accessibility.chatBubbleDirection")} desc={t("settings.accessibility.chatBubbleDirectionDesc")}
+                <Row id="settings.accessibility.chatBubbleDirection" label={t("settings.accessibility.chatBubbleDirection")} desc={t("settings.accessibility.chatBubbleDirectionDesc")}
                   control={<Select value={prefs.chatBubbleDir ?? "auto"} onChange={(v) => updatePref("chatBubbleDir", v)}
                     options={[{ value: "auto", label: t("settings.accessibility.directionOptions.auto") }, { value: "left", label: t("settings.accessibility.directionOptions.left") }, { value: "right", label: t("settings.accessibility.directionOptions.right") }]} />} />
               </Section>
@@ -1032,11 +1338,11 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.reader.title")}</h1>
               <Section icon={BookOpen} title={t("settings.reader.readingMode")}>
-                <Row label={t("settings.reader.readerMode")} desc={t("settings.reader.readerModeDesc")} control={<Toggle checked={prefs.readerMode ?? false} onChange={(v) => updatePref("readerMode", v)} />} />
-                <Row label={t("settings.reader.fontSize")} desc={t("settings.reader.fontSizeDesc")}
+                <Row id="settings.reader.readerMode" label={t("settings.reader.readerMode")} desc={t("settings.reader.readerModeDesc")} control={<Toggle checked={prefs.readerMode ?? false} onChange={(v) => updatePref("readerMode", v)} />} />
+                <Row id="settings.reader.fontSize" label={t("settings.reader.fontSize")} desc={t("settings.reader.fontSizeDesc")}
                   control={<Select value={String(prefs.fontSizeReader ?? 16)} onChange={(v) => updatePref("fontSizeReader", parseInt(v))}
                     options={[{ value: "14", label: t("settings.reader.fontSizeOptions.14") }, { value: "16", label: t("settings.reader.fontSizeOptions.16") }, { value: "18", label: t("settings.reader.fontSizeOptions.18") }, { value: "20", label: t("settings.reader.fontSizeOptions.20") }, { value: "24", label: t("settings.reader.fontSizeOptions.24") }]} />} />
-                <Row label={t("settings.reader.lineSpacing")} desc={t("settings.reader.lineSpacingDesc")} control={<SliderControl value={prefs.lineSpacing ?? 1.6} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineSpacing", v)} />} />
+                <Row id="settings.reader.lineSpacing" label={t("settings.reader.lineSpacing")} desc={t("settings.reader.lineSpacingDesc")} control={<SliderControl value={prefs.lineSpacing ?? 1.6} min={1} max={2.5} step={0.1} onChange={(v) => updatePref("lineSpacing", v)} />} />
               </Section>
             </>
           )}
@@ -1046,21 +1352,21 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.language.title")}</h1>
               <Section icon={Globe} title={t("settings.language.language")}>
-                <Row label={t("settings.language.appLanguage")} desc={t("settings.language.appLanguageDesc")}
+                <Row id="settings.language.appLanguage" label={t("settings.language.appLanguage")} desc={t("settings.language.appLanguageDesc")}
                   control={<Select value={prefs.language ?? "en"} onChange={(v) => updatePref("language", v)}
                     options={supportedLanguages.map((l) => ({ value: l.code, label: `${l.native} (${l.name})` }))} />} />
               </Section>
               <Section icon={Calendar} title={t("settings.language.dateTime")}>
-                <Row label={t("settings.language.timeFormat")} desc={t("settings.language.timeFormatDesc")}
+                <Row id="settings.language.timeFormat" label={t("settings.language.timeFormat")} desc={t("settings.language.timeFormatDesc")}
                   control={<Select value={prefs.timeFormat ?? "12h"} onChange={(v) => updatePref("timeFormat", v)}
                     options={[{ value: "12h", label: t("settings.language.timeFormatOptions.12h") }, { value: "24h", label: t("settings.language.timeFormatOptions.24h") }]} />} />
-                <Row label={t("settings.language.dateFormat")} desc={t("settings.language.dateFormatDesc")}
+                <Row id="settings.language.dateFormat" label={t("settings.language.dateFormat")} desc={t("settings.language.dateFormatDesc")}
                   control={<Select value={prefs.dateFormat ?? "MDY"} onChange={(v) => updatePref("dateFormat", v)}
                     options={[{ value: "MDY", label: t("settings.language.dateFormatOptions.MDY") }, { value: "DMY", label: t("settings.language.dateFormatOptions.DMY") }, { value: "YMD", label: t("settings.language.dateFormatOptions.YMD") }]} />} />
-                <Row label={t("settings.language.firstDayOfWeek")} desc={t("settings.language.firstDayOfWeekDesc")}
+                <Row id="settings.language.firstDayOfWeek" label={t("settings.language.firstDayOfWeek")} desc={t("settings.language.firstDayOfWeekDesc")}
                   control={<Select value={prefs.firstDayOfWeek ?? "sun"} onChange={(v) => updatePref("firstDayOfWeek", v)}
                     options={[{ value: "sun", label: t("settings.language.dayOptions.sun") }, { value: "mon", label: t("settings.language.dayOptions.mon") }]} />} />
-                <Row label={t("settings.language.timezone")} desc={t("settings.language.timezoneDesc")}
+                <Row id="settings.language.timezone" label={t("settings.language.timezone")} desc={t("settings.language.timezoneDesc")}
                   control={<select value={prefs.timezone ?? "UTC"} onChange={(e) => updatePref("timezone", e.target.value)}
                     className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none max-w-[160px] cursor-pointer">
                     {["UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Moscow", "Asia/Tokyo", "Asia/Shanghai", "Asia/Kolkata", "Australia/Sydney", "Pacific/Auckland"].map((tz) => (
@@ -1069,10 +1375,10 @@ export function SettingsPage() {
                   </select>} />
               </Section>
               <Section icon={Ruler} title={t("settings.language.units")}>
-                <Row label={t("settings.language.temperature")} desc={t("settings.language.temperatureDesc")}
+                <Row id="settings.language.temperature" label={t("settings.language.temperature")} desc={t("settings.language.temperatureDesc")}
                   control={<Select value={prefs.temperatureUnit ?? "c"} onChange={(v) => updatePref("temperatureUnit", v)}
                     options={[{ value: "c", label: t("settings.language.temperatureOptions.c") }, { value: "f", label: t("settings.language.temperatureOptions.f") }]} />} />
-                <Row label={t("settings.language.measurement")} desc={t("settings.language.measurementDesc")}
+                <Row id="settings.language.measurement" label={t("settings.language.measurement")} desc={t("settings.language.measurementDesc")}
                   control={<Select value={prefs.measurementSystem ?? "metric"} onChange={(v) => updatePref("measurementSystem", v)}
                     options={[{ value: "metric", label: t("settings.language.measurementOptions.metric") }, { value: "imperial", label: t("settings.language.measurementOptions.imperial") }]} />} />
               </Section>
@@ -1084,20 +1390,20 @@ export function SettingsPage() {
             <>
               <h1 className="text-lg font-semibold text-text-primary">{t("settings.advanced.title")}</h1>
               <Section icon={Terminal} title={t("settings.advanced.developer")}>
-                <Row label={t("settings.advanced.developerMode")} desc={t("settings.advanced.developerModeDesc")} control={<Toggle checked={prefs.developerMode ?? false} onChange={(v) => updatePref("developerMode", v)} />} />
-                <Row label={t("settings.advanced.experimentalFeatures")} desc={t("settings.advanced.experimentalFeaturesDesc")} control={<Toggle checked={prefs.experimentalFeatures ?? false} onChange={(v) => updatePref("experimentalFeatures", v)} />} />
-                <Row label={t("settings.advanced.loggingLevel")} desc={t("settings.advanced.loggingLevelDesc")}
+                <Row id="settings.advanced.developerMode" label={t("settings.advanced.developerMode")} desc={t("settings.advanced.developerModeDesc")} control={<Toggle checked={prefs.developerMode ?? false} onChange={(v) => updatePref("developerMode", v)} />} />
+                <Row id="settings.advanced.experimentalFeatures" label={t("settings.advanced.experimentalFeatures")} desc={t("settings.advanced.experimentalFeaturesDesc")} control={<Toggle checked={prefs.experimentalFeatures ?? false} onChange={(v) => updatePref("experimentalFeatures", v)} />} />
+                <Row id="settings.advanced.loggingLevel" label={t("settings.advanced.loggingLevel")} desc={t("settings.advanced.loggingLevelDesc")}
                   control={<Select value={prefs.loggingLevel ?? "info"} onChange={(v) => updatePref("loggingLevel", v)}
                     options={[{ value: "error", label: t("settings.advanced.loggingOptions.errorsOnly") }, { value: "warn", label: t("settings.advanced.loggingOptions.warnings") }, { value: "info", label: t("settings.advanced.loggingOptions.info") }, { value: "debug", label: t("settings.advanced.loggingOptions.debug") }]} />} />
               </Section>
               <Section icon={Zap} title={t("settings.advanced.performance")}>
-                <Row label={t("settings.advanced.hardwareAcceleration")} desc={t("settings.advanced.hardwareAccelerationDesc")} control={<Toggle checked={prefs.hardwareAcceleration ?? true} onChange={(v) => updatePref("hardwareAcceleration", v)} />} />
-                <Row label={t("settings.advanced.cacheEnabled")} desc={t("settings.advanced.cacheEnabledDesc")} control={<Toggle checked={prefs.cacheEnabled ?? true} onChange={(v) => updatePref("cacheEnabled", v)} />} />
-                <Row label={t("settings.advanced.autoUpdate")} desc={t("settings.advanced.autoUpdateDesc")} control={<Toggle checked={prefs.autoUpdate ?? true} onChange={(v) => updatePref("autoUpdate", v)} />} />
+                <Row id="settings.advanced.hardwareAcceleration" label={t("settings.advanced.hardwareAcceleration")} desc={t("settings.advanced.hardwareAccelerationDesc")} control={<Toggle checked={prefs.hardwareAcceleration ?? true} onChange={(v) => updatePref("hardwareAcceleration", v)} />} />
+                <Row id="settings.advanced.cacheEnabled" label={t("settings.advanced.cacheEnabled")} desc={t("settings.advanced.cacheEnabledDesc")} control={<Toggle checked={prefs.cacheEnabled ?? true} onChange={(v) => updatePref("cacheEnabled", v)} />} />
+                <Row id="settings.advanced.autoUpdate" label={t("settings.advanced.autoUpdate")} desc={t("settings.advanced.autoUpdateDesc")} control={<Toggle checked={prefs.autoUpdate ?? true} onChange={(v) => updatePref("autoUpdate", v)} />} />
               </Section>
               <Section icon={Cloud} title={t("settings.advanced.dataPrivacy")}>
-                <Row label={t("settings.advanced.crashReporting")} desc={t("settings.advanced.crashReportingDesc")} control={<Toggle checked={prefs.crashReporting ?? true} onChange={(v) => updatePref("crashReporting", v)} />} />
-                <Row label={t("settings.advanced.diagnostics")} desc={t("settings.advanced.diagnosticsDesc")} control={<Toggle checked={prefs.diagnostics ?? false} onChange={(v) => updatePref("diagnostics", v)} />} />
+                <Row id="settings.advanced.crashReporting" label={t("settings.advanced.crashReporting")} desc={t("settings.advanced.crashReportingDesc")} control={<Toggle checked={prefs.crashReporting ?? true} onChange={(v) => updatePref("crashReporting", v)} />} />
+                <Row id="settings.advanced.diagnostics" label={t("settings.advanced.diagnostics")} desc={t("settings.advanced.diagnosticsDesc")} control={<Toggle checked={prefs.diagnostics ?? false} onChange={(v) => updatePref("diagnostics", v)} />} />
               </Section>
             </>
           )}
@@ -1127,6 +1433,9 @@ export function SettingsPage() {
                   ))}
                 </div>
               </Section>
+            </>
+          )}
+
             </>
           )}
 

@@ -1,5 +1,4 @@
 import { useState, createContext, useContext } from "react"
-import { useTranslation } from "react-i18next"
 import { Sidebar } from "./sidebar"
 import { Topbar } from "./topbar"
 import { ChatWindow } from "../chat/chat-window"
@@ -30,7 +29,6 @@ export function useNav() {
 }
 
 export function DashboardLayout() {
-  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [view, setView] = useState<View>("chat")
 

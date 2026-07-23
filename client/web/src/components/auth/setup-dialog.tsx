@@ -4,7 +4,7 @@ import { useAuth } from "../../lib/auth-context"
 import { useTheme } from "../../lib/theme-context"
 import i18n, { supportedLanguages } from "../../lib/i18n"
 import { api } from "../../lib/api"
-import { Globe, Sun, Moon, User, ArrowRight, Check } from "lucide-react"
+import { Sun, Moon, User, ArrowRight, Check } from "lucide-react"
 
 export function SetupDialog() {
   const { t } = useTranslation()

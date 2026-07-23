@@ -18,6 +18,10 @@ vi.mock("react-i18next", async () => {
   }
 })
 
+vi.mock("../../lib/toast-context", () => ({
+  useToast: vi.fn(() => ({ showToast: vi.fn() })),
+}))
+
 describe("MessageInput", () => {
   const onSend = vi.fn()
 

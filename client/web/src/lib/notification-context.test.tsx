@@ -4,6 +4,7 @@ import { NotificationProvider, useNotificationCount } from "./notification-conte
 
 vi.mock("./api", () => ({
   api: vi.fn(),
+  getTokens: vi.fn(() => ({ accessToken: "mock-token", refreshToken: "mock-refresh" })),
 }))
 
 import { api } from "./api"

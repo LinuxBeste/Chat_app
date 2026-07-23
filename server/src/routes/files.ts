@@ -7,6 +7,33 @@ import { eq, and, or, isNull, desc, inArray } from "drizzle-orm"
 
 const router: ReturnType<typeof Router> = Router()
 
+// --- Rename file ---
+
+router.put(
+  "/:id/rename",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const { filename } = req.body
+    if (!filename || !filename.trim()) {
+      res.status(400).json({ error: "filename required" })
+      return
+    }
+
+    const [file] = await db
+      .update(attachments)
+      .set({ filename: filename.trim() })
+      .where(eq(attachments.id, req.params.id as string))
+      .returning()
+
+    if (!file) {
+      res.status(404).json({ error: "File not found" })
+      return
+    }
+
+    res.json(file)
+  }),
+)
+
 // --- Move file to folder ---
 
 router.put(

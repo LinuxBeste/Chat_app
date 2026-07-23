@@ -134,6 +134,7 @@ describe("PUT /api/communities/:id", () => {
 
 describe("POST /api/communities/:id/channels", () => {
   it("creates a channel", async () => {
+    queryQueue.push([{ role: "owner" }])
     mockData.current = [
       {
         id: CHANNEL_ID,
@@ -165,6 +166,7 @@ describe("DELETE /api/communities/channels/:channelId", () => {
 
 describe("POST /api/communities/:id/invites", () => {
   it("creates an invite", async () => {
+    queryQueue.push([{ role: "owner" }])
     mockData.current = [
       {
         id: "inv1",

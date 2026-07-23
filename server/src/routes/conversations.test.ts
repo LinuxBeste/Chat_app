@@ -4,13 +4,25 @@ import app from "../app.js"
 import { verifyToken } from "../lib/jwt.js"
 import { db } from "../lib/db.js"
 
-const { mockData } = vi.hoisted(() => ({ mockData: { current: [] as any[] } }))
+const { mockData, queryQueue } = vi.hoisted(() => ({
+  mockData: { current: [] as any[] },
+  queryQueue: [] as any[][],
+}))
 
 vi.mock("../lib/db.js", () => {
   const chain: any = {
-    then: (resolve: any) => Promise.resolve(mockData.current).then(resolve),
-    catch: (reject: any) => Promise.resolve(mockData.current).catch(reject),
-    finally: (handler: any) => Promise.resolve(mockData.current).finally(handler),
+    then: (resolve: any) => {
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
+      return Promise.resolve(data).then(resolve)
+    },
+    catch: (reject: any) => {
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
+      return Promise.resolve(data).catch(reject)
+    },
+    finally: (handler: any) => {
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
+      return Promise.resolve(data).finally(handler)
+    },
     from: vi.fn(() => chain),
     where: vi.fn(() => chain),
     limit: vi.fn(() => chain),
@@ -42,6 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(verifyToken).mockReturnValue({ userId: "00000000-0000-0000-0000-000000000001", username: "test" })
   mockData.current = []
+  queryQueue.length = 0
 })
 
 describe("POST /api/conversations", () => {
@@ -68,13 +81,9 @@ describe("POST /api/conversations", () => {
   })
 
   it("reuses existing DM", async () => {
-    vi.mocked(db.query.conversations.findFirst).mockResolvedValueOnce({
-      id: "existing-dm",
-      name: null,
-      createdAt: new Date(),
-      type: "dm",
-      createdBy: "u1",
-    } as any)
+    queryQueue.push([{ id: "existing-dm" }])
+    queryQueue.push([{ userId: "00000000-0000-0000-0000-000000000001" }, { userId: "00000000-0000-0000-0000-000000000002" }])
+    mockData.current = [{ id: "existing-dm", type: "dm", name: null, createdAt: new Date().toISOString() }]
     const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody)
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("id", "existing-dm")

@@ -8,6 +8,19 @@ vi.mock("../../lib/auth-context", () => ({
   useAuth: () => mockUseAuth(),
 }))
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (k: string) => {
+      const map: Record<string, string> = {
+        "chat.selectConversation": "Select a conversation",
+        "chat.searchPlaceholder": "Search messages, groups...",
+      }
+      return map[k] ?? k
+    },
+    i18n: { changeLanguage: vi.fn(), language: "en" },
+  }),
+}))
+
 vi.mock("./conversation-list", () => ({
   ConversationList: vi.fn(({ activeId, onSelect }) => (
     <div data-testid="conversation-list">

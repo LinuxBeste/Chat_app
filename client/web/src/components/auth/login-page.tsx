@@ -17,8 +17,6 @@ export function LoginPage() {
   const [error, setError] = useState("")
   const [showLangPicker, setShowLangPicker] = useState(false)
 
-  const currentLang = supportedLanguages.find((l) => l.code === i18n.language) || supportedLanguages[0]
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")

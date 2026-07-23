@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { ConversationList } from "./conversation-list"
 
 const mockConversations = [
-  { id: "conv-1", type: "dm", name: "Alice", createdAt: "2024-01-01T00:00:00Z" },
+  { id: "conv-1", type: "dm", name: "Alice", createdAt: "2024-01-01T00:00:00Z", otherUser: { id: "user-1", username: "alice", displayName: "Alice", avatar: null, customStatus: "Busy coding" } },
   { id: "conv-2", type: "group", name: "Dev Team", createdAt: "2024-01-02T00:00:00Z" },
   { id: "conv-3", type: "channel", name: null, createdAt: "2024-01-03T00:00:00Z" },
 ]
@@ -26,6 +26,10 @@ vi.mock("react-i18next", async () => {
 
 vi.mock("../../lib/api", () => ({
   api: vi.fn(),
+}))
+
+vi.mock("../../lib/toast-context", () => ({
+  useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
 vi.mock("../ui/avatar", () => ({

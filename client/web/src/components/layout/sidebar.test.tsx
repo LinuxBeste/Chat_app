@@ -10,6 +10,10 @@ vi.mock("../../lib/utils", () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(" "),
 }))
 
+vi.mock("../../lib/auth-context", () => ({
+  useAuth: vi.fn(() => ({ user: { id: "u1", username: "test" }, logout: vi.fn() })),
+}))
+
 describe("Sidebar", () => {
   const onToggle = vi.fn()
 

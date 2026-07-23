@@ -18,6 +18,10 @@ vi.mock("react-i18next", async () => {
   }
 })
 
+vi.mock("../../lib/auth-context", () => ({
+  useAuth: vi.fn(() => ({ user: { id: "u1", username: "test" } })),
+}))
+
 const mockGroups = [
   { id: "group-1", type: "group", name: "Dev Team", createdAt: "2024-01-01T00:00:00Z" },
   { id: "group-2", type: "group", name: "Design Team", createdAt: "2024-01-02T00:00:00Z" },
@@ -73,14 +77,14 @@ describe("GroupsPage", () => {
   it("shows create group button", async () => {
     vi.mocked(api).mockResolvedValue([])
     render(<GroupsPage />)
-    expect(screen.getByLabelText("Create group")).toBeInTheDocument()
+    expect(screen.getByLabelText("Create Group")).toBeInTheDocument()
   })
 
   it("opens create group dialog on button click", async () => {
     const user = userEvent.setup()
     vi.mocked(api).mockResolvedValue([])
     render(<GroupsPage />)
-    await user.click(screen.getByLabelText("Create group"))
+    await user.click(screen.getByLabelText("Create Group"))
     expect(screen.getByText("Create Group")).toBeInTheDocument()
   })
 

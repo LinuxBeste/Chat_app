@@ -118,7 +118,6 @@
     "channelConversation": "チャンネル",
     "membersCount": "{{count}} メンバー",
     "fileType": "{{ext}} ファイル",
-    "searchPlaceholder": "メッセージ、グループを検索...",
     "addFriend": "友達を追加",
     "friendPending": "友達リクエスト保留中",
     "newConversation": "新しい会話",
@@ -348,6 +347,17 @@
       "never": "なし",
       "securityAlerts": "セキュリティ通知",
       "securityAlertsDesc": "不明な端末からの新規ログインを通知"
+    },
+    "status": {
+      "oneliner": "ワンライナーステータス",
+      "customStatus": "カスタムステータス",
+      "customStatusDesc": "名前の横に表示される短いメッセージ",
+      "customStatusPlaceholder": "今の気分は？",
+      "set": "設定",
+      "statusEmoji": "ステータス絵文字",
+      "statusEmojiDesc": "色付きドットを絵文字に置き換える（全ステータス）",
+      "resetToDot": "色付きドットにリセット",
+      "saved": "ステータス絵文字を保存しました"
     },
     "appearance": {
       "title": "外観",
@@ -887,7 +897,10 @@
       "nodeJs": "Node.js",
       "license": "ライセンス",
       "repository": "リポジトリ"
-    }
+    },
+    "search": "設定を検索...",
+    "searchResults": "検索結果",
+    "noResults": "設定が見つかりません"
   },
   "themeEditor": {
     "customThemes": "カスタムテーマ",
@@ -938,7 +951,11 @@
     "dropOrUpload": "ファイルをドロップするか、アップロードをクリック",
     "download": "ダウンロード",
     "cannotPreview": "このファイルタイプのプレビューは利用できません",
-    "userIdPlaceholder": "ユーザーIDを入力..."
+    "userIdPlaceholder": "ユーザーIDを入力...",
+    "rename": "名前を変更",
+    "moveTo": "移動先...",
+    "rootFolder": "ルートフォルダ",
+    "moveToFolder": "フォルダに移動"
   },
   "setup": {
     "welcome": "ようこそ！",

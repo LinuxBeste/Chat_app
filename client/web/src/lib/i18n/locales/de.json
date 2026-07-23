@@ -118,7 +118,6 @@
     "channelConversation": "Kanal",
     "membersCount": "{{count}} Mitglieder",
     "fileType": "{{ext}}-Datei",
-    "searchPlaceholder": "Durchsuche Nachrichten, Gruppen...",
     "addFriend": "Freund hinzufügen",
     "friendPending": "Freundschaftsanfrage ausstehend",
     "newConversation": "Neue Konversation",
@@ -348,6 +347,17 @@
       "never": "Nie",
       "securityAlerts": "Sicherheitswarnungen",
       "securityAlertsDesc": "Bei neuen Anmeldungen von unbekannten Geräten benachrichtigen"
+    },
+    "status": {
+      "oneliner": "Einzeiler-Status",
+      "customStatus": "Benutzerdefinierter Status",
+      "customStatusDesc": "Eine kurze Nachricht neben Ihrem Namen",
+      "customStatusPlaceholder": "Was gibt es Neues?",
+      "set": "Setzen",
+      "statusEmoji": "Status-Emoji",
+      "statusEmojiDesc": "Ersetzen Sie den farbigen Punkt durch ein Emoji (alle Status)",
+      "resetToDot": "Auf farbigen Punkt zurücksetzen",
+      "saved": "Status-Emoji gespeichert"
     },
     "appearance": {
       "title": "Darstellung",
@@ -941,7 +951,10 @@
       "nodeJs": "Node.js",
       "license": "Lizenz",
       "repository": "Repository"
-    }
+    },
+    "search": "Einstellungen suchen...",
+    "searchResults": "Suchergebnisse",
+    "noResults": "Keine Einstellungen gefunden"
   },
   "themeEditor": {
     "customThemes": "Benutzerdefinierte Designs",
@@ -992,7 +1005,11 @@
     "dropOrUpload": "Dateien ablegen oder auf Hochladen klicken",
     "download": "Herunterladen",
     "cannotPreview": "Vorschau für diesen Dateityp nicht verfügbar",
-    "userIdPlaceholder": "Benutzer-ID eingeben..."
+    "userIdPlaceholder": "Benutzer-ID eingeben...",
+    "rename": "Umbenennen",
+    "moveTo": "Verschieben nach...",
+    "rootFolder": "Hauptordner",
+    "moveToFolder": "In Ordner verschieben"
   },
   "setup": {
     "welcome": "Willkommen!",

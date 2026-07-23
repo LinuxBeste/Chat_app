@@ -11,9 +11,15 @@ class MockWebSocket {
   send = vi.fn()
   close = vi.fn()
   onopen: (() => void) | null = null
+  onmessage: ((event: { data: string }) => void) | null = null
 
   constructor(_url: string) {
-    setTimeout(() => this.onopen?.(), 0)
+    setTimeout(() => {
+      this.onopen?.()
+      setTimeout(() => {
+        this.onmessage?.({ data: JSON.stringify({ type: "connected", userId: "u1" }) })
+      }, 0)
+    }, 0)
   }
 }
 
