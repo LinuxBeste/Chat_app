@@ -1,6 +1,7 @@
 import { AuthProvider, useAuth } from "./lib/auth-context"
 import { ThemeProvider } from "./lib/theme-context"
 import { NotificationProvider } from "./lib/notification-context"
+import { ToastProvider } from "./lib/toast-context"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
 import { LoginPage } from "./components/auth/login-page"
 import { SetupDialog } from "./components/auth/setup-dialog"
@@ -30,11 +31,13 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   )
 }

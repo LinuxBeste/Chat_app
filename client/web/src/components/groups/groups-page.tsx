@@ -75,7 +75,7 @@ export function GroupsPage() {
       body: JSON.stringify({ type: "group", name: createName.trim(), participantIds: [] }),
     }).catch(() => null)
     if (conv) {
-      setGroups((prev) => [conv, ...prev])
+      setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)])
       setCreateName("")
       setShowCreate(false)
     }

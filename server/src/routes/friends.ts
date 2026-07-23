@@ -6,7 +6,7 @@ import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
 import { friends, users } from "../db/schema.js"
-import { eq, and, or, like, ilike } from "drizzle-orm"
+import { eq, and, or, ilike } from "drizzle-orm"
 
 const router: RouterType = Router()
 

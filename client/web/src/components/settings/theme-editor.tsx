@@ -68,7 +68,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps) {
         method: "POST",
         body: JSON.stringify({ name: name.trim(), theme: config }),
       })
-      setThemes((prev) => [created, ...prev])
+      setThemes((prev) => [created, ...prev.filter((t) => t.id !== created.id)])
       applyTheme(created)
       setName("")
       setEditing(false)

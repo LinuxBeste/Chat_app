@@ -103,12 +103,13 @@ export const attachments = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     messageId: uuid("message_id")
-      .references(() => messages.id)
-      .notNull(),
+      .references(() => messages.id),
     url: text("url").notNull(),
     mimeType: text("mime_type").notNull(),
     size: integer("size").notNull(),
     filename: text("filename").notNull(),
+    folderId: uuid("folder_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
     messageIdIdx: index("attachments_message_id_idx").on(table.messageId),

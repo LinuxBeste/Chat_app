@@ -78,7 +78,7 @@ export function CommunitiesPage() {
       body: JSON.stringify({ name: createName.trim(), description: createDesc.trim() || undefined }),
     }).catch(() => null)
     if (c) {
-      setCommunities((prev) => [c, ...prev])
+      setCommunities((prev) => [c, ...prev.filter((comm) => comm.id !== c.id)])
       setCreateName("")
       setCreateDesc("")
       setShowCreate(false)
@@ -103,7 +103,7 @@ export function CommunitiesPage() {
       body: JSON.stringify({ name: newChannel.trim() }),
     }).catch(() => null)
     if (ch) {
-      setChannels((prev) => [...prev, ch])
+      setChannels((prev) => prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch])
       setNewChannel("")
     }
   }
@@ -114,7 +114,7 @@ export function CommunitiesPage() {
       method: "POST",
     }).catch(() => null)
     if (inv) {
-      setInvites((prev) => [...prev, inv])
+      setInvites((prev) => prev.some((i) => i.id === inv.id) ? prev : [...prev, inv])
     }
   }
 

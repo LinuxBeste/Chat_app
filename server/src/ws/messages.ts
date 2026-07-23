@@ -9,6 +9,7 @@ import { sendToConversation } from "./clients.js"
 const log = createContextLogger("ws:messages")
 
 interface AttachmentPayload {
+  id?: string
   url: string
   filename: string
   mimeType: string
@@ -66,13 +67,20 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
 
     let attachment = payload.attachment
     if (attachment) {
-      await db.insert(attachments).values({
-        messageId: msg.id,
-        url: attachment.url,
-        filename: attachment.filename,
-        mimeType: attachment.mimeType,
-        size: attachment.size,
-      })
+      if (attachment.id) {
+        await db
+          .update(attachments)
+          .set({ messageId: msg.id })
+          .where(eq(attachments.id, attachment.id))
+      } else {
+        await db.insert(attachments).values({
+          messageId: msg.id,
+          url: attachment.url,
+          filename: attachment.filename,
+          mimeType: attachment.mimeType,
+          size: attachment.size,
+        })
+      }
     }
 
     const [user] = await db
@@ -84,6 +92,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
     const event: Record<string, unknown> = {
       type: "message:new",
       id: msg.id,
+      senderId: userId,
       conversationId: msg.conversationId,
       sender: { id: userId, ...user },
       content: msg.content,

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Avatar } from "../ui/avatar"
 import { api } from "../../lib/api"
+import { useToast } from "../../lib/toast-context"
 import { Plus, X, UserPlus, Loader2, AlertCircle } from "lucide-react"
 
 interface Conversation {
@@ -18,6 +19,7 @@ interface ConversationListProps {
 
 export function ConversationList({ activeId, onSelect }: ConversationListProps) {
   const { t } = useTranslation()
+  const { showToast } = useToast()
   const [convs, setConvs] = useState<Conversation[]>([])
   const [showNewConv, setShowNewConv] = useState(false)
   const [input, setInput] = useState("")
@@ -27,7 +29,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
   useEffect(() => {
     api<Conversation[]>("/api/conversations")
       .then(setConvs)
-      .catch(() => {})
+      .catch(() => showToast(t("chat.loadError")))
   }, [])
 
   const createConversation = async () => {
@@ -49,7 +51,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [userId] }),
       })
-      setConvs((prev) => [conv, ...prev])
+      setConvs((prev) => [conv, ...prev.filter((c) => c.id !== conv.id)])
       onSelect(conv.id)
       setShowNewConv(false)
       setInput("")

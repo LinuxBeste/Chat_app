@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { api } from "./api"
+import { api, getTokens } from "./api"
 
 interface NotificationContextValue {
   unreadCount: number
@@ -12,6 +12,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0)
 
   const refresh = useCallback(() => {
+    if (!getTokens().accessToken) return
     api<{ count: number }>("/api/notifications/unread-count")
       .then((d) => setUnreadCount(d.count))
       .catch(() => {})

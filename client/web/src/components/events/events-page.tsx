@@ -54,7 +54,7 @@ export function EventsPage() {
       }),
     }).catch(() => null)
     if (e) {
-      setEvents((prev) => [e, ...prev])
+      setEvents((prev) => [e, ...prev.filter((ev) => ev.id !== e.id)])
       setTitle("")
       setDescription("")
       setStartsAt("")

@@ -1,11 +1,16 @@
-import { useTranslation } from "react-i18next"
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { MessageInput, type AttachmentData } from "./message-input"
 import { CallOverlay } from "./call-overlay"
 import { AddParticipantsModal } from "./add-participants-modal"
 import { Avatar } from "../ui/avatar"
-import { Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download, Plus, Users, UserPlus } from "lucide-react"
+import {
+  Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download,
+  Plus, Users, UserPlus, Copy, Ban, Shield, LogOut, ArrowLeft, Search, Bell,
+  BellOff, Flag,
+} from "lucide-react"
 import { api } from "../../lib/api"
+import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
 
 interface Message {
@@ -43,9 +48,10 @@ interface ConversationInfo {
 interface ChatAreaProps {
   conversationId: string
   currentUserId: string
+  onLeave?: () => void
 }
 
-export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
+export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaProps) {
   const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [convInfo, setConvInfo] = useState<ConversationInfo | null>(null)
@@ -58,6 +64,11 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null)
   const [friendStatus, setFriendStatus] = useState<string | null>(null)
   const [addingFriend, setAddingFriend] = useState(false)
+  const [blocked, setBlocked] = useState(false)
+  const [showConvMenu, setShowConvMenu] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [renameText, setRenameText] = useState("")
+  const renameInputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -70,13 +81,18 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         setMessages(msgs)
         setConvInfo(info)
       })
-      .catch(() => {})
+      .catch(() => showToast(t("chat.loadError")))
       .finally(() => setLoading(false))
   }, [conversationId])
 
   const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
   const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
   const isGroup = convInfo?.type === "group" || convInfo?.type === "channel"
+  const otherSender = messages.find((m) => m.senderId !== currentUserId)
+  const otherMember = !isGroup ? convInfo?.members.find((m) => m.id !== currentUserId) : undefined
+  const dmName = otherSender?.sender?.displayName ?? otherSender?.sender?.username ?? otherMember?.displayName ?? otherMember?.username ?? t("chat.dmConversation")
+  const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const handleRemoveParticipant = async (userId: string) => {
     try {
@@ -91,7 +107,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   useEffect(() => {
     const unsubNew = wsClient.on("message:new", (data) => {
       if (data.conversationId === conversationId) {
-        setMessages((prev) => [...prev, data as unknown as Message])
+        setMessages((prev) => prev.some((m) => m.id === (data as unknown as Message).id) ? prev : [...prev, data as unknown as Message])
       }
     })
     const unsubEdited = wsClient.on("message:edited", (data) => {
@@ -140,10 +156,16 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       api<{ status: string }>(`/api/friends/status/${otherId}`)
         .then((res) => setFriendStatus(res.status))
         .catch(() => setFriendStatus(null))
+      api<{ blockedUserId: string }[]>("/api/privacy/blocks")
+        .then((list) => setBlocked(list.some((b) => b.blockedUserId === otherId)))
+        .catch(() => setBlocked(false))
     } else {
       setFriendStatus(null)
+      setBlocked(false)
     }
   }, [conversationId, messages])
+
+  const { showToast } = useToast()
 
   const handleAddFriend = async () => {
     if (!otherSender || addingFriend) return
@@ -154,14 +176,45 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         body: JSON.stringify({ friendId: otherSender.senderId }),
       })
       setFriendStatus("pending")
+      showToast(t("chat.friendRequestSent"), "success")
     } catch (err: any) {
       if (err?.message?.includes("already exists")) {
         setFriendStatus("pending")
+        showToast(t("chat.friendRequestExists"))
+      } else {
+        showToast(err?.message ?? t("chat.friendRequestError"))
       }
     } finally {
       setAddingFriend(false)
     }
   }
+
+  const handleBlockUser = useCallback(async () => {
+    if (!otherSender) return
+    try {
+      await api("/api/privacy/blocks", {
+        method: "POST",
+        body: JSON.stringify({ userId: otherSender.senderId }),
+      })
+      setBlocked(true)
+      setShowConvMenu(false)
+      showToast(t("chat.userBlocked"), "success")
+    } catch {
+      showToast(t("chat.blockError"))
+    }
+  }, [otherSender, showToast, t])
+
+  const handleUnblockUser = useCallback(async () => {
+    if (!otherSender) return
+    try {
+      await api(`/api/privacy/blocks/${otherSender.senderId}`, { method: "DELETE" })
+      setBlocked(false)
+      setShowConvMenu(false)
+      showToast(t("chat.userUnblocked"), "success")
+    } catch {
+      showToast(t("chat.unblockError"))
+    }
+  }, [otherSender, showToast, t])
 
   const handleSend = useCallback(
     (content: string, messageType?: string, attachment?: AttachmentData) => {
@@ -199,8 +252,78 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     [conversationId],
   )
 
-  const otherSender = messages.find((m) => m.senderId !== currentUserId)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const handleLeaveConversation = useCallback(async () => {
+    try {
+      await api(`/api/conversations/${conversationId}/participants/${currentUserId}`, { method: "DELETE" })
+      showToast(t("chat.leftConversation"), "success")
+      setShowConvMenu(false)
+      onLeave?.()
+    } catch {
+      showToast(t("chat.leaveError"))
+    }
+  }, [conversationId, currentUserId, showToast, t, onLeave])
+
+  const handleStartRename = useCallback(() => {
+    setRenameText(convInfo?.name ?? "")
+    setRenaming(true)
+    setShowConvMenu(false)
+    setTimeout(() => renameInputRef.current?.focus(), 50)
+  }, [convInfo])
+
+  const handleRenameConfirm = useCallback(async () => {
+    if (!renameText.trim()) return
+    try {
+      const updated = await api<{ name: string }>(`/api/conversations/${conversationId}`, {
+        method: "PUT",
+        body: JSON.stringify({ name: renameText.trim() }),
+      })
+      setConvInfo((prev) => (prev ? { ...prev, name: updated.name } : prev))
+      setRenaming(false)
+      showToast(t("chat.renamed"), "success")
+    } catch {
+      showToast(t("chat.renameError"))
+    }
+  }, [renameText, conversationId, showToast, t])
+
+  const handleRenameCancel = useCallback(() => {
+    setRenaming(false)
+    setRenameText("")
+  }, [])
+
+  const handleCopyUserId = useCallback(async () => {
+    if (!otherSender) return
+    try {
+      await navigator.clipboard.writeText(otherSender.senderId)
+      showToast(t("chat.userIdCopied"), "success")
+      setShowConvMenu(false)
+    } catch {
+      showToast(t("chat.copyError"))
+    }
+  }, [otherSender, showToast, t])
+
+  const handleReportUser = useCallback(async () => {
+    if (!otherSender) return
+    try {
+      await api("/api/moderation/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          targetUserId: otherSender.senderId,
+          reason: "User report from conversation menu",
+        }),
+      })
+      setShowConvMenu(false)
+      showToast(t("chat.userReported"), "success")
+    } catch {
+      showToast(t("chat.reportError"))
+    }
+  }, [otherSender, showToast, t])
+
+  const [muted, setMuted] = useState(false)
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => !prev)
+    showToast(muted ? t("chat.unmuted") : t("chat.muted"))
+  }, [muted, showToast, t])
 
   return (
     <div className="flex flex-col h-full" id="main-content">
@@ -210,19 +333,42 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         aria-label={t("chat.chatActions")}
       >
         <div className="relative">
-          <Avatar fallback={convInfo?.name?.[0] ?? otherSender?.sender?.username?.[0] ?? "?"} />
+          <Avatar fallback={convInfo?.name?.[0] ?? dmInitial} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-text-primary">
-            {convInfo?.name ?? otherSender?.sender?.username ?? t("nav.messages")}
-          </h3>
-          {isGroup && convInfo && (
-            <p className="text-xs text-text-muted truncate">
-              {t("chat.membersCount", { count: convInfo.members.length })}
-              {currentMember && (
-                <span className="ml-2 lowercase text-accent">· {currentMember.role}</span>
+          {renaming ? (
+            <div className="flex items-center gap-1">
+              <input
+                ref={renameInputRef}
+                value={renameText}
+                onChange={(e) => setRenameText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameConfirm()
+                  if (e.key === "Escape") handleRenameCancel()
+                }}
+                className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-text-primary w-full outline-none focus:border-accent"
+              />
+              <button onClick={handleRenameConfirm} className="text-accent hover:text-accent-hover cursor-pointer p-1">
+                <Check className="h-4 w-4" />
+              </button>
+              <button onClick={handleRenameCancel} className="text-text-muted hover:text-text-secondary cursor-pointer p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-sm font-semibold text-text-primary">
+                {convInfo?.name ?? dmName}
+              </h3>
+              {isGroup && convInfo && (
+                <p className="text-xs text-text-muted truncate">
+                  {t("chat.membersCount", { count: convInfo.members.length })}
+                  {currentMember && (
+                    <span className="ml-2 lowercase text-accent">· {currentMember.role}</span>
+                  )}
+                </p>
               )}
-            </p>
+            </>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -300,23 +446,223 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
               )}
             </div>
           )}
-          <button
-            aria-label={t("chat.moreOptions")}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowConvMenu(!showConvMenu)}
+              aria-label={t("chat.moreOptions")}
+              className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-        role="log"
-        aria-live="polite"
-        aria-label={t("chat.chatMessages")}
-      >
-        {loading && <p className="text-sm text-text-muted text-center">{t("common.loading")}</p>}
-        {messages.map((msg) => {
+      {showConvMenu ? (
+        <div className="flex-1 overflow-y-auto bg-surface">
+          <div className="flex items-center gap-3 px-4 py-2 border-b border-border">
+            <button
+              onClick={() => setShowConvMenu(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h2 className="text-sm font-semibold text-text-primary">
+              {isGroup ? t("chat.groupInfo") : t("chat.contactInfo")}
+            </h2>
+            {isGroup && canManage && (
+              <button
+                onClick={handleStartRename}
+                className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center py-8 px-4">
+            <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center text-accent text-3xl font-bold mb-4">
+              {isGroup
+                ? (convInfo?.name?.[0] ?? "G")
+                : dmInitial
+              }
+            </div>
+            <h1 className="text-lg font-bold text-text-primary text-center">
+              {isGroup
+                ? (convInfo?.name ?? t("chat.groupConversation"))
+                : dmName
+              }
+            </h1>
+            <p className="text-sm text-text-muted mt-1">
+              {isGroup
+                ? t("chat.membersCount", { count: convInfo?.members.length ?? 0 }) + " · " + (convInfo?.type ?? "group")
+                : dmName
+              }
+            </p>
+          </div>
+
+          <div className="flex justify-center gap-8 pb-6 px-4">
+            <button
+              onClick={() => { setShowConvMenu(false); const targetId = otherSender?.senderId ?? otherMember?.id; targetId && setCallState({ targetUserId: targetId, direction: "outgoing" }) }}
+              className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <Phone className="h-5 w-5 text-accent" />
+              </div>
+              <span className="text-xs">{t("chat.call")}</span>
+            </button>
+            <button
+              onClick={() => { setShowConvMenu(false); const targetId = otherSender?.senderId ?? otherMember?.id; targetId && setCallState({ targetUserId: targetId, direction: "outgoing" }) }}
+              className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <Video className="h-5 w-5 text-accent" />
+              </div>
+              <span className="text-xs">{t("chat.video")}</span>
+            </button>
+            <button
+              onClick={toggleMute}
+              className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                {muted ? <BellOff className="h-5 w-5 text-accent" /> : <Bell className="h-5 w-5 text-accent" />}
+              </div>
+              <span className="text-xs">{muted ? t("chat.unmute") : t("chat.mute")}</span>
+            </button>
+          </div>
+
+          {isGroup ? (
+            <>
+              <div className="border-t border-border">
+                <div className="px-4 py-3">
+                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{t("chat.members")}</h3>
+                  {convInfo?.members.slice(0, 6).map((m) => (
+                    <div key={m.id} className="flex items-center gap-3 py-2">
+                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold shrink-0">
+                        {(m.displayName || m.username)[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text-primary truncate">{m.displayName || m.username}</p>
+                        <p className="text-xs text-text-muted capitalize">{m.role} · {m.status}</p>
+                      </div>
+                      {canManage && m.id !== currentUserId && m.role !== "owner" && (
+                        <button
+                          onClick={() => handleRemoveParticipant(m.id)}
+                          className="text-text-muted hover:text-danger cursor-pointer shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {convInfo && convInfo.members.length > 6 && (
+                    <button
+                      onClick={() => { setShowConvMenu(false); setShowMemberMenu("header") }}
+                      className="text-sm text-accent hover:text-accent-hover mt-1 cursor-pointer"
+                    >
+                      {t("chat.viewAllMembers", { count: convInfo.members.length })}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t border-border px-4 py-2">
+                <button
+                  onClick={() => { setShowConvMenu(false); setShowMemberMenu(showMemberMenu === "header" ? null : "header") }}
+                  className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
+                >
+                  <Users className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.manageMembers")}
+                </button>
+                {canManage && (
+                  <button
+                    onClick={() => { setShowConvMenu(false); setShowAddPeople(true) }}
+                    className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.addPeople")}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="border-t border-border px-4 py-2">
+              <button
+                onClick={handleCopyUserId}
+                className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
+              >
+                <Copy className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.copyUserId")}
+              </button>
+              {friendStatus && friendStatus !== "accepted" && friendStatus !== "self" && friendStatus !== "pending" ? (
+                <button
+                  onClick={handleAddFriend}
+                  disabled={addingFriend}
+                  className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <UserPlus className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.addFriend")}
+                </button>
+              ) : friendStatus === "pending" ? (
+                <div className="flex items-center gap-3 w-full py-3 text-sm text-yellow-400">
+                  <UserPlus className="h-5 w-5 shrink-0" /> {t("chat.friendPending")}
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <div className="border-t border-border px-4 py-2">
+            <button
+              onClick={() => {}}
+              className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              <Search className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.searchInConversation")}
+            </button>
+          </div>
+
+          {!isGroup && (
+            <div className="border-t border-border px-4 py-2">
+              {blocked ? (
+                <button
+                  onClick={handleUnblockUser}
+                  className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
+                >
+                  <Shield className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.unblockUser")}
+                </button>
+              ) : (
+                <button
+                  onClick={handleBlockUser}
+                  className="flex items-center gap-3 w-full py-3 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                >
+                  <Ban className="h-5 w-5 shrink-0" /> {t("chat.blockUser")}
+                </button>
+              )}
+              <button
+                onClick={handleReportUser}
+                className="flex items-center gap-3 w-full py-3 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+              >
+                <Flag className="h-5 w-5 shrink-0" /> {t("chat.reportUser")}
+              </button>
+            </div>
+          )}
+
+          <div className="border-t border-border px-4 py-2 mt-2">
+            <button
+              onClick={handleLeaveConversation}
+              className="flex items-center gap-3 w-full py-3 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+            >
+              <LogOut className="h-5 w-5 shrink-0" /> {isGroup ? t("chat.leaveConversation") : t("chat.deleteConversation")}
+            </button>
+          </div>
+
+          <div className="h-12" />
+        </div>
+      ) : (
+        <>
+          <div
+            className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+            role="log"
+            aria-live="polite"
+            aria-label={t("chat.chatMessages")}
+          >
+            {loading && <p className="text-sm text-text-muted text-center">{t("common.loading")}</p>}
+            {messages.map((msg) => {
           const isMe = msg.senderId === currentUserId
           const isDeleted = !!msg.deletedAt
           return (
@@ -448,6 +794,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       {showMemberMenu && (
         <div className="fixed inset-0 z-40" onClick={() => setShowMemberMenu(null)} />
       )}
-    </div>
-  )
+    </>
+  )}
+</div>
+)
 }

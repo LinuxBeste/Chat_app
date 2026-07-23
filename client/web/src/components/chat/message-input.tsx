@@ -2,8 +2,10 @@ import { useState, useRef, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { Send, Paperclip, Smile, Loader2, Upload } from "lucide-react"
 import { apiFormData } from "../../lib/api"
+import { useToast } from "../../lib/toast-context"
 
 export interface AttachmentData {
+  id?: string
   url: string
   filename: string
   mimeType: string
@@ -17,6 +19,7 @@ interface MessageInputProps {
 
 export function MessageInput({ conversationId: _conversationId, onSend }: MessageInputProps) {
   const { t } = useTranslation()
+  const { showToast } = useToast()
   const [value, setValue] = useState("")
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -30,6 +33,7 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
       const result = await apiFormData<AttachmentData>("/api/uploads", formData)
       onSend(result.url, file.type.startsWith("image/") ? "image" : "file", result)
     } catch {
+      showToast(t("chat.uploadError"))
     } finally {
       setUploading(false)
     }

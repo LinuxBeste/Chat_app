@@ -18,7 +18,7 @@ export function ChatWindow() {
       </div>
       <div className="flex-1 min-w-0">
         {activeConversationId ? (
-          <ChatArea key={activeConversationId} conversationId={activeConversationId} currentUserId={user.id} />
+          <ChatArea key={activeConversationId} conversationId={activeConversationId} currentUserId={user.id} onLeave={() => setActiveConversationId(null)} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-text-muted">
             {t("chat.selectConversation")}

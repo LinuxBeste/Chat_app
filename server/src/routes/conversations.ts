@@ -8,6 +8,7 @@ import { catchAsync } from "../middleware/error-handler.js"
 import { conversations, participants, messages, users, attachments } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
+import { clients } from "../ws/clients.js"
 
 const log = createContextLogger("routes:conversations")
 
@@ -29,18 +30,31 @@ router.post(
       const allIds = [...new Set([req.user!.userId, ...participantIds])]
 
       if (type === "dm") {
-        const existing = await db.query.conversations.findFirst({
-          where: and(
-            eq(conversations.type, "dm"),
-            sql`(SELECT COUNT(*) FROM ${participants} WHERE ${participants.conversationId} = ${conversations.id} AND ${participants.userId} = ANY(${sql.join(
-              allIds.map((id) => sql`${id}::uuid`),
-              sql`, `,
-            )})) = ${allIds.length}`,
-          ),
-        })
+        const dms = await db
+          .select({ id: conversations.id })
+          .from(conversations)
+          .where(eq(conversations.type, "dm"))
+        let existing: { id: string } | undefined
+        for (const dm of dms) {
+          const members = await db
+            .select({ userId: participants.userId })
+            .from(participants)
+            .where(eq(participants.conversationId, dm.id))
+          const memberIds = members.map((m) => m.userId).sort()
+          const targetIds = [...allIds].sort()
+          if (memberIds.length === targetIds.length && memberIds.every((id, i) => id === targetIds[i])) {
+            existing = dm
+            break
+          }
+        }
 
         if (existing) {
-          res.json({ id: existing.id })
+          const [fullConv] = await db
+            .select({ id: conversations.id, type: conversations.type, name: conversations.name, createdAt: conversations.createdAt })
+            .from(conversations)
+            .where(eq(conversations.id, existing.id))
+            .limit(1)
+          res.json(fullConv)
           return
         }
       }
@@ -82,7 +96,14 @@ router.get(
       .where(eq(participants.userId, req.user!.userId))
       .orderBy(desc(conversations.createdAt))
 
-    res.json(convs)
+    const seen = new Set<string>()
+    const unique = convs.filter((c) => {
+      if (seen.has(c.id)) return false
+      seen.add(c.id)
+      return true
+    })
+
+    res.json(unique)
   }),
 )
 
@@ -174,7 +195,7 @@ router.post(
       .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, status: users.status, role: participants.role })
       .from(participants)
       .innerJoin(users, eq(users.id, participants.userId))
-      .where(and(eq(participants.conversationId, convId), sql`${participants.userId} = ANY(${sql.join(newIds.map((id: string) => sql`${id}::uuid`), sql`, `)})`))
+      .where(and(eq(participants.conversationId, convId), sql`${participants.userId} IN (${sql.join(newIds.map((id: string) => sql`${id}::uuid`), sql`, `)})`))
 
     res.status(201).json(added)
   }),
@@ -193,7 +214,7 @@ router.delete(
       return
     }
 
-    if (conv.createdBy === targetUserId) {
+    if (conv.createdBy === targetUserId && req.user!.userId !== targetUserId) {
       res.status(403).json({ error: "Cannot remove the conversation owner" })
       return
     }
@@ -201,6 +222,15 @@ router.delete(
     await db
       .delete(participants)
       .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)))
+
+    const userSockets = clients.get(targetUserId)
+    if (userSockets) {
+      for (const ws of userSockets) {
+        ws.send(JSON.stringify({ type: "participant:removed", conversationId: convId }))
+        ws.close()
+      }
+      clients.delete(targetUserId)
+    }
 
     res.json({ message: "Participant removed" })
   }),

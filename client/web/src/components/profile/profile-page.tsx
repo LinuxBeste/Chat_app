@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTranslation } from "react-i18next"
-import { Camera, Loader2 } from "lucide-react"
+import { useToast } from "../../lib/toast-context"
+import { Camera, Copy, Loader2 } from "lucide-react"
 
 export function ProfilePage() {
   const { t } = useTranslation()
@@ -12,6 +13,8 @@ export function ProfilePage() {
   const [avatar, setAvatar] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const { showToast } = useToast()
+  const [copied, setCopied] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -31,7 +34,10 @@ export function ProfilePage() {
         method: "PUT",
         body: JSON.stringify({ displayName, bio }),
       })
-    } catch {}
+      showToast(t("profile.saveSuccess"), "success")
+    } catch (err: any) {
+      showToast(err?.message ?? t("profile.saveError"))
+    }
     setSaving(false)
   }
 
@@ -47,7 +53,10 @@ export function ProfilePage() {
         body: formData,
       })
       setAvatar(res.avatar)
-    } catch {}
+      showToast(t("profile.avatarSuccess"), "success")
+    } catch (err: any) {
+      showToast(err?.message ?? t("profile.avatarError"))
+    }
     setUploading(false)
   }
 
@@ -85,6 +94,20 @@ export function ProfilePage() {
             <p className="text-sm font-medium text-text-primary">{user?.username}</p>
             <p className="text-xs text-text-muted">{user?.email}</p>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-3 flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-xs text-text-muted mb-0.5">{t("profile.userId")}</p>
+            <p className="text-sm text-text-primary font-mono truncate">{user?.id}</p>
+          </div>
+          <button
+            onClick={() => { navigator.clipboard.writeText(user?.id ?? ""); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer shrink-0"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            {copied ? t("common.copied") : t("common.copy")}
+          </button>
         </div>
 
         <div className="space-y-3">

@@ -1,5 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
+let refreshPromise: Promise<string | null> | null = null
+
 function getTokens() {
   const at = localStorage.getItem("accessToken")
   const rt = localStorage.getItem("refreshToken")
@@ -17,6 +19,17 @@ function clearTokens() {
 }
 
 export async function refreshAccess(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = doRefresh()
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
+  }
+}
+
+async function doRefresh(): Promise<string | null> {
   const { refreshToken } = getTokens()
   if (!refreshToken) return null
 

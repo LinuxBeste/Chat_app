@@ -4,7 +4,7 @@ import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
 import { config } from "../config.js"
 import { users, conversations, reports, bans, messages } from "../db/schema.js"
-import { eq, desc, count, inArray } from "drizzle-orm"
+import { eq, desc, count } from "drizzle-orm"
 
 const router: ReturnType<typeof Router> = Router()
 

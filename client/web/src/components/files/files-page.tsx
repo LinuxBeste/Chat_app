@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-import { api, apiFormData } from "../../lib/api"
+import { api, apiFormData, BASE_URL } from "../../lib/api"
 import { useTranslation } from "react-i18next"
+import { useToast } from "../../lib/toast-context"
 import {
   FileText, Image, Film, Music, Archive, Download, Upload, FolderPlus,
-  Folder, ChevronRight, ChevronDown, Plus, X, Loader2, Trash2, Users, Lock, Eye, Edit3,
+  Folder, X, Loader2, Trash2, Users,
 } from "lucide-react"
 
 interface FileItem {
@@ -14,6 +15,7 @@ interface FileItem {
   size: number
   createdAt: string
   messageId: string | null
+  folderId: string | null
 }
 
 interface FolderData {
@@ -46,9 +48,9 @@ function formatSize(bytes: number) {
 
 export function FilesPage() {
   const { t } = useTranslation()
+  const { showToast } = useToast()
   const [files, setFiles] = useState<FileItem[]>([])
   const [folders, setFolders] = useState<FolderData[]>([])
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
@@ -63,7 +65,7 @@ export function FilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    api<FileItem[]>("/api/files").then(setFiles).catch(() => {})
+    api<FileItem[]>("/api/files/list").then(setFiles).catch(() => {})
     api<FolderData[]>("/api/files/folders").then(setFolders).catch(() => {})
   }, [])
 
@@ -73,8 +75,11 @@ export function FilesPage() {
       const formData = new FormData()
       formData.append("file", file)
       const result = await apiFormData<FileItem>("/api/uploads", formData)
-      setFiles((prev) => [result, ...prev])
-    } catch {}
+      setFiles((prev) => [result, ...prev.filter((f) => f.id !== result.id)])
+      showToast(t("files.uploadSuccess"), "success")
+    } catch (err: any) {
+      showToast(err?.message || t("files.uploadError"))
+    }
     setUploading(false)
   }, [])
 
@@ -99,11 +104,13 @@ export function FilesPage() {
         method: "POST",
         body: JSON.stringify({ name: newFolderName.trim(), parentId: parentFolderId }),
       })
-      setFolders((prev) => [...prev, folder])
+      setFolders((prev) => prev.some((f) => f.id === folder.id) ? prev : [...prev, folder])
       setNewFolderName("")
       setShowNewFolder(false)
       setParentFolderId(null)
-    } catch {}
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.folderCreateError"))
+    }
   }
 
   const deleteFolder = async (id: string) => {
@@ -111,14 +118,16 @@ export function FilesPage() {
     try {
       await api(`/api/files/folders/${id}`, { method: "DELETE" })
       setFolders((prev) => prev.filter((f) => f.id !== id))
-    } catch {}
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.folderDeleteError"))
+    }
   }
 
   const openPreview = async (file: FileItem) => {
     setFilePreview(file)
     if (file.mimeType.startsWith("text/") || file.mimeType === "application/pdf") {
       try {
-        const res = await fetch(file.url)
+        const res = await fetch(`${BASE_URL}${file.url}`)
         const text = await res.text()
         setPreviewText(text)
       } catch {
@@ -133,7 +142,9 @@ export function FilesPage() {
     try {
       const members = await api<FolderMember[]>(`/api/files/folders/${folderId}/members`)
       setFolderMembers(members)
-    } catch {}
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.membersLoadError"))
+    }
   }
 
   const addFolderMember = async () => {
@@ -145,7 +156,9 @@ export function FilesPage() {
       })
       setAddMemberId("")
       loadFolderMembers(showFolderMembers)
-    } catch {}
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.memberAddError"))
+    }
   }
 
   const removeFolderMember = async (userId: string) => {
@@ -153,15 +166,42 @@ export function FilesPage() {
     try {
       await api(`/api/files/folders/${showFolderMembers}/members/${userId}`, { method: "DELETE" })
       setFolderMembers((prev) => prev.filter((m) => m.userId !== userId))
-    } catch {}
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.memberRemoveError"))
+    }
   }
 
-  const getFolderFiles = (folderId: string | null) => {
-    return files
+  const getFolderFiles = () => {
+    return selectedFolderId ? files.filter((f) => f.folderId === selectedFolderId) : files.filter((f) => !f.folderId)
+  }
+
+  const handleDragStart = (e: React.DragEvent, fileId: string) => {
+    e.dataTransfer.setData("text/plain", fileId)
+    e.dataTransfer.effectAllowed = "move"
+  }
+
+  const handleFolderDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }
+
+  const handleFolderDrop = async (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    const fileId = e.dataTransfer.getData("text/plain")
+    if (!fileId) return
+    try {
+      const updated = await api<FileItem>(`/api/files/${fileId}/move`, {
+        method: "PUT",
+        body: JSON.stringify({ folderId }),
+      })
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)))
+    } catch (err: any) {
+      showToast(err?.message ?? t("files.moveError"))
+    }
   }
 
   const rootFolders = folders.filter((f) => f.parentId === null)
-  const currentFiles = getFolderFiles(selectedFolderId)
+  const currentFiles = getFolderFiles()
 
   return (
     <div
@@ -213,6 +253,8 @@ export function FilesPage() {
             {rootFolders.map((folder) => (
               <div
                 key={folder.id}
+                onDragOver={handleFolderDragOver}
+                onDrop={(e) => handleFolderDrop(e, folder.id)}
                 className={`relative group rounded-2xl border p-3 cursor-pointer transition-all ${
                   selectedFolderId === folder.id ? "border-accent bg-accent/5" : "border-border bg-surface hover:border-accent/50"
                 }`}
@@ -317,6 +359,8 @@ export function FilesPage() {
           currentFiles.map((f) => (
             <div
               key={f.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, f.id)}
               className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-white/[0.02] transition-all cursor-pointer"
               onClick={() => openPreview(f)}
             >
@@ -330,7 +374,7 @@ export function FilesPage() {
                 </p>
               </div>
               <a
-                href={f.url}
+                href={`${BASE_URL}${f.url}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
@@ -359,19 +403,19 @@ export function FilesPage() {
             </div>
             <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
               {filePreview.mimeType.startsWith("image/") ? (
-                <img src={filePreview.url} alt={filePreview.filename} className="max-w-full rounded-2xl" />
+                <img src={`${BASE_URL}${filePreview.url}`} alt={filePreview.filename} className="max-w-full rounded-2xl" />
               ) : filePreview.mimeType.startsWith("text/") ? (
                 <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">
                   {previewText ?? t("common.loading")}
                 </pre>
               ) : filePreview.mimeType === "application/pdf" ? (
-                <iframe src={filePreview.url} className="w-full h-[60vh] rounded-2xl" title={filePreview.filename} />
+                <iframe src={`${BASE_URL}${filePreview.url}`} className="w-full h-[60vh] rounded-2xl" title={filePreview.filename} />
               ) : (
                 <div className="flex flex-col items-center gap-4 py-8 text-text-muted">
                   {fileIcon(filePreview.mimeType)}
                   <p className="text-sm">{t("files.cannotPreview")}</p>
                   <a
-                    href={filePreview.url}
+                    href={`${BASE_URL}${filePreview.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 h-10 px-5 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover cursor-pointer"

@@ -1,13 +1,35 @@
 import { Router, type Request, type Response } from "express"
-import { z } from "zod"
 import { db } from "../lib/db.js"
-import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { fileFolders, fileFolderMembers, filePermissions, attachments } from "../db/schema.js"
-import { eq, and, or, isNull } from "drizzle-orm"
+import { fileFolders, fileFolderMembers, filePermissions, attachments, messages, participants } from "../db/schema.js"
+import { eq, and, or, isNull, desc, inArray } from "drizzle-orm"
 
 const router: ReturnType<typeof Router> = Router()
+
+// --- Move file to folder ---
+
+router.put(
+  "/:id/move",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const { folderId } = req.body
+    const fileId = req.params.id as string
+
+    const [file] = await db
+      .update(attachments)
+      .set({ folderId: folderId || null })
+      .where(eq(attachments.id, fileId))
+      .returning()
+
+    if (!file) {
+      res.status(404).json({ error: "File not found" })
+      return
+    }
+
+    res.json(file)
+  }),
+)
 
 // --- Folders ---
 
@@ -75,7 +97,7 @@ router.put(
     const [folder] = await db
       .update(fileFolders)
       .set({ name: name.trim() })
-      .where(and(eq(fileFolders.id, req.params.id as string), eq(fileFolders.userId, req.user!.userId)))
+      .where(eq(fileFolders.id, req.params.id as string))
       .returning()
 
     if (!folder) {
@@ -90,34 +112,36 @@ router.delete(
   "/folders/:id",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const [deleted] = await db
-      .delete(fileFolders)
-      .where(and(eq(fileFolders.id, req.params.id as string), eq(fileFolders.userId, req.user!.userId)))
-      .returning()
+    const userId = req.user!.userId
 
-    if (!deleted) {
+    const folder = await db.query.fileFolders.findFirst({
+      where: eq(fileFolders.id, req.params.id as string),
+    })
+    if (!folder) {
       res.status(404).json({ error: "Folder not found" })
       return
     }
+    if (folder.userId !== userId) {
+      res.status(403).json({ error: "Not your folder" })
+      return
+    }
+
+    await db.delete(fileFolderMembers).where(eq(fileFolderMembers.folderId, folder.id))
+    await db.delete(fileFolders).where(eq(fileFolders.id, folder.id))
     res.json({ message: "Folder deleted" })
   }),
 )
 
-// --- Folder Members (Permissions) ---
+// --- Folder Members ---
 
 router.get(
   "/folders/:id/members",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
     const members = await db
-      .select({
-        userId: fileFolderMembers.userId,
-        permission: fileFolderMembers.permission,
-        createdAt: fileFolderMembers.createdAt,
-      })
+      .select()
       .from(fileFolderMembers)
       .where(eq(fileFolderMembers.folderId, req.params.id as string))
-
     res.json(members)
   }),
 )
@@ -126,34 +150,36 @@ router.post(
   "/folders/:id/members",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const { userId, permission } = req.body
-    if (!userId) {
-      res.status(400).json({ error: "userId required" })
+    const { userIds, permission } = req.body
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ error: "userIds array required" })
       return
     }
+    const folderId = req.params.id as string
 
-    await db
-      .insert(fileFolderMembers)
-      .values({ folderId: req.params.id as string, userId, permission: permission || "read" })
-      .onConflictDoNothing()
+    const rows = userIds.map((uid: string) => ({
+      folderId,
+      userId: uid,
+      permission: permission || "read",
+    }))
 
-    res.status(201).json({ message: "Member added" })
+    const inserted = await db.insert(fileFolderMembers).values(rows).onConflictDoNothing().returning()
+    res.status(201).json(inserted)
   }),
 )
 
 router.delete(
-  "/folders/:folderId/members/:userId",
+  "/folders/:id/members/:userId",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
     await db
       .delete(fileFolderMembers)
       .where(
         and(
-          eq(fileFolderMembers.folderId, req.params.folderId as string),
+          eq(fileFolderMembers.folderId, req.params.id as string),
           eq(fileFolderMembers.userId, req.params.userId as string),
         ),
       )
-
     res.json({ message: "Member removed" })
   }),
 )
@@ -204,21 +230,38 @@ router.delete(
           eq(filePermissions.userId, req.params.userId as string),
         ),
       )
-
     res.json({ message: "Permission removed" })
   }),
 )
 
-// --- File listing (my files + shared with me) ---
+// --- File listing (files user can access) ---
 
 router.get(
-  "/",
+  "/list",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
     const userId = req.user!.userId
-    const folderId = req.query.folderId as string | undefined
 
-    let query = db
+    const userConversations = await db
+      .select({ conversationId: participants.conversationId })
+      .from(participants)
+      .where(eq(participants.userId, userId))
+
+    const conversationIds = userConversations.map((p) => p.conversationId)
+
+    const conditions: ReturnType<typeof and>[] = [isNull(attachments.messageId)]
+    if (conversationIds.length > 0) {
+      const convMessages = await db
+        .select({ id: messages.id })
+        .from(messages)
+        .where(inArray(messages.conversationId, conversationIds))
+      const messageIds = convMessages.map((m) => m.id)
+      if (messageIds.length > 0) {
+        conditions.push(inArray(attachments.messageId, messageIds))
+      }
+    }
+
+    const files = await db
       .select({
         id: attachments.id,
         url: attachments.url,
@@ -227,14 +270,13 @@ router.get(
         size: attachments.size,
         createdAt: attachments.createdAt,
         messageId: attachments.messageId,
+        folderId: attachments.folderId,
       })
       .from(attachments)
+      .where(or(...conditions))
+      .orderBy(desc(attachments.id))
+      .limit(100)
 
-    if (folderId) {
-      query = query.where(eq(attachments.messageId, folderId as any))
-    }
-
-    const files = await query.orderBy(attachments.id).limit(100)
     res.json(files)
   }),
 )

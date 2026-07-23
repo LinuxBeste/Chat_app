@@ -14,17 +14,18 @@ export interface IncomingMessage {
   [key: string]: unknown
 }
 
-function authenticate(req: HttpMessage): { userId: string; username: string } | null {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host}`)
-  const token = url.searchParams.get("token")
-
+function authenticate(token: string): { userId: string; username: string } | null {
   if (!token) return null
-
   try {
     return verifyToken(token)
   } catch {
     return null
   }
+}
+
+interface AuthState {
+  userId: string
+  username: string
 }
 
 export function createWSServer(server: import("http").Server) {
@@ -73,80 +74,83 @@ export function createWSServer(server: import("http").Server) {
     wsLogger.warn("Redis not available, running without pub/sub")
   }
 
-  wss.on("connection", (ws: WebSocket, req: HttpMessage) => {
+  wss.on("connection", (ws: WebSocket, _req: HttpMessage) => {
+    let user: AuthState | null = null
     let authenticated = false
-    try {
-      const user = authenticate(req)
-      if (!user) {
-        ws.send(JSON.stringify({ type: "error", error: "Authentication required" }))
-        ws.close()
-        return
-      }
 
-      authenticated = true
-
-      if (!clients.has(user.userId)) {
-        clients.set(user.userId, new Set())
-      }
-      clients.get(user.userId)!.add(ws)
-
-      wsLogger.info({ userId: user.userId }, "WS connected")
-
-      updatePresence(user.userId, "online")
-      broadcast({ type: "presence:update", userId: user.userId, status: "online" })
-
-      ws.send(JSON.stringify({ type: "connected", userId: user.userId }))
-
+    const initHandlers = () => {
       ws.on("message", async (data) => {
         try {
           const msg: IncomingMessage = JSON.parse(data.toString())
-          wsLogger.debug({ userId: user.userId, type: msg.type }, "WS message received")
+
+          if (!authenticated) {
+            if (msg.type === "auth") {
+              const token = msg.token as string
+              user = authenticate(token)
+              if (!user) {
+                ws.send(JSON.stringify({ type: "error", error: "Authentication required" }))
+                ws.close()
+                return
+              }
+              authenticated = true
+              finishAuth()
+            } else {
+              ws.send(JSON.stringify({ type: "error", error: "Authentication required" }))
+              ws.close()
+            }
+            return
+          }
+
+          wsLogger.debug({ userId: user!.userId, type: msg.type }, "WS message received")
 
           switch (msg.type) {
             case "message:send":
-              await handleSendMessage(ws, msg as any, user.userId, user.username)
+              await handleSendMessage(ws, msg as any, user!.userId, user!.username)
               break
             case "message:typing":
-              await handleTyping(ws, msg as any, user.userId)
+              await handleTyping(ws, msg as any, user!.userId)
               break
             case "message:edit":
-              await handleEditMessage(ws, msg as any, user.userId)
+              await handleEditMessage(ws, msg as any, user!.userId)
               break
             case "message:delete":
-              await handleDeleteMessage(ws, msg as any, user.userId)
+              await handleDeleteMessage(ws, msg as any, user!.userId)
               break
             case "presence:status": {
               const status = (msg as any).status
-              wsLogger.debug({ userId: user.userId, status }, "Presence update")
-              await updatePresence(user.userId, status)
-              broadcast({ type: "presence:update", userId: user.userId, status })
+              wsLogger.debug({ userId: user!.userId, status }, "Presence update")
+              await updatePresence(user!.userId, status)
+              broadcast({ type: "presence:update", userId: user!.userId, status })
               break
             }
             case "call:offer": {
-              wsLogger.info({ userId: user.userId }, "Call offer")
-              const evt = await handleCallOffer(msg as any, user.userId)
+              wsLogger.info({ userId: user!.userId }, "Call offer")
+              const evt = await handleCallOffer(msg as any, user!.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
             case "call:answer": {
-              wsLogger.info({ userId: user.userId }, "Call answer")
-              const evt = await handleCallAnswer(msg as any, user.userId)
+              wsLogger.info({ userId: user!.userId }, "Call answer")
+              const evt = await handleCallAnswer(msg as any, user!.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
             case "call:ice-candidate": {
-              const evt = await handleCallIceCandidate(msg as any, user.userId)
+              const evt = await handleCallIceCandidate(msg as any, user!.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
             case "call:end": {
-              wsLogger.info({ userId: user.userId }, "Call ended")
-              const evt = handleCallEnd(msg as any, user.userId)
+              wsLogger.info({ userId: user!.userId }, "Call ended")
+              const evt = handleCallEnd(msg as any, user!.userId)
               if (evt) ws.send(JSON.stringify(evt))
               break
             }
+            case "ping":
+              ws.send(JSON.stringify({ type: "pong" }))
+              break
             default:
-              wsLogger.warn({ userId: user.userId, type: msg.type }, "Unknown WS message type")
+              wsLogger.warn({ userId: user!.userId, type: msg.type }, "Unknown WS message type")
               ws.send(JSON.stringify({ type: "error", error: `Unknown message type: ${msg.type}` }))
           }
         } catch (parseErr) {
@@ -154,33 +158,43 @@ export function createWSServer(server: import("http").Server) {
           ws.send(JSON.stringify({ type: "error", error: "Invalid message format" }))
         }
       })
-
-      ws.on("close", () => {
-        const userSockets = clients.get(user.userId)
-        if (userSockets) {
-          userSockets.delete(ws)
-          if (userSockets.size === 0) {
-            clients.delete(user.userId)
-            wsLogger.info({ userId: user.userId }, "WS disconnected")
-            updatePresence(user.userId, "offline")
-            broadcast({ type: "presence:update", userId: user.userId, status: "offline" })
-          }
-        }
-      })
-
-      const interval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.ping()
-        }
-      }, config.ws.heartbeatInterval)
-
-      ws.on("close", () => clearInterval(interval))
-    } catch (err) {
-      wsLogger.error({ err }, "WS connection error")
-      if (!authenticated) {
-        ws.close(1011, "Internal server error")
-      }
     }
+
+    const heartbeatInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping()
+      }
+    }, config.ws.heartbeatInterval)
+
+    const finishAuth = () => {
+      if (!clients.has(user!.userId)) {
+        clients.set(user!.userId, new Set())
+      }
+      clients.get(user!.userId)!.add(ws)
+
+      wsLogger.info({ userId: user!.userId }, "WS connected")
+
+      updatePresence(user!.userId, "online")
+      broadcast({ type: "presence:update", userId: user!.userId, status: "online" })
+
+      ws.send(JSON.stringify({ type: "connected", userId: user!.userId }))
+    }
+
+    initHandlers()
+
+    ws.on("close", () => {
+      clearInterval(heartbeatInterval)
+      if (user && clients.has(user.userId)) {
+        const userSockets = clients.get(user.userId)!
+        userSockets.delete(ws)
+        if (userSockets.size === 0) {
+          clients.delete(user.userId)
+          wsLogger.info({ userId: user.userId }, "WS disconnected")
+          updatePresence(user.userId, "offline")
+          broadcast({ type: "presence:update", userId: user.userId, status: "offline" })
+        }
+      }
+    })
   })
 
   return wss

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
-import { api } from "./api"
+import { api, getTokens } from "./api"
 
 export interface CustomThemeData {
   id: string
@@ -194,6 +194,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [applyCssVars])
 
   const refreshCustomTheme = useCallback(async () => {
+    if (!getTokens().accessToken) {
+      const stored = localStorage.getItem("customTheme")
+      if (stored) {
+        const config: ThemeConfig = JSON.parse(stored)
+        setThemeConfig(config)
+        applyCssVars(config)
+      }
+      return
+    }
     try {
       const active = await api<CustomThemeData | null>("/api/themes/active")
       if (active) {
