@@ -664,7 +664,8 @@
       "safetyAlerts": "安全警告",
       "safetyAlertsDesc": "不安全なDMについて警告",
       "blockedMuted": "ブロックとミュート",
-      "noBlocked": "ブロックしたユーザーはいません。"
+      "noBlocked": "ブロックしたユーザーはいません。",
+      "unblock": "ブロック解除"
     },
     "chat": {
       "title": "チャット",

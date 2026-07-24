@@ -42,7 +42,9 @@
     "failed": "Failed",
     "none": "None",
     "default": "Default",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "prev": "Previous",
+    "next": "Next"
   },
   "profile": {
     "title": "Profile",
@@ -128,6 +130,8 @@
     "userNotFound": "User not found",
     "rename": "Rename",
     "renamed": "Conversation renamed",
+    "avatarUpdated": "Group photo updated",
+    "avatarError": "Failed to update group photo",
     "renameError": "Failed to rename conversation",
     "leaveConversation": "Leave conversation",
     "leftConversation": "Left conversation",
@@ -221,7 +225,17 @@
     "create": "Create",
     "joinTitle": "Join Community",
     "enterInviteCode": "Enter invite code",
-    "join": "Join"
+    "join": "Join",
+    "voiceChannels": "Voice Channels",
+    "newVoiceChannelName": "New voice channel name"
+  },
+  "voice": {
+    "join": "Join",
+    "leave": "Leave",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "connected": "Connected",
+    "participants": "participants"
   },
   "admin": {
     "title": "Admin",
@@ -264,7 +278,25 @@
     "adminAdded": "Admin added",
     "adminRemoved": "Admin removed",
     "removeAdminConfirm": "Remove this admin?",
-    "failed": "Failed"
+    "failed": "Failed",
+    "activity": "Activity",
+    "onlineUsers": "Online Users",
+    "today": "Today",
+    "registrationsToday": "Registrations Today",
+    "messagesToday": "Messages Today",
+    "searchUsers": "Search by username, email or ID...",
+    "searchBans": "Search bans...",
+    "allStatuses": "All statuses",
+    "viewDetails": "View details",
+    "suspend": "Suspend",
+    "unsuspend": "Unsuspend",
+    "userDetails": "User Details",
+    "memberSince": "Member since",
+    "role": "Role",
+    "member": "Member",
+    "reportBy": "Reported by",
+    "target": "Target",
+    "expires": "Expires"
   },
   "settings": {
     "title": "Settings",
@@ -508,10 +540,14 @@
       "reactionAnimationDesc": "Emoji reaction animation",
       "skeletonStyle": "Skeleton Style",
       "skeletonStyleDesc": "Loading placeholder animation",
+      "loadingStyle": "Loading Style",
+      "loadingStyleDesc": "Loading spinner or skeleton style",
       "typingIndicator": "Typing Indicator",
       "typingIndicatorDesc": "Typing animation style",
       "badgeStyle": "Badge Style",
       "badgeStyleDesc": "Notification badge appearance",
+      "notificationDotSize": "Notification Dot Size",
+      "notificationDotSizeDesc": "Size of online status dots",
       "options": {
         "small": "Small",
         "medium": "Medium",
@@ -566,6 +602,8 @@
         "pop": "Pop",
         "shimmer": "Shimmer",
         "pulse": "Pulse",
+        "spinner": "Spinner",
+        "skeleton": "Skeleton",
         "bouncingDots": "Bouncing dots",
         "textOnly": "Text only",
         "dot": "Dot",
@@ -664,7 +702,8 @@
       "safetyAlerts": "Safety Alerts",
       "safetyAlertsDesc": "Get warned about unsafe DMs",
       "blockedMuted": "Blocked & Muted",
-      "noBlocked": "No blocked users yet."
+      "noBlocked": "No blocked users yet.",
+      "unblock": "Unblock"
     },
     "chat": {
       "title": "Chat",

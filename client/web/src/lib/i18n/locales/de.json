@@ -42,7 +42,9 @@
     "failed": "Fehlgeschlagen",
     "none": "Keine",
     "default": "Standard",
-    "saving": "Speichern..."
+    "saving": "Speichern...",
+    "prev": "Zurück",
+    "next": "Weiter"
   },
   "profile": {
     "title": "Profil",
@@ -128,6 +130,8 @@
     "userNotFound": "Benutzer nicht gefunden",
     "rename": "Umbenennen",
     "renamed": "Konversation umbenannt",
+    "avatarUpdated": "Gruppenfoto aktualisiert",
+    "avatarError": "Fehler beim Aktualisieren des Gruppenfotos",
     "renameError": "Umbenennen fehlgeschlagen",
     "leaveConversation": "Konversation verlassen",
     "leftConversation": "Konversation verlassen",
@@ -221,7 +225,17 @@
     "create": "Erstellen",
     "joinTitle": "Community beitreten",
     "enterInviteCode": "Einladungscode eingeben",
-    "join": "Beitreten"
+    "join": "Beitreten",
+    "voiceChannels": "Sprachkanäle",
+    "newVoiceChannelName": "Neuer Sprachkanalname"
+  },
+  "voice": {
+    "join": "Beitreten",
+    "leave": "Verlassen",
+    "mute": "Stummschalten",
+    "unmute": "Lautschalten",
+    "connected": "Verbunden",
+    "participants": "Teilnehmer"
   },
   "admin": {
     "title": "Admin",
@@ -264,7 +278,25 @@
     "adminAdded": "Admin hinzugefügt",
     "adminRemoved": "Admin entfernt",
     "removeAdminConfirm": "Diesen Admin entfernen?",
-    "failed": "Fehlgeschlagen"
+    "failed": "Fehlgeschlagen",
+    "activity": "Aktivität",
+    "onlineUsers": "Online-Benutzer",
+    "today": "Heute",
+    "registrationsToday": "Registrierungen heute",
+    "messagesToday": "Nachrichten heute",
+    "searchUsers": "Suche nach Benutzername, E-Mail oder ID...",
+    "searchBans": "Sperrungen durchsuchen...",
+    "allStatuses": "Alle Status",
+    "viewDetails": "Details anzeigen",
+    "suspend": "Sperren",
+    "unsuspend": "Entsperren",
+    "userDetails": "Benutzerdetails",
+    "memberSince": "Mitglied seit",
+    "role": "Rolle",
+    "member": "Mitglied",
+    "reportBy": "Gemeldet von",
+    "target": "Ziel",
+    "expires": "Läuft ab"
   },
   "settings": {
     "title": "Einstellungen",
@@ -664,7 +696,8 @@
       "safetyAlerts": "Sicherheitswarnungen",
       "safetyAlertsDesc": "Vor unsicheren Direktnachrichten gewarnt werden",
       "blockedMuted": "Blockiert & Stummgeschaltet",
-      "noBlocked": "Noch keine blockierten Benutzer."
+      "noBlocked": "Noch keine blockierten Benutzer.",
+      "unblock": "Entblocken"
     },
     "chat": {
       "title": "Chat",

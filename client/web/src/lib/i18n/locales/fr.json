@@ -664,7 +664,8 @@
       "safetyAlerts": "Alertes de sécurité",
       "safetyAlertsDesc": "Être averti des messages directs dangereux",
       "blockedMuted": "Bloqués & Masqués",
-      "noBlocked": "Aucun utilisateur bloqué pour le moment."
+      "noBlocked": "Aucun utilisateur bloqué pour le moment.",
+      "unblock": "Débloquer"
     },
     "chat": {
       "title": "Chat",
