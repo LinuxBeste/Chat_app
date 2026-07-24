@@ -32,7 +32,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const { t } = useTranslation()
   const { unreadCount } = useNotificationCount()
   const { view, setView } = useNav()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
+
+  const filteredNavItems = navItems.filter(
+    (item) => item.view !== "admin" || user?.isAdmin
+  )
 
   const handleNavClick = (v: View) => setView(v)
   const handleBottomClick = (labelKey: string) => {
@@ -60,7 +64,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 p-3" aria-label={t("nav.mainMenu")}>
-        {navItems.map((item) => (
+        {filteredNavItems.map((item) => (
           <button
             key={item.labelKey}
             onClick={() => handleNavClick(item.view)}

@@ -69,7 +69,10 @@ router.get(
       return
     }
 
-    res.json(user)
+    res.json({
+      ...user,
+      isAdmin: config.admin.userIds.includes(req.user!.userId) || config.admin.ownerUserId === req.user!.userId,
+    })
   }),
 )
 

@@ -10,8 +10,10 @@ vi.mock("../../lib/utils", () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(" "),
 }))
 
+import { useAuth } from "../../lib/auth-context"
+
 vi.mock("../../lib/auth-context", () => ({
-  useAuth: vi.fn(() => ({ user: { id: "u1", username: "test" }, logout: vi.fn() })),
+  useAuth: vi.fn(() => ({ user: { id: "u1", username: "test", isAdmin: false }, logout: vi.fn() })),
 }))
 
 describe("Sidebar", () => {
@@ -30,6 +32,17 @@ describe("Sidebar", () => {
     expect(screen.getByLabelText("Calls")).toBeInTheDocument()
     expect(screen.getByLabelText("Files")).toBeInTheDocument()
     expect(screen.getByLabelText("Notifications")).toBeInTheDocument()
+  })
+
+  it("hides admin tab for non-admin users", () => {
+    render(<Sidebar collapsed={false} onToggle={onToggle} />)
+    expect(screen.queryByLabelText("Admin")).not.toBeInTheDocument()
+  })
+
+  it("shows admin tab for admin users", () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: "u1", username: "test", isAdmin: true }, logout: vi.fn() } as any)
+    render(<Sidebar collapsed={false} onToggle={onToggle} />)
+    expect(screen.getByLabelText("Admin")).toBeInTheDocument()
   })
 
   it("renders bottom items", () => {

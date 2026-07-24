@@ -5,7 +5,7 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { blocks, messageReads } from "../db/schema.js"
+import { blocks, messageReads, users } from "../db/schema.js"
 import { eq, and } from "drizzle-orm"
 
 const router: RouterType = Router()
@@ -43,8 +43,15 @@ router.get(
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
     const list = await db
-      .select({ blockedUserId: blocks.blockedUserId, createdAt: blocks.createdAt })
+      .select({
+        blockedUserId: blocks.blockedUserId,
+        createdAt: blocks.createdAt,
+        username: users.username,
+        displayName: users.displayName,
+        avatar: users.avatar,
+      })
       .from(blocks)
+      .innerJoin(users, eq(users.id, blocks.blockedUserId))
       .where(eq(blocks.userId, req.user!.userId))
     res.json(list)
   }),

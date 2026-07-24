@@ -5,6 +5,7 @@ import { config } from "../config.js"
 import { handleSendMessage, handleTyping, handleEditMessage, handleDeleteMessage } from "./messages.js"
 import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
+import { handleVoiceJoin, handleVoiceLeave, handleVoiceOffer, handleVoiceAnswer, handleVoiceIceCandidate } from "./voice.js"
 import { getRedis } from "../lib/redis.js"
 import { createContextLogger } from "../lib/logger.js"
 import { clients, sendToUser, broadcast, sendToConversation } from "./clients.js"
@@ -51,6 +52,10 @@ export function createWSServer(server: import("http").Server) {
         }
         if (["call:offer", "call:answer", "call:ice-candidate"].includes(event.type)) {
           const userId = event.callerId ?? event.userId
+          if (userId) sendToUser(userId, event)
+        }
+        if (["voice:user-joined", "voice:user-left", "voice:offer", "voice:answer", "voice:ice-candidate"].includes(event.type)) {
+          const userId = event.targetUserId ?? event.userId
           if (userId) sendToUser(userId, event)
         }
       } catch (redisErr) {
@@ -144,6 +149,28 @@ export function createWSServer(server: import("http").Server) {
               wsLogger.info({ userId: user!.userId }, "Call ended")
               const evt = handleCallEnd(msg as any, user!.userId)
               if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "voice:join": {
+              const evt = await handleVoiceJoin(msg as any, user!.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "voice:leave": {
+              const evt = await handleVoiceLeave(msg as any, user!.userId)
+              if (evt) ws.send(JSON.stringify(evt))
+              break
+            }
+            case "voice:offer": {
+              await handleVoiceOffer(msg as any, user!.userId)
+              break
+            }
+            case "voice:answer": {
+              await handleVoiceAnswer(msg as any, user!.userId)
+              break
+            }
+            case "voice:ice-candidate": {
+              await handleVoiceIceCandidate(msg as any, user!.userId)
               break
             }
             case "ping":

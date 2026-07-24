@@ -11,6 +11,7 @@ interface User {
   displayName?: string | null
   emailVerified?: string
   createdAt?: string
+  isAdmin?: boolean
 }
 
 interface AuthState {
