@@ -31,6 +31,7 @@ export const conversations = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     type: conversationTypeEnum("type").notNull(),
     name: text("name"),
+    avatar: text("avatar"),
     createdBy: uuid("created_by").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -415,6 +416,21 @@ export const communityChannels = pgTable(
   },
   (table) => ({
     communityIdIdx: index("community_channels_community_id_idx").on(table.communityId),
+  }),
+)
+
+export const communityVoiceChannels = pgTable(
+  "community_voice_channels",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    communityId: uuid("community_id")
+      .references(() => communities.id)
+      .notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    communityIdIdx: index("community_voice_channels_community_id_idx").on(table.communityId),
   }),
 )
 
