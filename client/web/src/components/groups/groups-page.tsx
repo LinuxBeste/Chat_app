@@ -2,8 +2,8 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
-import { useNav } from "../layout/dashboard-layout"
-import { Plus, Users, X, Search, UserPlus, MessageSquare, Trash2 } from "lucide-react"
+import { ChatArea } from "../chat/chat-area"
+import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare, ArrowLeft } from "lucide-react"
 
 interface Group {
   id: string
@@ -23,8 +23,8 @@ interface UserResult {
 export function GroupsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const { setView, setActiveConversationId } = useNav()
   const [groups, setGroups] = useState<Group[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState("")
   const [createSearchQuery, setCreateSearchQuery] = useState("")
@@ -43,6 +43,7 @@ export function GroupsPage() {
     try {
       await api(`/api/conversations/${id}`, { method: "DELETE" })
       setGroups((prev) => prev.filter((g) => g.id !== id))
+      if (selectedGroupId === id) setSelectedGroupId(null)
     } catch { /* ignore */ }
   }
 
@@ -54,6 +55,7 @@ export function GroupsPage() {
     }).catch(() => null)
     if (conv) {
       setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)])
+      setSelectedGroupId(conv.id)
       setCreateName("")
       setCreateSearchQuery("")
       setCreateSearchResults([])
@@ -77,7 +79,7 @@ export function GroupsPage() {
 
   return (
     <div className="flex h-full">
-      <div className="flex-1 flex flex-col">
+      <div className={`flex flex-col border-r border-border ${selectedGroupId ? "w-72 shrink-0 hidden md:flex" : "flex-1"}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text-primary">{t("groups.title")}</h2>
           <button
@@ -95,8 +97,10 @@ export function GroupsPage() {
           {groups.map((g) => (
             <button
               key={g.id}
-              onClick={() => { setActiveConversationId(g.id); setView("chat") }}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-all cursor-pointer hover:bg-white/[0.02]"
+              onClick={() => setSelectedGroupId(g.id)}
+              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-all cursor-pointer hover:bg-white/[0.02] ${
+                selectedGroupId === g.id ? "bg-white/[0.03]" : ""
+              }`}
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0 overflow-hidden">
                 {g.avatar ? (
@@ -122,6 +126,29 @@ export function GroupsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className={`flex flex-col ${selectedGroupId ? "flex-1" : "hidden md:flex md:flex-1"}`}>
+        {selectedGroupId && user ? (
+          <>
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border md:hidden">
+              <button
+                onClick={() => setSelectedGroupId(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all cursor-pointer"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <p className="text-sm font-semibold text-text-primary truncate">
+                {groups.find((g) => g.id === selectedGroupId)?.name ?? t("groups.unnamed")}
+              </p>
+            </div>
+            <ChatArea conversationId={selectedGroupId} currentUserId={user.id} onLeave={() => setSelectedGroupId(null)} />
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-sm text-text-muted">{t("groups.selectGroup")}</p>
+          </div>
+        )}
       </div>
 
       {showCreate && (
@@ -208,8 +235,6 @@ export function GroupsPage() {
           </div>
         </div>
       )}
-
-
     </div>
   )
 }
