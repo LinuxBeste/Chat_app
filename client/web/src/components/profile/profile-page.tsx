@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { api } from "../../lib/api"
+import { api, apiFormData } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTranslation } from "react-i18next"
 import { useToast } from "../../lib/toast-context"
@@ -48,10 +48,7 @@ export function ProfilePage() {
     try {
       const formData = new FormData()
       formData.append("avatar", file)
-      const res = await api<{ avatar: string }>("/api/users/avatar", {
-        method: "POST",
-        body: formData,
-      })
+      const res = await apiFormData<{ avatar: string }>("/api/users/avatar", formData)
       setAvatar(res.avatar)
       showToast(t("profile.avatarSuccess"), "success")
     } catch (err: any) {
