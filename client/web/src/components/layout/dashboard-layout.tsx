@@ -18,22 +18,25 @@ export type View =
 interface NavContextValue {
   view: View
   setView: (v: View) => void
+  activeConversationId: string | null
+  setActiveConversationId: (id: string | null) => void
 }
 
 const NavContext = createContext<NavContextValue | null>(null)
 
 export function useNav() {
   const ctx = useContext(NavContext)
-  if (!ctx) return { view: "chat" as View, setView: () => {} }
+  if (!ctx) return { view: "chat" as View, setView: () => {}, activeConversationId: null, setActiveConversationId: () => {} }
   return ctx
 }
 
 export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [view, setView] = useState<View>("chat")
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
 
   return (
-    <NavContext.Provider value={{ view, setView }}>
+    <NavContext.Provider value={{ view, setView, activeConversationId, setActiveConversationId }}>
       <div className="flex h-screen bg-bg-secondary">
         <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
@@ -41,7 +44,7 @@ export function DashboardLayout() {
           <Topbar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
           <main className="flex-1 overflow-hidden rounded-[32px] bg-bg-primary m-3">
-            {view === "chat" && <ChatWindow />}
+            {view === "chat" && <ChatWindow activeConversationId={activeConversationId} onConversationChange={setActiveConversationId} />}
             {view === "profile" && <ProfilePage />}
             {view === "files" && <FilesPage />}
             {view === "groups" && <GroupsPage />}

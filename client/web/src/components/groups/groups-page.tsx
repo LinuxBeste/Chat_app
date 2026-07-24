@@ -2,21 +2,16 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
-import { Plus, Users, X, Search, UserCheck } from "lucide-react"
+import { useNav } from "../layout/dashboard-layout"
+import { Plus, Users, X, Search, UserPlus, MessageSquare, Trash2 } from "lucide-react"
 
 interface Group {
   id: string
   type: string
   name: string | null
+  avatar: string | null
   createdAt: string
   createdBy: string
-}
-
-interface Member {
-  id: string
-  username: string
-  displayName: string | null
-  role: string
 }
 
 interface UserResult {
@@ -28,15 +23,13 @@ interface UserResult {
 export function GroupsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { setView, setActiveConversationId } = useNav()
   const [groups, setGroups] = useState<Group[]>([])
-  const [selected, setSelected] = useState<Group | null>(null)
-  const [members, setMembers] = useState<Member[]>([])
-  const [newName, setNewName] = useState("")
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState("")
-  const [showAddMember, setShowAddMember] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<UserResult[]>([])
+  const [createSearchQuery, setCreateSearchQuery] = useState("")
+  const [createSearchResults, setCreateSearchResults] = useState<UserResult[]>([])
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     api<Group[]>("/api/conversations")
@@ -46,86 +39,45 @@ export function GroupsPage() {
       .catch(() => {})
   }, [])
 
-  const selectGroup = async (g: Group) => {
-    setSelected(g)
-    setNewName(g.name ?? "")
-    const conv = await api<any>(`/api/conversations/${g.id}`)
-    setMembers(conv.members ?? [])
-  }
-
-  const currentMember = members.find((m) => m.id === user?.id)
-  const isOwner = currentMember?.role === "owner"
-  const isAdmin = currentMember?.role === "admin"
-  const canManage = isOwner || isAdmin
-
-  const renameGroup = async () => {
-    if (!selected || !newName.trim()) return
-    await api(`/api/conversations/${selected.id}`, {
-      method: "PUT",
-      body: JSON.stringify({ name: newName.trim() }),
-    }).catch(() => {})
-    setGroups((prev) => prev.map((g) => (g.id === selected.id ? { ...g, name: newName.trim() } : g)))
-    setSelected((prev) => (prev ? { ...prev, name: newName.trim() } : null))
+  const deleteGroup = async (id: string) => {
+    try {
+      await api(`/api/conversations/${id}`, { method: "DELETE" })
+      setGroups((prev) => prev.filter((g) => g.id !== id))
+    } catch { /* ignore */ }
   }
 
   const createGroup = async () => {
     if (!createName.trim()) return
     const conv = await api<Group>("/api/conversations", {
       method: "POST",
-      body: JSON.stringify({ type: "group", name: createName.trim(), participantIds: [] }),
+      body: JSON.stringify({ type: "group", name: createName.trim(), participantIds: Array.from(selectedParticipants) }),
     }).catch(() => null)
     if (conv) {
       setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)])
       setCreateName("")
+      setCreateSearchQuery("")
+      setCreateSearchResults([])
+      setSelectedParticipants(new Set())
       setShowCreate(false)
     }
   }
 
-  const removeMember = async (userId: string) => {
-    if (!selected) return
-    await api(`/api/conversations/${selected.id}/participants/${userId}`, {
-      method: "DELETE",
-    }).catch(() => {})
-    setMembers((prev) => prev.filter((m) => m.id !== userId))
-  }
-
-  const changeRole = async (userId: string, role: string) => {
-    if (!selected) return
-    await api(`/api/conversations/${selected.id}/participants/${userId}/role`, {
-      method: "PUT",
-      body: JSON.stringify({ role }),
-    }).catch(() => {})
-    setMembers((prev) => prev.map((m) => (m.id === userId ? { ...m, role } : m)))
-  }
-
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 1) {
-      setSearchResults([])
+    if (!createSearchQuery || createSearchQuery.length < 1) {
+      setCreateSearchResults([])
       return
     }
     const timer = setTimeout(() => {
-      api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
-        .then(setSearchResults)
-        .catch(() => setSearchResults([]))
+      api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(createSearchQuery)}`)
+        .then(setCreateSearchResults)
+        .catch(() => setCreateSearchResults([]))
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  const addMember = async (userId: string) => {
-    if (!selected) return
-    await api(`/api/conversations/${selected.id}/participants`, {
-      method: "POST",
-      body: JSON.stringify({ participantIds: [userId] }),
-    }).catch(() => {})
-    const conv = await api<any>(`/api/conversations/${selected.id}`)
-    setMembers(conv.members ?? [])
-    setSearchQuery("")
-    setSearchResults([])
-  }
+  }, [createSearchQuery])
 
   return (
     <div className="flex h-full">
-      <div className="w-72 border-r border-border flex flex-col">
+      <div className="flex-1 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text-primary">{t("groups.title")}</h2>
           <button
@@ -137,110 +89,51 @@ export function GroupsPage() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
+          {groups.length === 0 && (
+            <p className="text-sm text-text-muted text-center py-8">{t("groups.noGroups")}</p>
+          )}
           {groups.map((g) => (
             <button
               key={g.id}
-              onClick={() => selectGroup(g)}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-all cursor-pointer hover:bg-white/[0.02] ${selected?.id === g.id ? "bg-accent/[0.03]" : ""}`}
+              onClick={() => { setActiveConversationId(g.id); setView("chat") }}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-all cursor-pointer hover:bg-white/[0.02]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0">
-                <Users className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0 overflow-hidden">
+                {g.avatar ? (
+                  <img src={g.avatar} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Users className="h-4 w-4" />
+                )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-text-primary truncate">{g.name ?? t("groups.unnamed")}</p>
-                <p className="text-xs text-text-muted">{g.type}</p>
+                <p className="text-xs text-text-muted">Group</p>
               </div>
+              {g.createdBy === user?.id && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteGroup(g.id) }}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer shrink-0"
+                  title={t("common.delete")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              <MessageSquare className="h-4 w-4 text-text-muted shrink-0" />
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        {!selected && <p className="text-sm text-text-muted">{t("groups.selectGroup")}</p>}
-        {selected && (
-          <div className="max-w-lg space-y-6">
-            <h1 className="text-lg font-semibold text-text-primary">{t("groups.groupSettings")}</h1>
-
-            <div>
-              <label className="text-xs text-text-muted block mb-1">{t("groups.groupName")}</label>
-              <div className="flex gap-2">
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="flex-1 h-10 rounded-2xl border border-border bg-surface px-4 text-sm text-text-primary outline-none focus:border-accent/50"
-                />
-                <button
-                  onClick={renameGroup}
-                  disabled={!newName.trim()}
-                  className="h-10 rounded-2xl bg-accent text-white text-sm px-4 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
-                >
-                  {t("groups.rename")}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-text-primary">{t("groups.members")} ({members.length})</h3>
-                {canManage && (
-                  <button
-                    onClick={() => setShowAddMember(true)}
-                    className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover cursor-pointer"
-                  >
-                    <Plus className="h-3 w-3" /> {t("common.add")}
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2">
-                {members.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5"
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
-                      {(m.displayName || m.username)[0].toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text-primary truncate">{m.displayName || m.username}</p>
-                      <p className="text-xs text-text-muted">@{m.username}</p>
-                    </div>
-                    <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">
-                      {m.role}
-                    </span>
-                    {canManage && m.id !== user?.id && m.role !== "owner" && (
-                      <button
-                        onClick={() => removeMember(m.id)}
-                        className="text-text-muted hover:text-danger cursor-pointer"
-                        title={t("groups.removeMember")}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    {isOwner && m.id !== user?.id && m.role !== "owner" && (
-                      <select
-                        value={m.role}
-                        onChange={(e) => changeRole(m.id, e.target.value)}
-                        className="text-xs bg-transparent border border-border rounded-xl px-2 py-1 text-text-muted cursor-pointer outline-none"
-                      >
-                        <option value="member">{t("groups.member")}</option>
-                        <option value="admin">{t("groups.admin")}</option>
-                      </select>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowCreate(false); setCreateSearchQuery(""); setCreateSearchResults([]); setSelectedParticipants(new Set()) }}>
+          <div
+            className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">{t("groups.createGroup")}</h3>
               <button
-                onClick={() => setShowCreate(false)}
+                onClick={() => { setShowCreate(false); setCreateSearchQuery(""); setCreateSearchResults([]); setSelectedParticipants(new Set()) }}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -250,8 +143,61 @@ export function GroupsPage() {
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
               placeholder={t("groups.groupNamePlaceholder")}
-              className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-4"
+              className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 mb-3"
             />
+            <div className="flex items-center gap-2 mb-3 px-4 py-2.5 rounded-2xl border border-border bg-bg-primary">
+              <Search className="h-4 w-4 text-text-muted shrink-0" />
+              <input
+                value={createSearchQuery}
+                onChange={(e) => setCreateSearchQuery(e.target.value)}
+                placeholder={t("groups.searchUsers")}
+                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
+              />
+            </div>
+            {selectedParticipants.size > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {Array.from(selectedParticipants).map((id) => {
+                  const u = createSearchResults.find((r) => r.id === id)
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-accent/10 text-accent text-xs"
+                    >
+                      {u?.displayName || u?.username || id.slice(0, 8)}
+                      <button
+                        onClick={() => setSelectedParticipants((prev) => { const next = new Set(prev); next.delete(id); return next })}
+                        className="hover:text-accent-hover cursor-pointer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+            <div className="max-h-40 overflow-y-auto space-y-1 mb-4">
+              {createSearchQuery.length >= 1 && createSearchResults.length === 0 && (
+                <p className="text-sm text-text-muted text-center py-2">{t("groups.noUsersFound")}</p>
+              )}
+              {createSearchResults
+                .filter((u) => !selectedParticipants.has(u.id))
+                .map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedParticipants((prev) => new Set(prev).add(u.id))}
+                    className="flex w-full items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 transition-all cursor-pointer text-left"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
+                      {(u.displayName || u.username)[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-text-primary truncate">{u.displayName || u.username}</p>
+                      <p className="text-xs text-text-muted">@{u.username}</p>
+                    </div>
+                    <UserPlus className="h-4 w-4 text-text-muted shrink-0" />
+                  </button>
+                ))}
+            </div>
             <button
               onClick={createGroup}
               disabled={!createName.trim()}
@@ -263,60 +209,7 @@ export function GroupsPage() {
         </div>
       )}
 
-      {showAddMember && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddMember(false)}>
-          <div
-            className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text-primary">{t("groups.addMember")}</h3>
-              <button
-                onClick={() => setShowAddMember(false)}
-                className="text-text-muted hover:text-text-primary cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-2xl border border-border bg-bg-primary">
-              <Search className="h-4 w-4 text-text-muted shrink-0" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("groups.searchUsers")}
-                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
-              />
-            </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
-              {searchQuery.length >= 1 && searchResults.length === 0 && (
-                <p className="text-sm text-text-muted text-center py-2">{t("groups.noUsersFound")}</p>
-              )}
-              {searchResults.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => addMember(u.id)}
-                  className="flex w-full items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 transition-all cursor-pointer text-left"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
-                    {(u.displayName || u.username)[0].toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary truncate">{u.displayName || u.username}</p>
-                    <p className="text-xs text-text-muted">@{u.username}</p>
-                  </div>
-                  <UserCheck className="h-4 w-4 text-accent shrink-0" />
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowAddMember(false)}
-              className="w-full h-10 rounded-2xl border border-border text-text-muted text-sm font-medium hover:bg-white/5 transition-all cursor-pointer"
-            >
-              {t("common.cancel")}
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }

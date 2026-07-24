@@ -7,16 +7,32 @@ import { Avatar } from "../ui/avatar"
 import {
   Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download,
   Plus, Users, UserPlus, Copy, Ban, Shield, LogOut, ArrowLeft, Search, Bell,
-  BellOff, Flag,
+  BellOff, Flag, Camera,
 } from "lucide-react"
-import { api } from "../../lib/api"
+import { api, apiFormData, BASE_URL } from "../../lib/api"
+
+function displayName(url: string, attachment?: Attachment): string {
+  if (attachment?.filename) return attachment.filename
+  const name = url.split("/").pop() || "file"
+  return name.replace(/^\d+-\d+-/, "")
+}
 import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
+import { useNav } from "../layout/dashboard-layout"
+
+interface Attachment {
+  id: string
+  url: string
+  filename: string
+  mimeType: string
+  size: number
+}
 
 interface Message {
   id: string
   content: string
   type: string
+  messageType?: string
   senderId: string
   createdAt: string
   editedAt: string | null
@@ -26,6 +42,7 @@ interface Message {
     displayName: string | null
     avatar: string | null
   }
+  attachment?: Attachment
 }
 
 interface Member {
@@ -41,6 +58,7 @@ interface ConversationInfo {
   id: string
   type: string
   name: string | null
+  avatar: string | null
   createdBy: string
   members: Member[]
 }
@@ -68,6 +86,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const [showConvMenu, setShowConvMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameText, setRenameText] = useState("")
+  const [filePreview, setFilePreview] = useState<Message | null>(null)
+  const [previewText, setPreviewText] = useState<string | null>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,6 +105,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       .finally(() => setLoading(false))
   }, [conversationId])
 
+  const { setActiveConversationId, setView } = useNav()
   const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
   const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
   const isGroup = convInfo?.type === "group" || convInfo?.type === "channel"
@@ -93,6 +114,17 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const dmName = otherSender?.sender?.displayName ?? otherSender?.sender?.username ?? otherMember?.displayName ?? otherMember?.username ?? t("chat.dmConversation")
   const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (filePreview?.attachment?.mimeType?.startsWith("text/")) {
+      fetch(`${BASE_URL}${filePreview.content}`)
+        .then((r) => r.text())
+        .then(setPreviewText)
+        .catch(() => setPreviewText(null))
+    } else {
+      setPreviewText(null)
+    }
+  }, [filePreview])
 
   const handleRemoveParticipant = async (userId: string) => {
     try {
@@ -105,9 +137,19 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   }
 
   useEffect(() => {
-    const unsubNew = wsClient.on("message:new", (data) => {
+    const unsubNew = wsClient.on("message:new", (data: any) => {
       if (data.conversationId === conversationId) {
-        setMessages((prev) => prev.some((m) => m.id === (data as unknown as Message).id) ? prev : [...prev, data as unknown as Message])
+        const msg: Message = {
+          id: data.id,
+          content: data.content,
+          type: data.messageType || data.type,
+          senderId: data.senderId,
+          createdAt: data.createdAt,
+          editedAt: null,
+          sender: data.sender,
+          attachment: data.attachment,
+        }
+        setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg])
       }
     })
     const unsubEdited = wsClient.on("message:edited", (data) => {
@@ -263,6 +305,34 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     }
   }, [conversationId, currentUserId, showToast, t, onLeave])
 
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const formData = new FormData()
+      formData.append("avatar", file)
+      const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData)
+      setConvInfo((prev) => (prev ? { ...prev, avatar: res.avatar } : prev))
+      showToast(t("chat.avatarUpdated"), "success")
+    } catch {
+      showToast(t("chat.avatarError"))
+    }
+    if (avatarInputRef.current) avatarInputRef.current.value = ""
+  }, [conversationId, showToast, t])
+
+  const navigateToDm = useCallback(async (targetUserId: string) => {
+    try {
+      const conv = await api<{ id: string }>("/api/conversations", {
+        method: "POST",
+        body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
+      })
+      setActiveConversationId(conv.id)
+      setView("chat")
+    } catch { /* ignore */ }
+  }, [setActiveConversationId, setView])
+
   const handleStartRename = useCallback(() => {
     setRenameText(convInfo?.name ?? "")
     setRenaming(true)
@@ -333,7 +403,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         aria-label={t("chat.chatActions")}
       >
         <div className="relative">
-          <Avatar fallback={convInfo?.name?.[0] ?? dmInitial} />
+          <Avatar src={convInfo?.avatar ?? undefined} fallback={convInfo?.name?.[0] ?? dmInitial} />
         </div>
         <div className="flex-1 min-w-0">
           {renaming ? (
@@ -481,11 +551,27 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           </div>
 
           <div className="flex flex-col items-center py-8 px-4">
-            <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center text-accent text-3xl font-bold mb-4">
-              {isGroup
-                ? (convInfo?.name?.[0] ?? "G")
-                : dmInitial
-              }
+            <div className="relative w-20 h-20 mb-4">
+              <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center text-accent text-3xl font-bold overflow-hidden">
+                {convInfo?.avatar ? (
+                  <img src={convInfo.avatar} alt="" className="h-full w-full object-cover" />
+                ) : isGroup ? (
+                  (convInfo?.name?.[0] ?? "G")
+                ) : (
+                  dmInitial
+                )}
+              </div>
+              {isGroup && canManage && (
+                <>
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent-hover transition-colors cursor-pointer"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </>
+              )}
             </div>
             <h1 className="text-lg font-bold text-text-primary text-center">
               {isGroup
@@ -537,7 +623,14 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                 <div className="px-4 py-3">
                   <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{t("chat.members")}</h3>
                   {convInfo?.members.slice(0, 6).map((m) => (
-                    <div key={m.id} className="flex items-center gap-3 py-2">
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-3 py-2 cursor-pointer hover:bg-white/[0.02] rounded-lg"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("button")) return
+                        navigateToDm(m.id)
+                      }}
+                    >
                       <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold shrink-0">
                         {(m.displayName || m.username)[0].toUpperCase()}
                       </div>
@@ -547,7 +640,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       </div>
                       {canManage && m.id !== currentUserId && m.role !== "owner" && (
                         <button
-                          onClick={() => handleRemoveParticipant(m.id)}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveParticipant(m.id) }}
                           className="text-text-muted hover:text-danger cursor-pointer shrink-0"
                         >
                           <X className="h-4 w-4" />
@@ -702,27 +795,25 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                   </div>
                 ) : msg.type === "image" ? (
                   <img
-                    src={msg.content}
+                    src={`${BASE_URL}${msg.content}`}
                     alt={t("chat.sharedImage")}
                     className="max-w-full rounded-2xl cursor-pointer"
-                    onClick={() => window.open(msg.content, "_blank")}
+                    onClick={() => setFilePreview(msg)}
                   />
                 ) : msg.type === "file" ? (
-                  <a
-                    href={msg.content}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors no-underline"
+                  <button
+                    onClick={() => setFilePreview(msg)}
+                    className="flex items-center gap-3 p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors w-full text-left no-underline cursor-pointer"
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20">
                       <FileText className="h-5 w-5 text-accent" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{msg.content.split("/").pop()}</p>
-                      <p className="text-xs text-text-muted">{t("chat.fileType", { ext: msg.content.split(".").pop()?.toUpperCase() || "?" })}</p>
+                      <p className="text-sm font-medium truncate">{displayName(msg.content, msg.attachment)}</p>
+                      <p className="text-xs text-text-muted">{t("chat.fileType", { ext: displayName(msg.content, msg.attachment).split(".").pop()?.toUpperCase() || "?" })}</p>
                     </div>
                     <Download className="h-4 w-4 text-text-muted shrink-0" />
-                  </a>
+                  </button>
                 ) : (
                   <p className="text-sm leading-relaxed">{msg.content}</p>
                 )}
@@ -789,6 +880,53 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             api<ConversationInfo>(`/api/conversations/${conversationId}`).then(setConvInfo).catch(() => {})
           }}
         />
+      )}
+
+      {filePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setFilePreview(null); setPreviewText(null) }}>
+          <div className="w-full max-w-2xl max-h-[80vh] rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
+              <h3 className="text-sm font-semibold text-text-primary truncate">{displayName(filePreview.content, filePreview.attachment)}</h3>
+              <button onClick={() => { setFilePreview(null); setPreviewText(null) }} className="text-text-muted hover:text-text-primary cursor-pointer">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
+              {filePreview.type === "image" ? (
+                <img src={`${BASE_URL}${filePreview.content}`} alt={filePreview.attachment?.filename || ""} className="max-w-full rounded-2xl" />
+              ) : filePreview.attachment?.mimeType?.startsWith("text/") ? (
+                <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">{previewText ?? t("common.loading")}</pre>
+              ) : filePreview.attachment?.mimeType === "application/pdf" ? (
+                <iframe src={`${BASE_URL}${filePreview.content}`} className="w-full h-[60vh] rounded-2xl" title={filePreview.attachment?.filename || ""} />
+              ) : (
+                <div className="flex flex-col items-center gap-4 py-8 text-text-muted">
+                  <FileText className="h-12 w-12" />
+                  <p className="text-sm">{t("files.cannotPreview")}</p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${BASE_URL}${filePreview.content}`)
+                        const blob = await res.blob()
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        a.download = displayName(filePreview.content, filePreview.attachment)
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+                      } catch { /* ignore */ }
+                    }}
+                    className="flex items-center gap-2 h-10 px-5 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover cursor-pointer"
+                  >
+                    <Download className="h-4 w-4" />
+                    {t("files.download")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {showMemberMenu && (

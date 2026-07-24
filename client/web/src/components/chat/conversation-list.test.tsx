@@ -4,9 +4,8 @@ import userEvent from "@testing-library/user-event"
 import { ConversationList } from "./conversation-list"
 
 const mockConversations = [
-  { id: "conv-1", type: "dm", name: "Alice", createdAt: "2024-01-01T00:00:00Z", otherUser: { id: "user-1", username: "alice", displayName: "Alice", avatar: null, customStatus: "Busy coding" } },
-  { id: "conv-2", type: "group", name: "Dev Team", createdAt: "2024-01-02T00:00:00Z" },
-  { id: "conv-3", type: "channel", name: null, createdAt: "2024-01-03T00:00:00Z" },
+  { id: "conv-1", type: "dm", name: "Alice", avatar: null, createdAt: "2024-01-01T00:00:00Z", otherUser: { id: "user-1", username: "alice", displayName: "Alice", avatar: null, customStatus: "Busy coding" } },
+  { id: "conv-2", type: "dm", name: "Bob", avatar: null, createdAt: "2024-01-02T00:00:00Z", otherUser: { id: "user-2", username: "bob", displayName: "Bob", avatar: null, customStatus: null } },
 ]
 
 vi.mock("react-i18next", async () => {
@@ -56,20 +55,13 @@ describe("ConversationList", () => {
     await waitFor(() => {
       expect(screen.getByText("Alice")).toBeInTheDocument()
     })
-    expect(screen.getByText("Dev Team")).toBeInTheDocument()
+    expect(screen.getByText("Bob")).toBeInTheDocument()
   })
 
   it("shows total count", async () => {
     render(<ConversationList activeId={null} onSelect={onSelect} />)
     await waitFor(() => {
-      expect(screen.getByText("3 total")).toBeInTheDocument()
-    })
-  })
-
-  it("displays type fallback when name is null", async () => {
-    render(<ConversationList activeId={null} onSelect={onSelect} />)
-    await waitFor(() => {
-      expect(screen.getByText("channel")).toBeInTheDocument()
+      expect(screen.getByText("2 total")).toBeInTheDocument()
     })
   })
 
@@ -91,7 +83,7 @@ describe("ConversationList", () => {
     })
   })
 
-  it("shows avatar with first letter of name", async () => {
+  it("shows avatar with first letter of display name", async () => {
     render(<ConversationList activeId={null} onSelect={onSelect} />)
     await waitFor(() => {
       const avatars = screen.getAllByTestId("avatar")

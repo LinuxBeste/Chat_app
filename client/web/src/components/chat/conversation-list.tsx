@@ -9,6 +9,7 @@ interface Conversation {
   id: string
   type: "dm" | "group" | "channel"
   name: string | null
+  avatar: string | null
   createdAt: string
   otherUser?: {
     id: string
@@ -35,7 +36,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
 
   useEffect(() => {
     api<Conversation[]>("/api/conversations")
-      .then(setConvs)
+      .then((convs) => setConvs(convs.filter((c) => c.type === "dm")))
       .catch(() => showToast(t("chat.loadError")))
   }, [])
 
@@ -96,7 +97,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
             className={`flex w-full items-start gap-3 px-4 py-3.5 transition-all duration-200 cursor-pointer text-left border-b border-border last:border-0 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset ${activeId === conv.id ? "bg-accent/[0.03]" : ""}`}
           >
             <div className="relative shrink-0 mt-0.5">
-              <Avatar src={conv.otherUser?.avatar ?? undefined} fallback={conv.otherUser?.displayName?.[0] ?? conv.otherUser?.username?.[0] ?? "?"} />
+              <Avatar src={conv.type === "dm" ? conv.otherUser?.avatar ?? undefined : conv.avatar ?? undefined} fallback={conv.type === "dm" ? (conv.otherUser?.displayName?.[0] ?? conv.otherUser?.username?.[0] ?? "?") : conv.name?.[0] ?? "?"} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
@@ -107,8 +108,8 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
                 </span>
               </div>
               <p className="text-sm text-text-secondary truncate mt-0.5">
-                {conv.type === "dm" && conv.otherUser
-                  ? (conv.otherUser.customStatus || t("chat.dmConversation"))
+                {conv.type === "dm"
+                  ? (conv.otherUser?.customStatus || t("chat.dmConversation"))
                   : t(`chat.${conv.type}Conversation`)}
               </p>
             </div>

@@ -42,71 +42,78 @@ vi.mock("./chat-area", () => ({
 }))
 
 describe("ChatWindow", () => {
+  const onConversationChange = vi.fn()
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseAuth.mockReturnValue({ user: { id: "user-1", username: "testuser", email: "test@test.com" } })
   })
 
   it("renders the chat window container", () => {
-    render(<ChatWindow />)
+    render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     expect(screen.getByTestId("conversation-list")).toBeInTheDocument()
   })
 
   it("shows 'Select a conversation' when no conversation is active", () => {
-    render(<ChatWindow />)
+    render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     expect(screen.getByText("Select a conversation")).toBeInTheDocument()
   })
 
   it("renders ChatArea when a conversation is selected", async () => {
-    render(<ChatWindow />)
+    const { rerender } = render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     await act(async () => {
       screen.getByTestId("select-conv").click()
     })
+    rerender(<ChatWindow activeConversationId={"conv-1"} onConversationChange={onConversationChange} />)
     expect(screen.getByTestId("chat-area")).toBeInTheDocument()
   })
 
   it("passes conversationId to ChatArea on selection", async () => {
-    render(<ChatWindow />)
+    const { rerender } = render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     await act(async () => {
       screen.getByTestId("select-conv").click()
     })
+    rerender(<ChatWindow activeConversationId={"conv-1"} onConversationChange={onConversationChange} />)
     expect(screen.getByTestId("conv-id").textContent).toBe("conv-1")
   })
 
   it("passes currentUserId to ChatArea", async () => {
-    render(<ChatWindow />)
+    const { rerender } = render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     await act(async () => {
       screen.getByTestId("select-conv").click()
     })
+    rerender(<ChatWindow activeConversationId={"conv-1"} onConversationChange={onConversationChange} />)
     expect(screen.getByTestId("current-user").textContent).toBe("user-1")
   })
 
   it("hides the select placeholder when conversation is selected", async () => {
-    render(<ChatWindow />)
+    const { rerender } = render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
+    expect(screen.getByText("Select a conversation")).toBeInTheDocument()
     await act(async () => {
       screen.getByTestId("select-conv").click()
     })
+    rerender(<ChatWindow activeConversationId={"conv-1"} onConversationChange={onConversationChange} />)
     expect(screen.queryByText("Select a conversation")).not.toBeInTheDocument()
   })
 
   it("passes null activeId to ConversationList initially", () => {
-    render(<ChatWindow />)
+    render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     expect(screen.getByTestId("active-id").textContent).toBe("null")
   })
 
   it("does not render ChatArea without a user", () => {
     mockUseAuth.mockReturnValue({ user: null as any })
-    render(<ChatWindow />)
+    render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     expect(screen.queryByTestId("chat-area")).not.toBeInTheDocument()
   })
 
   it("renders conversation list with border class", () => {
-    const { container } = render(<ChatWindow />)
+    const { container } = render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     expect(container.querySelector(".border-r")).toBeInTheDocument()
   })
 
   it("does not crash when onSelect is called", async () => {
-    render(<ChatWindow />)
+    render(<ChatWindow activeConversationId={null} onConversationChange={onConversationChange} />)
     await act(async () => {
       screen.getByTestId("select-conv").click()
     })

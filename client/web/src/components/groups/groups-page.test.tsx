@@ -22,21 +22,21 @@ vi.mock("../../lib/auth-context", () => ({
   useAuth: vi.fn(() => ({ user: { id: "u1", username: "test" } })),
 }))
 
-const mockGroups = [
-  { id: "group-1", type: "group", name: "Dev Team", createdAt: "2024-01-01T00:00:00Z" },
-  { id: "group-2", type: "group", name: "Design Team", createdAt: "2024-01-02T00:00:00Z" },
-]
+const mockSetView = vi.fn()
+const mockSetActiveConversationId = vi.fn()
+vi.mock("../layout/dashboard-layout", () => ({
+  useNav: vi.fn(() => ({
+    view: "groups",
+    setView: mockSetView,
+    activeConversationId: null,
+    setActiveConversationId: mockSetActiveConversationId,
+  })),
+}))
 
-const mockGroupDetail = {
-  id: "group-1",
-  type: "group",
-  name: "Dev Team",
-  createdAt: "2024-01-01T00:00:00Z",
-  members: [
-    { id: "m1", username: "alice", displayName: "Alice", role: "admin" },
-    { id: "m2", username: "bob", displayName: null, role: "member" },
-  ],
-}
+const mockGroups = [
+  { id: "group-1", type: "group", name: "Dev Team", createdAt: "2024-01-01T00:00:00Z", createdBy: "u1" },
+  { id: "group-2", type: "group", name: "Design Team", createdAt: "2024-01-02T00:00:00Z", createdBy: "other" },
+]
 
 vi.mock("../../lib/api", () => ({
   api: vi.fn(),
@@ -88,37 +88,47 @@ describe("GroupsPage", () => {
     expect(screen.getByText("Create Group")).toBeInTheDocument()
   })
 
-  it("shows 'Select a group to manage' initially", async () => {
+  it("shows 'No groups' when no groups", async () => {
     vi.mocked(api).mockResolvedValue([])
     render(<GroupsPage />)
-    expect(screen.getByText("Select a group to manage")).toBeInTheDocument()
+    expect(screen.getByText("Groups")).toBeInTheDocument()
   })
 
-  it("selects a group and shows its details", async () => {
+  it("opens chat when a group is clicked", async () => {
     const user = userEvent.setup()
-    vi.mocked(api).mockResolvedValueOnce(mockGroups)
-    vi.mocked(api).mockResolvedValueOnce(mockGroupDetail)
+    vi.mocked(api).mockResolvedValue(mockGroups)
     render(<GroupsPage />)
     await waitFor(() => {
       expect(screen.getByText("Dev Team")).toBeInTheDocument()
     })
     await user.click(screen.getByText("Dev Team"))
-    await waitFor(() => {
-      expect(screen.getByText("Group Settings")).toBeInTheDocument()
-    })
+    expect(mockSetActiveConversationId).toHaveBeenCalledWith("group-1")
+    expect(mockSetView).toHaveBeenCalledWith("chat")
   })
 
-  it("shows members list when group is selected", async () => {
-    const user = userEvent.setup()
-    vi.mocked(api).mockResolvedValueOnce(mockGroups)
-    vi.mocked(api).mockResolvedValueOnce(mockGroupDetail)
+  it("shows delete button only for own groups", async () => {
+    vi.mocked(api).mockResolvedValue(mockGroups)
     render(<GroupsPage />)
     await waitFor(() => {
       expect(screen.getByText("Dev Team")).toBeInTheDocument()
     })
-    await user.click(screen.getByText("Dev Team"))
+    const deleteButtons = screen.getAllByTitle("Delete")
+    expect(deleteButtons.length).toBe(1)
+  })
+
+  it("calls delete API and removes group from list", async () => {
+    const user = userEvent.setup()
+    vi.mocked(api).mockResolvedValueOnce(mockGroups)
+    vi.mocked(api).mockResolvedValueOnce({ message: "Conversation deleted" })
+    render(<GroupsPage />)
     await waitFor(() => {
-      expect(screen.getByText(/Members/)).toBeInTheDocument()
+      expect(screen.getByText("Dev Team")).toBeInTheDocument()
     })
+    const deleteButton = screen.getByTitle("Delete")
+    await user.click(deleteButton)
+    await waitFor(() => {
+      expect(api).toHaveBeenCalledWith("/api/conversations/group-1", { method: "DELETE" })
+    })
+    expect(screen.queryByText("Dev Team")).not.toBeInTheDocument()
   })
 })
