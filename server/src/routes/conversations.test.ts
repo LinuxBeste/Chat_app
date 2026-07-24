@@ -94,11 +94,11 @@ describe("POST /api/conversations", () => {
     expect(res.status).toBe(401)
   })
 
-  it("returns 400 with empty participantIds", async () => {
+  it("returns 400 with invalid participantId format", async () => {
     const res = await request(app)
       .post("/api/conversations")
       .set("Authorization", "Bearer token")
-      .send({ type: "dm", participantIds: [] })
+      .send({ type: "dm", participantIds: ["not-a-uuid"] })
     expect(res.status).toBe(400)
   })
 })
@@ -159,9 +159,27 @@ describe("PUT /api/conversations/:id", () => {
 })
 
 describe("DELETE /api/conversations/:id", () => {
-  it("returns 404 (route not found)", async () => {
+  it("deletes own conversation", async () => {
+    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "00000000-0000-0000-0000-000000000001" }]
     const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("message", "Conversation deleted")
+  })
+
+  it("returns 403 for non-creator", async () => {
+    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "other-user" }]
+    const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token")
+    expect(res.status).toBe(403)
+  })
+
+  it("returns 404 for unknown conversation", async () => {
+    const res = await request(app).delete("/api/conversations/unknown").set("Authorization", "Bearer token")
     expect(res.status).toBe(404)
+  })
+
+  it("returns 401 without auth", async () => {
+    const res = await request(app).delete("/api/conversations/c1")
+    expect(res.status).toBe(401)
   })
 })
 

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express"
 import type { Router as RouterType } from "express"
+import multer from "multer"
 import { z } from "zod"
 import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
@@ -9,6 +10,16 @@ import { conversations, participants, messages, users, attachments } from "../db
 import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 import { clients } from "../ws/clients.js"
+import { saveAvatar } from "../lib/image.js"
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true)
+    else cb(new Error("Only image files are allowed"))
+  },
+})
 
 const log = createContextLogger("routes:conversations")
 
@@ -17,7 +28,7 @@ const router: RouterType = Router()
 const createSchema = z.object({
   type: z.enum(["dm", "group", "channel"]),
   name: z.string().min(1).max(100).optional(),
-  participantIds: z.array(z.string().uuid()).min(1),
+  participantIds: z.array(z.string().uuid()).default([]),
 })
 
 router.post(
@@ -121,6 +132,7 @@ router.get(
         id: conversations.id,
         type: conversations.type,
         name: conversations.name,
+        avatar: conversations.avatar,
         createdAt: conversations.createdAt,
       })
       .from(conversations)
@@ -197,16 +209,37 @@ router.put(
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
     const { name } = req.body
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ error: "Name is required" })
+    const updates: Record<string, unknown> = {}
+    if (name && typeof name === "string") updates.name = name
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "No fields to update" })
       return
     }
     const [updated] = await db
       .update(conversations)
-      .set({ name })
+      .set(updates)
       .where(eq(conversations.id, req.params.id as string))
       .returning()
     res.json(updated)
+  }),
+)
+
+router.post(
+  "/:id/avatar",
+  authGuard,
+  avatarUpload.single("avatar"),
+  catchAsync(async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" })
+      return
+    }
+    const url = await saveAvatar(req.file.buffer)
+    const [updated] = await db
+      .update(conversations)
+      .set({ avatar: url })
+      .where(eq(conversations.id, req.params.id as string))
+      .returning()
+    res.json({ avatar: updated.avatar })
   }),
 )
 
@@ -330,9 +363,17 @@ router.get(
           displayName: users.displayName,
           avatar: users.avatar,
         },
+        attachment: {
+          id: attachments.id,
+          url: attachments.url,
+          filename: attachments.filename,
+          mimeType: attachments.mimeType,
+          size: attachments.size,
+        },
       })
       .from(messages)
       .innerJoin(users, eq(users.id, messages.senderId))
+      .leftJoin(attachments, eq(attachments.messageId, messages.id))
       .where(eq(messages.conversationId, req.params.id as string))
       .orderBy(desc(messages.createdAt))
       .limit(limit)
@@ -402,6 +443,31 @@ router.delete(
     await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, msg.id))
 
     res.json({ message: "Message deleted" })
+  }),
+)
+
+router.delete(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const convId = req.params.id as string
+
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" })
+      return
+    }
+
+    if (conv.createdBy !== req.user!.userId) {
+      res.status(403).json({ error: "Only the creator can delete this conversation" })
+      return
+    }
+
+    await db.delete(participants).where(eq(participants.conversationId, convId))
+    await db.delete(messages).where(eq(messages.conversationId, convId))
+    await db.delete(conversations).where(eq(conversations.id, convId))
+
+    res.json({ message: "Conversation deleted" })
   }),
 )
 
