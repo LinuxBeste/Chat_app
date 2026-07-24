@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { Send, Paperclip, Smile, Loader2, Upload } from "lucide-react"
 import { apiFormData } from "../../lib/api"
 import { useToast } from "../../lib/toast-context"
+import { EmojiPicker } from "./emoji-picker"
 
 export interface AttachmentData {
   id?: string
@@ -23,7 +24,25 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
   const [value, setValue] = useState("")
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleEmojiSelect = (emoji: string) => {
+    const input = inputRef.current
+    if (!input) {
+      setValue((prev) => prev + emoji)
+      return
+    }
+    const start = input.selectionStart ?? value.length
+    const end = input.selectionStart ?? value.length
+    const newValue = value.slice(0, start) + emoji + value.slice(end)
+    setValue(newValue)
+    requestAnimationFrame(() => {
+      input.selectionStart = input.selectionEnd = start + emoji.length
+      input.focus()
+    })
+  }
 
   const uploadFile = useCallback(async (file: File) => {
     setUploading(true)
@@ -101,13 +120,23 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Paperclip className="h-4 w-4" aria-hidden="true" />}
         </button>
-        <button
-          aria-label={t("chat.insertEmoji")}
-          className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <Smile className="h-4 w-4" aria-hidden="true" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            aria-label={t("chat.insertEmoji")}
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Smile className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {showEmojiPicker && (
+            <EmojiPicker
+              onEmojiSelect={handleEmojiSelect}
+              onClose={() => setShowEmojiPicker(false)}
+            />
+          )}
+        </div>
         <input
+          ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
