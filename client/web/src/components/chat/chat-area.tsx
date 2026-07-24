@@ -19,6 +19,7 @@ function displayName(url: string, attachment?: Attachment): string {
 import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
+import { cacheMessages, getCachedMessages, subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages } from "../../lib/offline"
 
 interface Attachment {
   id: string
@@ -91,8 +92,28 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const renameInputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
+  const [offline, setOffline] = useState(!checkOnline())
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+
+  useEffect(() => {
+    return subscribeToOnlineStatus(
+      () => setOffline(false),
+      () => setOffline(true),
+    )
+  }, [])
+
   useEffect(() => {
     setLoading(true)
+    if (offline) {
+      const cached = getCachedMessages(conversationId)
+      if (cached.length > 0) {
+        setMessages(cached as Message[])
+        setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+        setLoading(false)
+        return
+      }
+    }
     Promise.all([
       api<Message[]>(`/api/conversations/${conversationId}/messages`),
       api<ConversationInfo>(`/api/conversations/${conversationId}`),
@@ -100,8 +121,17 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       .then(([msgs, info]) => {
         setMessages(msgs)
         setConvInfo(info)
+        cacheMessages(conversationId, msgs)
       })
-      .catch(() => showToast(t("chat.loadError")))
+      .catch(() => {
+        const cached = getCachedMessages(conversationId)
+        if (cached.length > 0) {
+          setMessages(cached as Message[])
+          setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+        } else {
+          showToast(t("chat.loadError"))
+        }
+      })
       .finally(() => setLoading(false))
   }, [conversationId])
 
@@ -149,7 +179,12 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           sender: data.sender,
           attachment: data.attachment,
         }
-        setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg])
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev
+          const next = [...prev, msg]
+          cacheMessages(conversationId, next)
+          return next
+        })
       }
     })
     const unsubEdited = wsClient.on("message:edited", (data) => {
@@ -480,6 +515,20 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           >
             <Video className="h-4 w-4" aria-hidden="true" />
           </button>
+          {offline && (() => {
+            const pendingCount = getPendingMessages().length
+            return (
+              <div className="flex h-9 items-center gap-1.5 px-2 rounded-2xl text-yellow-400 bg-yellow-500/10 text-xs font-medium" title={t("chat.offline")}>
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
+                <span>{t("chat.offline")}</span>
+                {pendingCount > 0 && (
+                  <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {pendingCount}
+                  </span>
+                )}
+              </div>
+            )
+          })()}
           {isGroup && canManage && (
             <div className="relative">
               <button

@@ -25,6 +25,40 @@ export interface ThemeConfig {
   statusEmoji?: string
 }
 
+export const defaultLightTheme: ThemeConfig = {
+  colors: {
+    "bg-primary": "#FAF9F6",
+    "bg-secondary": "#FFFFFF",
+    surface: "#FFFFFF",
+    border: "#E4E2DD",
+    accent: "#E8574A",
+    "accent-hover": "#D64B3F",
+    "text-primary": "#1C1917",
+    "text-secondary": "#78716C",
+    "text-muted": "#A8A29E",
+  },
+  bubbleStyle: "cozy",
+  borderRadius: 24,
+  statusEmoji: "",
+}
+
+export const defaultDarkTheme: ThemeConfig = {
+  colors: {
+    "bg-primary": "#0A0A0F",
+    "bg-secondary": "#101016",
+    surface: "#181825",
+    border: "#252538",
+    accent: "#6C8CFF",
+    "accent-hover": "#7FA0FF",
+    "text-primary": "#E8E8F0",
+    "text-secondary": "#8888A0",
+    "text-muted": "#585870",
+  },
+  bubbleStyle: "compact",
+  borderRadius: 16,
+  statusEmoji: "",
+}
+
 export const themePresets: { name: string; config: ThemeConfig }[] = [
   {
     name: "Midnight",
@@ -128,10 +162,10 @@ interface ThemeContextValue {
   toggleTheme: () => void
   customTheme: CustomThemeData | null
   themeConfig: ThemeConfig | null
-  lightThemeId: string | null
-  darkThemeId: string | null
-  setLightTheme: (id: string | null) => void
-  setDarkTheme: (id: string | null) => void
+  lightTheme: ThemeConfig | null
+  darkTheme: ThemeConfig | null
+  setLightTheme: (config: ThemeConfig | null) => void
+  setDarkTheme: (config: ThemeConfig | null) => void
   applyTheme: (t: CustomThemeData) => void
   clearCustomTheme: () => void
   refreshCustomTheme: () => Promise<void>
@@ -148,8 +182,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   })
   const [customTheme, setCustomTheme] = useState<CustomThemeData | null>(null)
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null)
-  const [lightThemeId, setLightThemeId] = useState<string | null>(() => localStorage.getItem("lightThemeId"))
-  const [darkThemeId, setDarkThemeId] = useState<string | null>(() => localStorage.getItem("darkThemeId"))
+  const [lightTheme, setLightThemeState] = useState<ThemeConfig | null>(() => {
+    const stored = localStorage.getItem("lightTheme")
+    return stored ? JSON.parse(stored) : null
+  })
+  const [darkTheme, setDarkThemeState] = useState<ThemeConfig | null>(() => {
+    const stored = localStorage.getItem("darkTheme")
+    return stored ? JSON.parse(stored) : null
+  })
 
   const applyCssVars = useCallback((tc: ThemeConfig | null) => {
     const root = document.documentElement
@@ -176,62 +216,66 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const applyTheme = useCallback(
     (t: CustomThemeData) => {
       setCustomTheme(t)
-      const config: ThemeConfig = JSON.parse(t.theme)
-      setThemeConfig(config)
+      setLightThemeState(null)
+      setDarkThemeState(null)
       localStorage.setItem("customThemeId", t.id)
       localStorage.setItem("customTheme", t.theme)
-      applyCssVars(config)
+      localStorage.removeItem("lightTheme")
+      localStorage.removeItem("darkTheme")
     },
-    [applyCssVars],
+    [],
   )
+
+  const setLightTheme = useCallback((config: ThemeConfig | null) => {
+    setLightThemeState(config)
+    if (config) {
+      localStorage.setItem("lightTheme", JSON.stringify(config))
+    } else {
+      localStorage.removeItem("lightTheme")
+    }
+  }, [])
+
+  const setDarkTheme = useCallback((config: ThemeConfig | null) => {
+    setDarkThemeState(config)
+    if (config) {
+      localStorage.setItem("darkTheme", JSON.stringify(config))
+    } else {
+      localStorage.removeItem("darkTheme")
+    }
+  }, [])
 
   const clearCustomTheme = useCallback(() => {
     setCustomTheme(null)
     setThemeConfig(null)
+    setLightThemeState(null)
+    setDarkThemeState(null)
     localStorage.removeItem("customThemeId")
     localStorage.removeItem("customTheme")
-    applyCssVars(null)
-  }, [applyCssVars])
+    localStorage.removeItem("lightTheme")
+    localStorage.removeItem("darkTheme")
+  }, [])
 
   const refreshCustomTheme = useCallback(async () => {
-    if (!getTokens().accessToken) {
-      const stored = localStorage.getItem("customTheme")
-      if (stored) {
-        const config: ThemeConfig = JSON.parse(stored)
-        setThemeConfig(config)
-        applyCssVars(config)
-      }
-      return
-    }
+    if (!getTokens().accessToken) return
     try {
       const active = await api<CustomThemeData | null>("/api/themes/active")
       if (active) {
         applyTheme(active)
-      } else {
-        const stored = localStorage.getItem("customTheme")
-        if (stored) {
-          const config: ThemeConfig = JSON.parse(stored)
-          setThemeConfig(config)
-          applyCssVars(config)
-        }
       }
-    } catch {
-      const stored = localStorage.getItem("customTheme")
-      if (stored) {
-        const config: ThemeConfig = JSON.parse(stored)
-        setThemeConfig(config)
-        applyCssVars(config)
-      }
-    }
-  }, [applyTheme, applyCssVars])
+    } catch { /* offline */ }
+  }, [])
 
   const applyPreset = useCallback(
     (preset: ThemeConfig) => {
-      setThemeConfig(preset)
-      localStorage.setItem("customTheme", JSON.stringify(preset))
-      applyCssVars(preset)
+      setCustomTheme(null)
+      setLightThemeState(preset)
+      setDarkThemeState(preset)
+      localStorage.removeItem("customThemeId")
+      localStorage.removeItem("customTheme")
+      localStorage.setItem("lightTheme", JSON.stringify(preset))
+      localStorage.setItem("darkTheme", JSON.stringify(preset))
     },
-    [applyCssVars],
+    [],
   )
 
   useEffect(() => {
@@ -240,56 +284,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme])
 
   useEffect(() => {
-    localStorage.setItem("lightThemeId", lightThemeId ?? "")
-  }, [lightThemeId])
-
-  useEffect(() => {
-    localStorage.setItem("darkThemeId", darkThemeId ?? "")
-  }, [darkThemeId])
-
-  useEffect(() => {
-    if (customTheme && theme === "dark") {
-      const config: ThemeConfig = JSON.parse(customTheme.theme)
-      applyCssVars(config)
-    } else if (!customTheme && theme === "dark" && themeConfig) {
-      applyCssVars(themeConfig)
-    } else if (theme === "light") {
-      applyCssVars(null)
+    if (customTheme) {
+      applyCssVars(JSON.parse(customTheme.theme))
+    } else if (theme === "dark") {
+      applyCssVars(darkTheme ?? defaultDarkTheme)
+    } else {
+      applyCssVars(lightTheme ?? defaultLightTheme)
     }
-  }, [theme, customTheme, themeConfig, applyCssVars])
+  }, [theme, customTheme, darkTheme, lightTheme, applyCssVars])
 
   useEffect(() => {
     refreshCustomTheme()
   }, [refreshCustomTheme])
 
   const toggleTheme = () => {
-    setTheme((t) => {
-      const next = t === "dark" ? "light" : "dark"
-      if (customTheme) {
-        const config: ThemeConfig = JSON.parse(customTheme.theme)
-        if (next === "light") {
-          applyCssVars(null)
-        } else {
-          applyCssVars(config)
-        }
-      } else if (themeConfig) {
-        if (next === "light") {
-          applyCssVars(null)
-        } else {
-          applyCssVars(themeConfig)
-        }
-      }
-      return next
-    })
+    setTheme((t) => (t === "dark" ? "light" : "dark"))
   }
 
   return (
     <ThemeContext.Provider
       value={{
         theme, toggleTheme, customTheme, themeConfig,
-        lightThemeId, darkThemeId,
-        setLightTheme: (id) => setLightThemeId(id),
-        setDarkTheme: (id) => setDarkThemeId(id),
+        lightTheme, darkTheme,
+        setLightTheme, setDarkTheme,
         applyTheme, clearCustomTheme, refreshCustomTheme, applyPreset,
       }}
     >

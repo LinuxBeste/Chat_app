@@ -1,4 +1,5 @@
 import { getTokens, refreshAccess } from "./api"
+import { addPendingMessage, getPendingMessages, clearPendingMessages } from "./offline"
 
 const BASE_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000"
 const HEARTBEAT_INTERVAL = 25000
@@ -29,6 +30,12 @@ class WSClient {
     const refreshed = await refreshAccess()
     let token = refreshed ?? getTokens().accessToken
     if (!token) return
+
+    const savedQueue = getPendingMessages()
+    if (savedQueue.length > 0) {
+      this.pendingMessages = savedQueue
+      clearPendingMessages()
+    }
 
     this.ws = new WebSocket(BASE_URL)
 
@@ -129,6 +136,13 @@ class WSClient {
   send(type: string, payload: Record<string, unknown> = {}) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
       this.pendingMessages.push({ type, payload })
+      addPendingMessage({
+        id: payload.id as string || crypto.randomUUID(),
+        conversationId: payload.conversationId as string,
+        type: type as "message:send",
+        payload,
+        createdAt: new Date().toISOString(),
+      })
       return
     }
     this.ws.send(JSON.stringify({ type, ...payload }))
@@ -153,11 +167,24 @@ class WSClient {
       this.reconnectTimer = null
     }
     this.stopHeartbeat()
+
+    if (this.pendingMessages.length > 0) {
+      for (const msg of this.pendingMessages) {
+        addPendingMessage({
+          id: crypto.randomUUID(),
+          conversationId: "",
+          type: "message:send",
+          payload: msg.payload,
+          createdAt: new Date().toISOString(),
+        })
+      }
+      this.pendingMessages = []
+    }
+
     this.ws?.close()
     this.ws = null
     this.connected = false
     this.authenticated = false
-    this.pendingMessages = []
     this.reconnectAttempts = 0
   }
 

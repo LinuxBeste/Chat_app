@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
-import { useTheme, type CustomThemeData, type ThemeConfig, themePresets } from "../../lib/theme-context"
-import { Palette, Check, Trash2, Plus, X, PaintBucket, MessageSquare, Type, Sparkles, Sun, Moon, Layout } from "lucide-react"
+import { useTheme, type CustomThemeData, type ThemeConfig, themePresets, defaultLightTheme, defaultDarkTheme } from "../../lib/theme-context"
+import { Palette, Check, Trash2, Plus, X, PaintBucket, MessageSquare, Type, Sparkles, Sun, Moon, Layout, Circle } from "lucide-react"
 
 const defaultThemeConfig: ThemeConfig = {
   colors: {
@@ -47,13 +47,34 @@ interface ThemeEditorProps {
   onClose?: () => void
 }
 
+function configsEqual(a: ThemeConfig, b: ThemeConfig): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+const darkPresets = themePresets.filter((p) => {
+  const bg = p.config.colors?.["bg-primary"] || ""
+  return !bg.startsWith("#F") && !bg.startsWith("#E")
+})
+
+const lightPresets = themePresets.filter((p) => {
+  const bg = p.config.colors?.["bg-primary"] || ""
+  return bg.startsWith("#F") || bg.startsWith("#E")
+})
+
 export function ThemeEditor(_props: ThemeEditorProps) {
   const { t } = useTranslation()
-  const { customTheme, applyTheme, clearCustomTheme, applyPreset, lightThemeId, darkThemeId, setLightTheme, setDarkTheme } = useTheme()
+  const { theme, customTheme, themeConfig, applyTheme, clearCustomTheme, applyPreset, lightTheme, darkTheme, setLightTheme, setDarkTheme } = useTheme()
   const [themes, setThemes] = useState<CustomThemeData[]>([])
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
   const [config, setConfig] = useState<ThemeConfig>(defaultThemeConfig)
+
+  const isDefaultDark = !customTheme && !themeConfig && theme === "dark"
+  const isDefaultLight = !customTheme && !themeConfig && theme === "light"
+
+  const activeConfig: ThemeConfig | null = customTheme
+    ? JSON.parse(customTheme.theme)
+    : themeConfig
 
   useEffect(() => {
     api<CustomThemeData[]>("/api/themes")
@@ -109,6 +130,29 @@ export function ThemeEditor(_props: ThemeEditorProps) {
     setConfig((prev) => ({ ...prev, statusEmoji: value }))
   }
 
+  function PresetButton({ config: cfg, name: label, active }: { config: ThemeConfig; name: string; active: boolean }) {
+    return (
+      <button
+        onClick={() => { clearCustomTheme(); applyPreset(cfg) }}
+        className={`flex items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer text-left ${
+          active
+            ? "border-accent ring-2 ring-accent/30"
+            : "border-border hover:border-accent/50"
+        }`}
+        style={{ background: cfg.colors?.["bg-primary"] || "#0F1117" }}
+      >
+        <div
+          className="h-6 w-6 rounded-lg shrink-0"
+          style={{ background: cfg.colors?.accent || "#7C5CFC" }}
+        />
+        <span className="text-xs font-medium truncate" style={{ color: cfg.colors?.["text-primary"] || "#fff" }}>
+          {label}
+        </span>
+        {active && <Check className="h-3.5 w-3.5 shrink-0 ml-auto" style={{ color: cfg.colors?.accent || "#7C5CFC" }} />}
+      </button>
+    )
+  }
+
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-medium text-text-primary flex items-center gap-2">
@@ -122,26 +166,46 @@ export function ThemeEditor(_props: ThemeEditorProps) {
           <Layout className="h-3.5 w-3.5" />
           {t("themeEditor.presets")}
         </p>
+
+        {/* Default themes */}
+        <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+          <Circle className="h-2.5 w-2.5" />
+          {t("themeEditor.defaults")}
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {themePresets.map((preset, i) => (
-            <button
+          <PresetButton config={defaultDarkTheme} name={t("themeEditor.defaultDark")} active={isDefaultDark || (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultDarkTheme, activeConfig))} />
+          <PresetButton config={defaultLightTheme} name={t("themeEditor.defaultLight")} active={isDefaultLight || (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultLightTheme, activeConfig))} />
+        </div>
+
+        {/* Dark presets */}
+        <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+          <Moon className="h-2.5 w-2.5" />
+          {t("themeEditor.darkPresets")}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {darkPresets.map((preset, i) => (
+            <PresetButton
               key={i}
-              onClick={() => {
-                applyPreset(preset.config)
-              }}
-              className="flex items-center gap-2 p-3 rounded-2xl border border-border hover:border-accent/50 transition-all cursor-pointer text-left"
-              style={{
-                background: preset.config.colors?.["bg-primary"] || "#0F1117",
-              }}
-            >
-              <div
-                className="h-6 w-6 rounded-lg shrink-0"
-                style={{ background: preset.config.colors?.accent || "#7C5CFC" }}
-              />
-              <span className="text-xs font-medium truncate" style={{ color: preset.config.colors?.["text-primary"] || "#fff" }}>
-                {preset.name}
-              </span>
-            </button>
+              config={preset.config}
+              name={preset.name}
+              active={!customTheme && !!activeConfig && configsEqual(preset.config, activeConfig)}
+            />
+          ))}
+        </div>
+
+        {/* Light presets */}
+        <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+          <Sun className="h-2.5 w-2.5" />
+          {t("themeEditor.lightPresets")}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {lightPresets.map((preset, i) => (
+            <PresetButton
+              key={i}
+              config={preset.config}
+              name={preset.name}
+              active={!customTheme && !!activeConfig && configsEqual(preset.config, activeConfig)}
+            />
           ))}
         </div>
       </div>
@@ -156,27 +220,71 @@ export function ThemeEditor(_props: ThemeEditorProps) {
           <div className="flex items-center gap-3">
             <Sun className="h-4 w-4 text-yellow-500 shrink-0" />
             <select
-              value={lightThemeId || ""}
-              onChange={(e) => setLightTheme(e.target.value || null)}
+              value={lightTheme ? JSON.stringify(lightTheme) : ""}
+              onChange={(e) => {
+                const val = e.target.value
+                if (!val) { setLightTheme(null); return }
+                const parsed = JSON.parse(val)
+                setLightTheme(parsed)
+              }}
               className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
             >
-              <option value="">{t("themeEditor.defaultTheme")}</option>
-              {themes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              <option value="">{t("themeEditor.defaultLight")}</option>
+              <optgroup label={t("themeEditor.defaults")}>
+                <option value={JSON.stringify(defaultDarkTheme)}>{t("themeEditor.defaultDark")}</option>
+              </optgroup>
+              <optgroup label={t("themeEditor.darkPresets")}>
+                {darkPresets.map((p, i) => (
+                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label={t("themeEditor.lightPresets")}>
+                {lightPresets.map((p, i) => (
+                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                ))}
+              </optgroup>
+              {themes.length > 0 && (
+                <optgroup label={t("themeEditor.customThemes")}>
+                  {themes.map((t) => (
+                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>{t.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
           <div className="flex items-center gap-3">
             <Moon className="h-4 w-4 text-indigo-400 shrink-0" />
             <select
-              value={darkThemeId || ""}
-              onChange={(e) => setDarkTheme(e.target.value || null)}
+              value={darkTheme ? JSON.stringify(darkTheme) : ""}
+              onChange={(e) => {
+                const val = e.target.value
+                if (!val) { setDarkTheme(null); return }
+                const parsed = JSON.parse(val)
+                setDarkTheme(parsed)
+              }}
               className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
             >
-              <option value="">{t("themeEditor.defaultTheme")}</option>
-              {themes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              <option value="">{t("themeEditor.defaultDark")}</option>
+              <optgroup label={t("themeEditor.defaults")}>
+                <option value={JSON.stringify(defaultLightTheme)}>{t("themeEditor.defaultLight")}</option>
+              </optgroup>
+              <optgroup label={t("themeEditor.darkPresets")}>
+                {darkPresets.map((p, i) => (
+                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label={t("themeEditor.lightPresets")}>
+                {lightPresets.map((p, i) => (
+                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                ))}
+              </optgroup>
+              {themes.length > 0 && (
+                <optgroup label={t("themeEditor.customThemes")}>
+                  {themes.map((t) => (
+                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>{t.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
         </div>

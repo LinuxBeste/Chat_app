@@ -165,7 +165,8 @@
     "reportError": "Failed to report user",
     "deleteConversation": "Delete conversation",
     "loadError": "Failed to load data",
-    "uploadError": "File upload failed"
+    "uploadError": "File upload failed",
+    "offline": "Offline"
   },
   "calls": {
     "callControls": "Call controls",
@@ -977,6 +978,16 @@
         "debug": "Debug"
       }
     },
+    "offline": {
+      "title": "Offline",
+      "pendingQueue": "Pending Messages",
+      "pendingQueueDesc": "Messages waiting to be sent",
+      "clearQueue": "Clear Queue",
+      "clearCache": "Clear Cached Messages",
+      "queueCleared": "Pending message queue cleared",
+      "cacheCleared": "Cached messages cleared",
+      "refresh": "Refresh"
+    },
     "about": {
       "title": "About",
       "appInfo": "Application Info",
@@ -1021,6 +1032,11 @@
     "cancel": "Cancel",
     "newThemeBtn": "New Theme",
     "presets": "Theme Presets",
+    "defaults": "Defaults",
+    "defaultDark": "Default Dark",
+    "defaultLight": "Default Light",
+    "darkPresets": "Dark Presets",
+    "lightPresets": "Light Presets",
     "modeThemes": "Light / Dark Theme",
     "defaultTheme": "Default",
     "bubbleStyles": {

@@ -4,6 +4,7 @@ import { useAuth } from "../../lib/auth-context"
 import { useTheme } from "../../lib/theme-context"
 import { ThemeEditor } from "./theme-editor"
 import { Avatar } from "../ui/avatar"
+import { getPendingMessages, clearPendingMessages, clearConversationCache } from "../../lib/offline"
 import { supportedLanguages } from "../../lib/i18n"
 import i18n from "../../lib/i18n"
 import { useTranslation } from "react-i18next"
@@ -13,7 +14,7 @@ import {
   Monitor, Music, Camera, Mic, Video, Terminal, MessageCircle,
   BookOpen, Sliders, Cloud, Zap, Type, Image, FileText, Hash,
   Clock, Calendar, Ruler, Layers, Headphones, Mic2,
-  Phone, Trash2, Square, Grid3X3, Search, Sparkles,
+  Phone, Trash2, Square, Grid3X3, Search, Sparkles, Wifi, RefreshCw,
 } from "lucide-react"
 
 interface TOTPStatus { enabled: boolean }
@@ -260,6 +261,55 @@ function Row({ label, desc, control, id }: { label: string; desc: string; contro
         <p className="text-xs text-text-muted truncate">{desc}</p>
       </div>
       {control}
+    </div>
+  )
+}
+
+function OfflineCacheInfo() {
+  const { t } = useTranslation()
+  const [queueCount, setQueueCount] = useState(getPendingMessages().length)
+  const [msg, setMsg] = useState("")
+
+  const refreshQueue = () => setQueueCount(getPendingMessages().length)
+
+  const handleClearQueue = () => {
+    clearPendingMessages()
+    setQueueCount(0)
+    setMsg(t("settings.offline.queueCleared"))
+    setTimeout(() => setMsg(""), 2000)
+  }
+
+  const handleClearCache = () => {
+    const keys: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith("offline:messages:")) keys.push(key)
+    }
+    keys.forEach((k) => clearConversationCache(k.replace("offline:messages:", "")))
+    setMsg(t("settings.offline.cacheCleared"))
+    setTimeout(() => setMsg(""), 2000)
+  }
+
+  return (
+    <div className="space-y-3" role="group">
+      <Row id="settings.offline.pendingQueue" label={t("settings.offline.pendingQueue")} desc={t("settings.offline.pendingQueueDesc")}
+        control={
+          <button onClick={refreshQueue} className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-all" aria-label={t("settings.offline.refresh")}>
+            <RefreshCw className="h-3 w-3" />
+            <span>{queueCount}</span>
+          </button>
+        } />
+      <div className="flex gap-2">
+        <button onClick={handleClearQueue} disabled={queueCount === 0}
+          className="flex-1 h-8 rounded-2xl bg-danger/10 text-danger text-xs font-medium hover:bg-danger/20 transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed">
+          {t("settings.offline.clearQueue")}
+        </button>
+        <button onClick={handleClearCache}
+          className="flex-1 h-8 rounded-2xl bg-warning/10 text-warning text-xs font-medium hover:bg-warning/20 transition-all cursor-pointer">
+          {t("settings.offline.clearCache")}
+        </button>
+      </div>
+      {msg && <p className="text-xs text-text-muted">{msg}</p>}
     </div>
   )
 }
@@ -1456,6 +1506,9 @@ export function SettingsPage() {
               <Section icon={Cloud} title={t("settings.advanced.dataPrivacy")}>
                 <Row id="settings.advanced.crashReporting" label={t("settings.advanced.crashReporting")} desc={t("settings.advanced.crashReportingDesc")} control={<Toggle checked={prefs.crashReporting ?? true} onChange={(v) => updatePref("crashReporting", v)} />} />
                 <Row id="settings.advanced.diagnostics" label={t("settings.advanced.diagnostics")} desc={t("settings.advanced.diagnosticsDesc")} control={<Toggle checked={prefs.diagnostics ?? false} onChange={(v) => updatePref("diagnostics", v)} />} />
+              </Section>
+              <Section icon={Wifi} title={t("settings.offline.title")}>
+                <OfflineCacheInfo />
               </Section>
             </>
           )}

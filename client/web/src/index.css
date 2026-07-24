@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: var(--bg-primary, #0E1116);
-  --color-bg-secondary: var(--bg-secondary, #12141B);
-  --color-surface: var(--surface, #181B22);
-  --color-border: var(--border, #2A2F3A);
-  --color-accent: var(--accent, #4850BB);
-  --color-accent-hover: var(--accent-hover, #535BCC);
-  --color-text-primary: var(--text-primary, #F0F0F0);
-  --color-text-secondary: var(--text-secondary, #8B8F96);
-  --color-text-muted: var(--text-muted, #5C6068);
+  --color-bg-primary: var(--bg-primary, #0A0A0F);
+  --color-bg-secondary: var(--bg-secondary, #101016);
+  --color-surface: var(--surface, #181825);
+  --color-border: var(--border, #252538);
+  --color-accent: var(--accent, #6C8CFF);
+  --color-accent-hover: var(--accent-hover, #7FA0FF);
+  --color-text-primary: var(--text-primary, #E8E8F0);
+  --color-text-secondary: var(--text-secondary, #8888A0);
+  --color-text-muted: var(--text-muted, #585870);
   --color-success: var(--success, #22C55E);
   --color-warning: var(--warning, #F59E0B);
   --color-danger: var(--danger, #EF4444);
@@ -19,33 +19,33 @@
 }
 
 :root {
-  --bg-primary: #F5F5F7;
+  --bg-primary: #FAF9F6;
   --bg-secondary: #FFFFFF;
   --surface: #FFFFFF;
-  --border: #E5E7EB;
-  --accent: #4850BB;
-  --accent-hover: #535BCC;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --online: #22C55E;
-  --away: #F59E0B;
-  --busy: #EF4444;
+  --border: #E4E2DD;
+  --accent: #E8574A;
+  --accent-hover: #D64B3F;
+  --text-primary: #1C1917;
+  --text-secondary: #78716C;
+  --text-muted: #A8A29E;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --online: #16A34A;
+  --away: #D97706;
+  --busy: #DC2626;
 }
 
 .dark {
-  --bg-primary: #0E1116;
-  --bg-secondary: #12141B;
-  --surface: #181B22;
-  --border: #2A2F3A;
-  --accent: #4850BB;
-  --accent-hover: #535BCC;
-  --text-primary: #F0F0F0;
-  --text-secondary: #8B8F96;
-  --text-muted: #5C6068;
+  --bg-primary: #0A0A0F;
+  --bg-secondary: #101016;
+  --surface: #181825;
+  --border: #252538;
+  --accent: #6C8CFF;
+  --accent-hover: #7FA0FF;
+  --text-primary: #E8E8F0;
+  --text-secondary: #8888A0;
+  --text-muted: #585870;
   --success: #22C55E;
   --warning: #F59E0B;
   --danger: #EF4444;

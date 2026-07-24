@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { Send, Paperclip, Smile, Loader2, Upload } from "lucide-react"
+import { Send, Paperclip, Smile, Loader2, Upload, WifiOff } from "lucide-react"
 import { apiFormData } from "../../lib/api"
 import { useToast } from "../../lib/toast-context"
 import { EmojiPicker } from "./emoji-picker"
+import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages } from "../../lib/offline"
 
 export interface AttachmentData {
   id?: string
@@ -25,8 +26,16 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [offline, setOffline] = useState(!checkOnline())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return subscribeToOnlineStatus(
+      () => setOffline(false),
+      () => setOffline(true),
+    )
+  }, [])
 
   const handleEmojiSelect = (emoji: string) => {
     const input = inputRef.current
@@ -111,6 +120,20 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
         </div>
       )}
       <div className="flex items-center gap-3 border-t border-border px-4 py-3" role="form" aria-label={t("chat.messageInput")}>
+        {offline && (() => {
+          const pendingCount = getPendingMessages().length
+          return (
+            <div className="flex items-center gap-1.5 text-yellow-400 text-xs shrink-0" title={t("chat.offline")}>
+              <WifiOff className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t("chat.offline")}</span>
+              {pendingCount > 0 && (
+                <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+          )
+        })()}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
         <button
           onClick={handleFilePick}

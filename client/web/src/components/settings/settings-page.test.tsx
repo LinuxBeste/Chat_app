@@ -22,11 +22,23 @@ vi.mock("../../lib/theme-context", () => ({
     toggleTheme: vi.fn(),
     customTheme: null,
     themeConfig: null,
+    lightTheme: null,
+    darkTheme: null,
+    setLightTheme: vi.fn(),
+    setDarkTheme: vi.fn(),
     applyTheme: vi.fn(),
     clearCustomTheme: vi.fn(),
     refreshCustomTheme: vi.fn(),
   })),
   themePresets: [],
+  defaultLightTheme: {
+    colors: { "bg-primary": "#FAF9F6", "bg-secondary": "#FFFFFF", surface: "#FFFFFF", border: "#E4E2DD", accent: "#E8574A", "accent-hover": "#D64B3F", "text-primary": "#1C1917", "text-secondary": "#78716C", "text-muted": "#A8A29E" },
+    bubbleStyle: "cozy", borderRadius: 24, statusEmoji: "",
+  },
+  defaultDarkTheme: {
+    colors: { "bg-primary": "#0A0A0F", "bg-secondary": "#101016", surface: "#181825", border: "#252538", accent: "#6C8CFF", "accent-hover": "#7FA0FF", "text-primary": "#E8E8F0", "text-secondary": "#8888A0", "text-muted": "#585870" },
+    bubbleStyle: "compact", borderRadius: 16, statusEmoji: "",
+  },
 }))
 
 vi.mock("react-i18next", async () => {
