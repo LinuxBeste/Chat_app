@@ -2,7 +2,8 @@ import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTranslation } from "react-i18next"
-import { Plus, X, Globe, Hash, Link, Check, Copy, Crown } from "lucide-react"
+import { Plus, X, Globe, Hash, Link, Check, Copy, Crown, Headphones } from "lucide-react"
+import { VoiceChannel } from "./voice-channel"
 
 interface Community {
   id: string
@@ -40,6 +41,7 @@ export function CommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([])
   const [selected, setSelected] = useState<Community | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
+  const [voiceChannels, setVoiceChannels] = useState<any[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
   const [showCreate, setShowCreate] = useState(false)
@@ -48,6 +50,8 @@ export function CommunitiesPage() {
   const [createDesc, setCreateDesc] = useState("")
   const [joinCode, setJoinCode] = useState("")
   const [newChannel, setNewChannel] = useState("")
+  const [newVoice, setNewVoice] = useState("")
+  const [activeVoice, setActiveVoice] = useState<{ id: string; name: string } | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
   const currentMember = members.find((m) => m.userId === user?.id)
@@ -65,6 +69,7 @@ export function CommunitiesPage() {
     const data = await api<any>(`/api/communities/${c.id}`).catch(() => null)
     if (data) {
       setChannels(data.channels ?? [])
+      setVoiceChannels(data.voiceChannels ?? [])
       setMembers(data.members ?? [])
     }
     const invs = await api<Invite[]>(`/api/communities/${c.id}/invites`).catch(() => [])
@@ -106,6 +111,26 @@ export function CommunitiesPage() {
       setChannels((prev) => prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch])
       setNewChannel("")
     }
+  }
+
+  const createVoiceChannel = async () => {
+    if (!selected || !newVoice.trim()) return
+    const ch = await api<any>(`/api/communities/${selected.id}/voice`, {
+      method: "POST",
+      body: JSON.stringify({ name: newVoice.trim() }),
+    }).catch(() => null)
+    if (ch) {
+      setVoiceChannels((prev) => prev.some((v) => v.id === ch.id) ? prev : [...prev, ch])
+      setNewVoice("")
+    }
+  }
+
+  const joinVoiceChannel = (id: string, name: string) => {
+    setActiveVoice({ id, name })
+  }
+
+  const leaveVoiceChannel = () => {
+    setActiveVoice(null)
   }
 
   const createInvite = async () => {
@@ -197,6 +222,63 @@ export function CommunitiesPage() {
                   <button
                     onClick={createChannel}
                     disabled={!newChannel.trim()}
+                    className="h-9 rounded-2xl bg-accent text-white text-sm px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {t("communities.add")}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Voice Channels */}
+            <div>
+              <h3 className="text-sm font-medium text-text-primary mb-2">
+                <Headphones className="h-4 w-4 inline mr-1.5 text-text-muted" />
+                {t("communities.voiceChannels")}
+              </h3>
+              <div className="space-y-1.5">
+                {voiceChannels.map((vc) => (
+                  <div
+                    key={vc.id}
+                    className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5"
+                  >
+                    <Headphones className="h-4 w-4 text-accent shrink-0" />
+                    <span className="text-sm text-text-primary flex-1">{vc.name}</span>
+                    {activeVoice?.id === vc.id ? (
+                      <span className="text-xs text-accent font-medium">{t("voice.connected")}</span>
+                    ) : (
+                      <button
+                        onClick={() => joinVoiceChannel(vc.id, vc.name)}
+                        className="h-7 rounded-xl bg-accent text-white text-xs px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer"
+                      >
+                        {t("voice.join")}
+                      </button>
+                    )}
+                    {canManage && activeVoice?.id !== vc.id && (
+                      <button
+                        onClick={() => api(`/api/communities/voice/${vc.id}`, { method: "DELETE" }).then(() => {
+                          setVoiceChannels((prev) => prev.filter((v) => v.id !== vc.id))
+                        })}
+                        className="text-text-muted hover:text-danger cursor-pointer"
+                        title={t("communities.delete")}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {canManage && (
+                <div className="flex gap-2 mt-2">
+                  <input
+                    value={newVoice}
+                    onChange={(e) => setNewVoice(e.target.value)}
+                    placeholder={t("communities.newVoiceChannelName")}
+                    className="flex-1 h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
+                  />
+                  <button
+                    onClick={createVoiceChannel}
+                    disabled={!newVoice.trim()}
                     className="h-9 rounded-2xl bg-accent text-white text-sm px-3 font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40"
                   >
                     {t("communities.add")}
@@ -336,6 +418,14 @@ export function CommunitiesPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {activeVoice && (
+        <VoiceChannel
+          channelId={activeVoice.id}
+          channelName={activeVoice.name}
+          onLeave={leaveVoiceChannel}
+        />
       )}
 
       {showJoin && (

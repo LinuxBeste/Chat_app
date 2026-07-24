@@ -103,6 +103,7 @@ describe("GET /api/communities/:id", () => {
     expect(res.body).toHaveProperty("id", COM_ID)
     expect(res.body).toHaveProperty("members")
     expect(res.body).toHaveProperty("channels")
+    expect(res.body).toHaveProperty("voiceChannels")
   })
 
   it("returns 404 when not found", async () => {
@@ -161,6 +162,41 @@ describe("DELETE /api/communities/channels/:channelId", () => {
       .set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("message", "Channel deleted")
+  })
+})
+
+const VOICE_ID = "vc000000-0000-0000-0000-000000000001"
+
+describe("POST /api/communities/:id/voice", () => {
+  it("creates a voice channel", async () => {
+    queryQueue.push([{ role: "owner" }])
+    mockData.current = [{ id: VOICE_ID, communityId: COM_ID, name: "General Voice", createdAt: new Date().toISOString() }]
+    const res = await request(app)
+      .post(`/api/communities/${COM_ID}/voice`)
+      .set("Authorization", "Bearer token")
+      .send({ name: "General Voice" })
+    expect(res.status).toBe(201)
+    expect(res.body).toHaveProperty("id", VOICE_ID)
+    expect(res.body).toHaveProperty("name", "General Voice")
+  })
+
+  it("returns 403 without owner/admin role", async () => {
+    queryQueue.push([{ role: "member" }])
+    const res = await request(app)
+      .post(`/api/communities/${COM_ID}/voice`)
+      .set("Authorization", "Bearer token")
+      .send({ name: "General Voice" })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe("DELETE /api/communities/voice/:voiceId", () => {
+  it("deletes a voice channel", async () => {
+    const res = await request(app)
+      .delete(`/api/communities/voice/${VOICE_ID}`)
+      .set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("message", "Voice channel deleted")
   })
 })
 

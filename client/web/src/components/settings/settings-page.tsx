@@ -3,6 +3,7 @@ import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTheme } from "../../lib/theme-context"
 import { ThemeEditor } from "./theme-editor"
+import { Avatar } from "../ui/avatar"
 import { supportedLanguages } from "../../lib/i18n"
 import i18n from "../../lib/i18n"
 import { useTranslation } from "react-i18next"
@@ -404,6 +405,28 @@ export function SettingsPage() {
     return () => clearTimeout(timer)
   }, [statusEmojiLocal])
 
+  const [blockedUsers, setBlockedUsers] = useState<{ blockedUserId: string; createdAt: string; username: string; displayName: string | null; avatar: string | null }[]>([])
+
+  const fetchBlocked = useCallback(async () => {
+    try {
+      const list = await api<typeof blockedUsers>("/api/privacy/blocks")
+      setBlockedUsers(list)
+    } catch { /* */ }
+  }, [])
+
+  const unblockUser = async (userId: string) => {
+    try {
+      await api(`/api/privacy/blocks/${userId}`, { method: "DELETE" })
+      setBlockedUsers((prev) => prev.filter((b) => b.blockedUserId !== userId))
+    } catch { /* */ }
+  }
+
+  useEffect(() => {
+    if (tab === "privacy") {
+      fetchBlocked()
+    }
+  }, [tab, fetchBlocked])
+
   useEffect(() => {
     if (tab === "security") {
       api<TOTPStatus>("/api/security/totp/status").then(setTotpStatus).catch(() => {})
@@ -495,6 +518,8 @@ export function SettingsPage() {
     { key: "settings.appearance.layout", tab: "appearance" as SettingsTab, label: t("settings.appearance.layout"), keywords: ["sidebar", "spacing"] },
     { key: "settings.appearance.messageDisplay", tab: "appearance" as SettingsTab, label: t("settings.appearance.messageDisplay"), keywords: ["bubble", "timestamps"] },
     { key: "settings.appearance.animations", tab: "appearance" as SettingsTab, label: t("settings.appearance.animations"), keywords: ["motion", "animation"] },
+    { key: "settings.appearance.loadingStyle", tab: "appearance" as SettingsTab, label: t("settings.appearance.loadingStyle") },
+    { key: "settings.appearance.notificationDotSize", tab: "appearance" as SettingsTab, label: t("settings.appearance.notificationDotSize") },
     { key: "themeEditor.statusEmoji", tab: "appearance" as SettingsTab, label: t("themeEditor.statusEmoji"), keywords: ["status", "looks", "presence", "emoji", "dot", "online", "away", "busy"] },
     // Notifications
     { key: "settings.notifications.messages", tab: "notifications" as SettingsTab, label: t("settings.notifications.messages") },
@@ -505,7 +530,7 @@ export function SettingsPage() {
     // Privacy
     { key: "settings.privacy.readReceipts", tab: "privacy" as SettingsTab, label: t("settings.privacy.readReceipts") },
     { key: "settings.privacy.showOnlineStatus", tab: "privacy" as SettingsTab, label: t("settings.privacy.showOnlineStatus") },
-    { key: "settings.privacy.blockedMuted", tab: "privacy" as SettingsTab, label: t("settings.privacy.blockedMuted") },
+    { key: "settings.privacy.blockedMuted", tab: "privacy" as SettingsTab, label: t("settings.privacy.blockedMuted"), keywords: ["block", "mute"] },
     { key: "settings.privacy.safetyAlerts", tab: "privacy" as SettingsTab, label: t("settings.privacy.safetyAlerts") },
     { key: "settings.privacy.directMessages", tab: "privacy" as SettingsTab, label: t("settings.privacy.directMessages"), keywords: ["dm"] },
     // Chat
@@ -1046,6 +1071,10 @@ export function SettingsPage() {
                   control={<Select value={prefs.skeletonStyle ?? "shimmer"} onChange={(v) => updatePref("skeletonStyle", v)} options={[
                     { value: "shimmer", label: t("settings.appearance.options.shimmer") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "none", label: t("settings.appearance.options.none") },
                   ]} />} />
+                <Row id="settings.appearance.loadingStyle" label={t("settings.appearance.loadingStyle")} desc={t("settings.appearance.loadingStyleDesc")}
+                  control={<Select value={prefs.loadingStyle ?? "spinner"} onChange={(v) => updatePref("loadingStyle", v)} options={[
+                    { value: "spinner", label: t("settings.appearance.options.spinner") }, { value: "skeleton", label: t("settings.appearance.options.skeleton") }, { value: "dots", label: t("settings.appearance.options.bouncingDots") },
+                  ]} />} />
                 <Row id="settings.appearance.typingIndicator" label={t("settings.appearance.typingIndicator")} desc={t("settings.appearance.typingIndicatorDesc")}
                   control={<Select value={prefs.typingIndicatorStyle ?? "dots"} onChange={(v) => updatePref("typingIndicatorStyle", v)} options={[
                     { value: "dots", label: t("settings.appearance.options.bouncingDots") }, { value: "pulse", label: t("settings.appearance.options.pulse") }, { value: "text", label: t("settings.appearance.options.textOnly") },
@@ -1053,6 +1082,10 @@ export function SettingsPage() {
                 <Row id="settings.appearance.badgeStyle" label={t("settings.appearance.badgeStyle")} desc={t("settings.appearance.badgeStyleDesc")}
                   control={<Select value={prefs.badgeStyle ?? "pill"} onChange={(v) => updatePref("badgeStyle", v)} options={[
                     { value: "dot", label: t("settings.appearance.options.dot") }, { value: "pill", label: t("settings.appearance.options.pill") }, { value: "number", label: t("settings.appearance.options.number") },
+                  ]} />} />
+                <Row id="settings.appearance.notificationDotSize" label={t("settings.appearance.notificationDotSize")} desc={t("settings.appearance.notificationDotSizeDesc")}
+                  control={<Select value={prefs.notificationDotSize ?? "medium"} onChange={(v) => updatePref("notificationDotSize", v)} options={[
+                    { value: "small", label: t("settings.appearance.options.small") }, { value: "medium", label: t("settings.appearance.options.medium") }, { value: "large", label: t("settings.appearance.options.large") },
                   ]} />} />
               </Section>
 
@@ -1140,9 +1173,9 @@ export function SettingsPage() {
                 <Row id="settings.notifications.doNotDisturb" label={t("settings.notifications.doNotDisturb")} desc={t("settings.notifications.doNotDisturbDesc")} control={<Toggle checked={prefs.dndEnabled ?? false} onChange={(v) => updatePref("dndEnabled", v)} />} />
                 {prefs.dndEnabled && (
                   <div className="flex gap-2">
-                    <input type="time" className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none" />
+                    <input type="time" value={prefs.dndStart ?? "22:00"} onChange={(e) => updatePref("dndStart", e.target.value)} className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none focus:border-accent/50" />
                     <span className="text-xs text-text-muted self-center">{t("settings.notifications.to")}</span>
-                    <input type="time" className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none" />
+                    <input type="time" value={prefs.dndEnd ?? "08:00"} onChange={(e) => updatePref("dndEnd", e.target.value)} className="h-8 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary outline-none focus:border-accent/50" />
                   </div>
                 )}
               </Section>
@@ -1179,7 +1212,26 @@ export function SettingsPage() {
                 <Row id="settings.privacy.safetyAlerts" label={t("settings.privacy.safetyAlerts")} desc={t("settings.privacy.safetyAlertsDesc")} control={<Toggle checked={prefs.safetyAlerts ?? true} onChange={(v) => updatePref("safetyAlerts", v)} />} />
               </Section>
               <Section icon={Lock} title={t("settings.privacy.blockedMuted")}>
-                <p className="text-sm text-text-muted">{t("settings.privacy.noBlocked")}</p>
+                {blockedUsers.length === 0 ? (
+                  <p className="text-sm text-text-muted">{t("settings.privacy.noBlocked")}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedUsers.map((b) => (
+                      <div key={b.blockedUserId} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar src={b.avatar ?? undefined} fallback={(b.displayName ?? b.username)?.[0] ?? "?"} className="h-7 w-7 shrink-0" />
+                          <span className="text-sm text-text-primary truncate">{b.displayName ?? b.username}</span>
+                        </div>
+                        <button
+                          onClick={() => unblockUser(b.blockedUserId)}
+                          className="text-xs text-danger hover:text-danger/80 transition-colors cursor-pointer shrink-0"
+                        >
+                          {t("settings.privacy.unblock")}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Section>
             </>
           )}

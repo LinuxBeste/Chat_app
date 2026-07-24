@@ -5,7 +5,7 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { communities, communityMembers, communityChannels, communityInvites } from "../db/schema.js"
+import { communities, communityMembers, communityChannels, communityVoiceChannels, communityInvites } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { logger } from "../lib/logger.js"
 
@@ -53,7 +53,8 @@ router.get(
     }
     const members = await db.select().from(communityMembers).where(eq(communityMembers.communityId, community.id))
     const channels = await db.select().from(communityChannels).where(eq(communityChannels.communityId, community.id))
-    res.json({ ...community, members, channels })
+    const voiceChannels = await db.select().from(communityVoiceChannels).where(eq(communityVoiceChannels.communityId, community.id))
+    res.json({ ...community, members, channels, voiceChannels })
   }),
 )
 
@@ -114,6 +115,31 @@ router.delete(
   catchAsync(async (req: Request, res: Response) => {
     await db.delete(communityChannels).where(eq(communityChannels.id, req.params.channelId as string))
     res.json({ message: "Channel deleted" })
+  }),
+)
+
+// --- Voice Channels ---
+
+router.post(
+  "/:id/voice",
+  authGuard,
+  requireCommunityOwner,
+  validate(z.object({ name: z.string().min(1).max(100) })),
+  catchAsync(async (req: Request, res: Response) => {
+    const [ch] = await db
+      .insert(communityVoiceChannels)
+      .values({ communityId: req.params.id as string, name: req.body.name })
+      .returning()
+    res.status(201).json(ch)
+  }),
+)
+
+router.delete(
+  "/voice/:voiceId",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    await db.delete(communityVoiceChannels).where(eq(communityVoiceChannels.id, req.params.voiceId as string))
+    res.json({ message: "Voice channel deleted" })
   }),
 )
 
