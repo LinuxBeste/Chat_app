@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../mobile/src/layout";
 
 @theme {
   --color-bg-primary: var(--bg-primary, #0A0A0F);

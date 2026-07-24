@@ -437,6 +437,13 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         role="toolbar"
         aria-label={t("chat.chatActions")}
       >
+        <button
+          onClick={onLeave}
+          className="flex md:hidden h-8 w-8 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer mr-1"
+          aria-label="Back to conversations"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
         <div className="relative">
           <Avatar src={convInfo?.avatar ?? undefined} fallback={convInfo?.name?.[0] ?? dmInitial} />
         </div>
