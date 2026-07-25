@@ -55,6 +55,8 @@ cd server && bash start.sh --redis
 | `pnpm lint` | Lint server and web source files |
 | `pnpm build` | Build server (TypeScript) |
 | `pnpm --filter web build` | Build web client |
+| `pnpm --filter desktop build` | Build Electron main process |
+| `pnpm --filter desktop start` | Start Electron desktop app |
 
 ### start.sh Options
 
@@ -92,7 +94,10 @@ cd server && bash start.sh --redis
 │   │       ├── components/ # UI components by feature
 │   │       ├── lib/        # API client, WS, contexts
 │   │       └── ...
-│   └── mobile/            # Expo mobile client
+│   ├── mobile/            # Expo mobile client
+│   └── desktop/           # Electron desktop app
+│       ├── electron/      # Main process + preload
+│       └── package.json
 └── README.md
 ```
 
@@ -111,6 +116,35 @@ cd server && bash start.sh --redis
 - **Files**: File uploads with gallery, trash, shared files
 - **Search**: Full-text search with PostgreSQL
 - **Developer**: Webhooks with event logs, rate limit analytics
+
+## Desktop App (Electron)
+
+The desktop app wraps the web client in Electron with offline persistence.
+
+```bash
+# Build the Electron main process
+cd client/desktop && pnpm build
+
+# Start the app (requires server to be running)
+cd client/desktop && pnpm start
+
+# Full walkthrough
+cat docs/how-to-use.md
+```
+
+### Offline Support
+
+- Conversations and messages are cached in IndexedDB for offline reading.
+- Messages sent while offline are queued and delivered on reconnect.
+- Cached data is shown automatically when the server is unreachable.
+
+### Packaging
+
+```bash
+cd client/desktop && pnpm package
+```
+
+Outputs distributable packages to `client/desktop/release/`.
 
 ## Docker
 
