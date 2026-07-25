@@ -1,4 +1,3 @@
-import { cn } from "../../lib/utils"
 import { ConversationList } from "./conversation-list"
 import { useTranslation } from "react-i18next"
 import { ChatArea } from "./chat-area"
@@ -17,16 +16,10 @@ export function ChatWindow({ activeConversationId, onConversationChange }: ChatW
 
   return (
     <div className="flex h-full">
-      <div className={cn(
-        "w-full md:w-72 md:shrink-0 border-r border-border overflow-hidden",
-        activeConversationId && "hidden md:flex",
-      )}>
+      <div className="w-72 shrink-0 border-r border-border overflow-hidden">
         <ConversationList activeId={activeConversationId} onSelect={onConversationChange} />
       </div>
-      <div className={cn(
-        "flex-1 min-w-0",
-        !activeConversationId && "hidden md:flex",
-      )}>
+      <div className="flex-1 min-w-0">
         {activeConversationId ? (
           <ChatArea key={activeConversationId} conversationId={activeConversationId} currentUserId={user.id} onLeave={() => onConversationChange(null)} />
         ) : (

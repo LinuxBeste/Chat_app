@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { ChatArea } from "../chat/chat-area"
-import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare, ArrowLeft } from "lucide-react"
+import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare } from "lucide-react"
 
 interface Group {
   id: string
@@ -130,20 +130,7 @@ export function GroupsPage() {
 
       <div className={`flex flex-col ${selectedGroupId ? "flex-1" : "hidden md:flex md:flex-1"}`}>
         {selectedGroupId && user ? (
-          <>
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border md:hidden">
-              <button
-                onClick={() => setSelectedGroupId(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all cursor-pointer"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <p className="text-sm font-semibold text-text-primary truncate">
-                {groups.find((g) => g.id === selectedGroupId)?.name ?? t("groups.unnamed")}
-              </p>
-            </div>
-            <ChatArea conversationId={selectedGroupId} currentUserId={user.id} onLeave={() => setSelectedGroupId(null)} />
-          </>
+          <ChatArea conversationId={selectedGroupId} currentUserId={user.id} onLeave={() => setSelectedGroupId(null)} />
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-sm text-text-muted">{t("groups.selectGroup")}</p>
