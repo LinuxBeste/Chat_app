@@ -19,7 +19,8 @@ function displayName(url: string, attachment?: Attachment): string {
 import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
-import { cacheMessages, getCachedMessages, subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages } from "../../lib/offline"
+import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db"
+import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline"
 
 interface Attachment {
   id: string
@@ -106,13 +107,14 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   useEffect(() => {
     setLoading(true)
     if (offline) {
-      const cached = getCachedMessages(conversationId)
-      if (cached.length > 0) {
-        setMessages(cached as Message[])
-        setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+      getCachedMessagesDB(conversationId).then((cached) => {
+        if (cached.length > 0) {
+          setMessages(cached as Message[])
+          setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+        }
         setLoading(false)
-        return
-      }
+      })
+      return
     }
     Promise.all([
       api<Message[]>(`/api/conversations/${conversationId}/messages`),
@@ -121,16 +123,18 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       .then(([msgs, info]) => {
         setMessages(msgs)
         setConvInfo(info)
+        cacheMessagesDB(conversationId, msgs)
         cacheMessages(conversationId, msgs)
       })
       .catch(() => {
-        const cached = getCachedMessages(conversationId)
-        if (cached.length > 0) {
-          setMessages(cached as Message[])
-          setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
-        } else {
-          showToast(t("chat.loadError"))
-        }
+        getCachedMessagesDB(conversationId).then((cached) => {
+          if (cached.length > 0) {
+            setMessages(cached as Message[])
+            setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+          } else {
+            showToast(t("chat.loadError"))
+          }
+        })
       })
       .finally(() => setLoading(false))
   }, [conversationId])

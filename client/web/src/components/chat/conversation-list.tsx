@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next"
 import { Avatar } from "../ui/avatar"
 import { api } from "../../lib/api"
 import { useToast } from "../../lib/toast-context"
+import { cacheConversations, getCachedConversations } from "../../lib/offline-db"
+import { isOnline } from "../../lib/offline"
 import { Plus, X, UserPlus, Loader2, AlertCircle } from "lucide-react"
 
 interface Conversation {
@@ -35,9 +37,24 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
   const [error, setError] = useState("")
 
   useEffect(() => {
+    if (!isOnline()) {
+      getCachedConversations().then((cached) => {
+        if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"))
+      })
+      return
+    }
     api<Conversation[]>("/api/conversations")
-      .then((convs) => setConvs(convs.filter((c) => c.type === "dm")))
-      .catch(() => showToast(t("chat.loadError")))
+      .then((convs) => {
+        const filtered = convs.filter((c) => c.type === "dm")
+        setConvs(filtered)
+        cacheConversations(filtered)
+      })
+      .catch(() => {
+        getCachedConversations().then((cached) => {
+          if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"))
+          else showToast(t("chat.loadError"))
+        })
+      })
   }, [])
 
   const createConversation = async () => {
