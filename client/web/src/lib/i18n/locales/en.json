@@ -63,6 +63,7 @@
     "registerToStart": "Register to get started",
     "username": "Username",
     "email": "Email",
+    "emailOrUsername": "Email or username",
     "password": "Password",
     "signIn": "Sign In",
     "createAccountBtn": "Create Account",

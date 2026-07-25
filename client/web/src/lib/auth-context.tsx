@@ -18,7 +18,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   needsSetup: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (login: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
   completeSetup: () => void
@@ -51,10 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchMe])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (login: string, password: string) => {
     const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ login, password }),
     })
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)

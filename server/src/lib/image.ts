@@ -1,6 +1,6 @@
 import sharp from "sharp"
 import { join, extname } from "path"
-import { createWriteStream, existsSync, mkdirSync } from "fs"
+import { existsSync, mkdirSync } from "fs"
 import { writeFile } from "fs/promises"
 import { v4 as uuid } from "uuid"
 import { config } from "../config.js"

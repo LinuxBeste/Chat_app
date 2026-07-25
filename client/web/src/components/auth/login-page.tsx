@@ -11,7 +11,7 @@ export function LoginPage() {
   const { theme, toggleTheme } = useTheme()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
+  const [credential, setCredential] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -22,9 +22,9 @@ export function LoginPage() {
     setError("")
     try {
       if (mode === "login") {
-        await login(email, password)
+        await login(credential, password)
       } else {
-        await register(username, email, password)
+        await register(username, credential, password)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.somethingWentWrong"))
@@ -96,15 +96,15 @@ export function LoginPage() {
             </div>
           )}
           <div>
-            <label htmlFor="email" className="sr-only">
-              {t("auth.email")}
+            <label htmlFor="login" className="sr-only">
+              {mode === "login" ? t("auth.emailOrUsername") : t("auth.email")}
             </label>
             <input
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              placeholder={t("auth.email")}
+              id="login"
+              value={credential}
+              onChange={(e) => setCredential(e.target.value)}
+              type={mode === "login" ? "text" : "email"}
+              placeholder={mode === "login" ? t("auth.emailOrUsername") : t("auth.email")}
               className="w-full h-10 rounded-2xl border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
               required
             />

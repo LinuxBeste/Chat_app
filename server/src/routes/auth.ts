@@ -8,7 +8,7 @@ import { signAccessToken, signRefreshToken, signSessionToken, verifyToken } from
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { users, totpSecrets, loginHistory, refreshTokens, emailVerificationTokens } from "../db/schema.js"
-import { eq, and, desc, gt } from "drizzle-orm"
+import { eq, and, desc, gt, or } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 
 const log = createContextLogger("auth")
@@ -22,7 +22,7 @@ const registerSchema = z.object({
 })
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  login: z.string().min(1),
   password: z.string(),
 })
 
@@ -45,8 +45,12 @@ function writeLoginHistory(userId: string, ip: string | undefined, userAgent: st
     .catch((err) => log.error({ err }, "Failed to write login history"))
 }
 
-async function isLockedOut(email: string): Promise<boolean> {
-  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1)
+async function isLockedOut(login: string): Promise<boolean> {
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(or(eq(users.email, login), eq(users.username, login)))
+    .limit(1)
   if (!user) return false
 
   const cutoff = new Date(Date.now() - LOCKOUT_WINDOW_MS)
@@ -95,16 +99,20 @@ router.post("/register", validate(registerSchema), async (req: Request, res: Res
 
 router.post("/login", validate(loginSchema), async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body
+    const { login, password } = req.body
     const ip = req.ip ?? req.socket.remoteAddress
     const userAgent = req.headers["user-agent"]
 
-    if (await isLockedOut(email)) {
+    if (await isLockedOut(login)) {
       res.status(429).json({ error: "Account temporarily locked. Try again later." })
       return
     }
 
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(or(eq(users.email, login), eq(users.username, login)))
+      .limit(1)
     if (!user) {
       res.status(401).json({ error: "Invalid email or password" })
       return
@@ -142,7 +150,7 @@ router.post("/login", validate(loginSchema), async (req: Request, res: Response)
     })
     log.info({ userId: user.id }, "User logged in")
   } catch (err) {
-    log.error({ err, email: req.body.email }, "Login failed")
+    log.error({ err, login: req.body.login }, "Login failed")
     res.status(500).json({ error: "Internal server error" })
   }
 })

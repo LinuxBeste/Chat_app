@@ -61,6 +61,7 @@
     "registerToStart": "登録して始めましょう",
     "username": "ユーザー名",
     "email": "メールアドレス",
+    "emailOrUsername": "メールまたはユーザー名",
     "password": "パスワード",
     "signIn": "サインイン",
     "createAccountBtn": "アカウント作成",

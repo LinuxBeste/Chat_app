@@ -63,6 +63,7 @@
     "registerToStart": "Registriere dich, um loszulegen",
     "username": "Benutzername",
     "email": "E-Mail",
+    "emailOrUsername": "E-Mail oder Benutzername",
     "password": "Passwort",
     "signIn": "Anmelden",
     "createAccountBtn": "Konto erstellen",

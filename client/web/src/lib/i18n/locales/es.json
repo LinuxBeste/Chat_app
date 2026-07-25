@@ -61,6 +61,7 @@
     "registerToStart": "Regístrate para comenzar",
     "username": "Nombre de usuario",
     "email": "Correo electrónico",
+    "emailOrUsername": "Correo o usuario",
     "password": "Contraseña",
     "signIn": "Iniciar sesión",
     "createAccountBtn": "Crear cuenta",
