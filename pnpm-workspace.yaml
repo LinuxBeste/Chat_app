@@ -2,6 +2,10 @@ packages:
   - "server"
   - "client/*"
 
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+
 onlyBuiltDependencies:
   - bcrypt
   - esbuild

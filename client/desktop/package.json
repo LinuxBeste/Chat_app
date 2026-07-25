@@ -1,0 +1,36 @@
+{
+  "name": "desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Real-time chat application with messaging, calls, and communities",
+  "author": {
+    "name": "Chat App",
+    "email": "dev@chatapp.local"
+  },
+  "homepage": "https://github.com/your-org/chat-app",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.electron.json",
+    "build:web": "pnpm --filter web build",
+    "start": "electron dist/main.js",
+    "dev": "pnpm build && electron dist/main.js",
+    "package": "pnpm build:web && pnpm build && electron-builder --config electron-builder.yml && node scripts/package-release.mjs",
+    "package:linux": "pnpm build:web && pnpm build && electron-builder --config electron-builder.yml --linux && node scripts/package-release.mjs linux",
+    "package:mac": "pnpm build:web && pnpm build && electron-builder --config electron-builder.yml --mac && node scripts/package-release.mjs darwin",
+    "package:win": "pnpm build:web && pnpm build && electron-builder --config electron-builder.yml --win && node scripts/package-release.mjs win32",
+    "package:all": "pnpm build:web && pnpm build && electron-builder --config electron-builder.yml --linux --mac --win"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^29.4.0",
+    "electron-builder": "^26.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.8.0",
+    "wait-on": "^8.0.0"
+  }
+}
