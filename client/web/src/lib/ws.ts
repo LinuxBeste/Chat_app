@@ -41,7 +41,9 @@ class WSClient {
 
     this.ws.onopen = () => {
       this.connected = true
-      this.ws!.send(JSON.stringify({ type: "auth", token }))
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "auth", token }))
+      }
     }
 
     this.ws.onmessage = (event) => {
