@@ -69,6 +69,7 @@ export const messages = pgTable(
       .notNull(),
     content: text("content").notNull(),
     type: messageTypeEnum("type").default("text").notNull(),
+    encrypted: text("encrypted").default("false").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),
@@ -116,6 +117,14 @@ export const attachments = pgTable(
     messageIdIdx: index("attachments_message_id_idx").on(table.messageId),
   }),
 )
+
+export const publicKeys = pgTable("public_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  key: text("key").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
 
 export const refreshTokens = pgTable(
   "refresh_tokens",
@@ -303,10 +312,9 @@ export const notifications = pgTable(
 
 export const totpSecrets = pgTable("totp_secrets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .references(() => users.id)
-    .notNull()
-    .unique(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
   secret: text("secret").notNull(),
   verified: text("verified").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

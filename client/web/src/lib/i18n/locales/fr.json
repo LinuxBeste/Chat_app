@@ -162,7 +162,9 @@
     "reportError": "Échec du signalement",
     "deleteConversation": "Supprimer la conversation",
     "loadError": "Échec du chargement des données",
-    "uploadError": "Échec du téléchargement du fichier"
+    "uploadError": "Échec du téléchargement du fichier",
+    "couldNotDecrypt": "Impossible de déchiffrer le message",
+    "deleteError": "Échec de la suppression du message"
   },
   "calls": {
     "callControls": "Commandes d'appel",

@@ -9,7 +9,7 @@ import { catchAsync } from "../middleware/error-handler.js"
 import { conversations, participants, messages, users, attachments } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
-import { clients } from "../ws/clients.js"
+import { clients, sendToConversation } from "../ws/clients.js"
 import { saveAvatar } from "../lib/image.js"
 
 const avatarUpload = multer({
@@ -358,6 +358,8 @@ router.get(
         senderId: messages.senderId,
         createdAt: messages.createdAt,
         editedAt: messages.editedAt,
+        deletedAt: messages.deletedAt,
+        encrypted: messages.encrypted,
         sender: {
           username: users.username,
           displayName: users.displayName,
@@ -435,12 +437,16 @@ router.delete(
       res.status(403).json({ error: "Not your message" })
       return
     }
-    if (msg.deletedAt) {
-      res.status(400).json({ error: "Message already deleted" })
-      return
-    }
+    await db.delete(messages).where(eq(messages.id, msg.id))
 
-    await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, msg.id))
+    const event = { type: "message:deleted", id: msg.id, conversationId: req.params.id }
+    sendToConversation(req.params.id as string, event, req.user!.userId)
+    const sockets = clients.get(req.user!.userId)
+    if (sockets) {
+      for (const ws of sockets) {
+        if (ws.readyState === 1) ws.send(JSON.stringify(event))
+      }
+    }
 
     res.json({ message: "Message deleted" })
   }),

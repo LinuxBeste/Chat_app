@@ -162,7 +162,9 @@
     "reportError": "Error al reportar",
     "deleteConversation": "Eliminar conversación",
     "loadError": "Error al cargar datos",
-    "uploadError": "Error al subir el archivo"
+    "uploadError": "Error al subir el archivo",
+    "couldNotDecrypt": "No se pudo descifrar el mensaje",
+    "deleteError": "Error al eliminar el mensaje"
   },
   "calls": {
     "callControls": "Controles de llamada",

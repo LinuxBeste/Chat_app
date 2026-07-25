@@ -166,7 +166,9 @@
     "reportError": "Melden fehlgeschlagen",
     "deleteConversation": "Konversation löschen",
     "loadError": "Daten konnten nicht geladen werden",
-    "uploadError": "Datei-Upload fehlgeschlagen"
+    "uploadError": "Datei-Upload fehlgeschlagen",
+    "couldNotDecrypt": "Nachricht konnte nicht entschlüsselt werden",
+    "deleteError": "Nachricht konnte nicht gelöscht werden"
   },
   "calls": {
     "callControls": "Anrufsteuerung",

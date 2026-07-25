@@ -1,9 +1,7 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage } from "electron"
-import { join, dirname } from "path"
-import { fileURLToPath } from "url"
-import { readFileSync, existsSync, writeFileSync } from "fs"
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, safeStorage } from "electron"
+import { join } from "path"
+import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
 const WEB_DIST = join(__dirname, "..", "..", "web", "dist")
 
 const isDev = !app.isPackaged
@@ -135,3 +133,46 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("get-user-data-path", () => app.getPath("userData"))
 ipcMain.handle("get-app-version", () => app.getVersion())
+
+const KEY_FILE = "e2ee-keypair.enc"
+const CONV_KEYS_FILE = "e2ee-conv-keys.enc"
+
+ipcMain.handle("e2ee:is-available", () => safeStorage.isEncryptionAvailable())
+
+ipcMain.handle("e2ee:store-keypair", async (_event, keypairJson: string) => {
+  if (!safeStorage.isEncryptionAvailable()) return false
+  const encrypted = safeStorage.encryptString(keypairJson)
+  writeFileSync(join(app.getPath("userData"), KEY_FILE), encrypted)
+  return true
+})
+
+ipcMain.handle("e2ee:get-keypair", async () => {
+  const path = join(app.getPath("userData"), KEY_FILE)
+  if (!existsSync(path)) return null
+  const encrypted = readFileSync(path)
+  return safeStorage.decryptString(encrypted)
+})
+
+ipcMain.handle("e2ee:delete-keypair", async () => {
+  const path = join(app.getPath("userData"), KEY_FILE)
+  if (existsSync(path)) unlinkSync(path)
+})
+
+ipcMain.handle("e2ee:store-conv-keys", async (_event, dataJson: string) => {
+  if (!safeStorage.isEncryptionAvailable()) return false
+  const encrypted = safeStorage.encryptString(dataJson)
+  writeFileSync(join(app.getPath("userData"), CONV_KEYS_FILE), encrypted)
+  return true
+})
+
+ipcMain.handle("e2ee:get-conv-keys", async () => {
+  const path = join(app.getPath("userData"), CONV_KEYS_FILE)
+  if (!existsSync(path)) return null
+  const encrypted = readFileSync(path)
+  return safeStorage.decryptString(encrypted)
+})
+
+ipcMain.handle("e2ee:delete-conv-keys", async () => {
+  const path = join(app.getPath("userData"), CONV_KEYS_FILE)
+  if (existsSync(path)) unlinkSync(path)
+})

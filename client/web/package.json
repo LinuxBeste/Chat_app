@@ -29,7 +29,9 @@
     "react-i18next": "^17.0.10",
     "shared": "workspace:*",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

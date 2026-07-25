@@ -162,7 +162,9 @@
     "reportError": "通報に失敗しました",
     "deleteConversation": "会話を削除",
     "loadError": "データの読み込みに失敗しました",
-    "uploadError": "ファイルのアップロードに失敗しました"
+    "uploadError": "ファイルのアップロードに失敗しました",
+    "couldNotDecrypt": "メッセージを復号化できませんでした",
+    "deleteError": "メッセージの削除に失敗しました"
   },
   "calls": {
     "callControls": "通話コントロール",

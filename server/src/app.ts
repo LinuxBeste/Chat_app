@@ -26,6 +26,7 @@ import callRoutes from "./routes/calls.js"
 import themeRoutes from "./routes/themes.js"
 import adminRoutes from "./routes/admin.js"
 import fileRoutes from "./routes/files.js"
+import e2eeRoutes from "./routes/e2ee.js"
 
 const app: Express = express()
 
@@ -75,6 +76,7 @@ app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
 app.use(`${config.apiPrefix}/themes`, themeRoutes)
 app.use(`${config.apiPrefix}/admin`, adminRoutes)
 app.use(`${config.apiPrefix}/files`, fileRoutes)
+app.use(`${config.apiPrefix}/e2ee`, e2eeRoutes)
 
 app.use(errorHandler)
 

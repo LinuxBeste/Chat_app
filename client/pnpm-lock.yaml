@@ -19,6 +19,9 @@ importers:
       expo:
         specifier: ~57.0.0
         version: 57.0.7(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.7(react@19.2.7))(react-native@0.79.2(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.2.7))(react@19.2.7)(typescript@5.8.3)
+      expo-secure-store:
+        specifier: ^57.0.1
+        version: 57.0.1(expo@57.0.7)
       expo-status-bar:
         specifier: ~2.2.0
         version: 2.2.3(react-native@0.79.2(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.2.7))(react@19.2.7)
@@ -40,6 +43,12 @@ importers:
       tailwind-merge:
         specifier: ^2.5.0
         version: 2.6.1
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
+      tweetnacl-util:
+        specifier: ^0.15.1
+        version: 0.15.1
     devDependencies:
       '@types/react':
         specifier: ~19.0.0
@@ -104,6 +113,12 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
+      tweetnacl-util:
+        specifier: ^0.15.1
+        version: 0.15.1
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.9.1
@@ -2338,6 +2353,11 @@ packages:
     peerDependencies:
       react-native: '*'
 
+  expo-secure-store@57.0.1:
+    resolution: {integrity: sha512-tLa1VmSadOq19mA/dwkl99RbHyjLE0T1qqBYMY3/OsguZTI+rlrDy/DDJjupqlVtmr95hD7o1pYqx5aL+B4YMA==}
+    peerDependencies:
+      expo: '*'
+
   expo-server@57.0.1:
     resolution: {integrity: sha512-sBfVDH6dmKVHZxqUxbfkzS00PZELMZt1IpnHKxcOTMZtR/t7CtRAFrbXcisG+EyzeqHSVDacZT+1tbYfZt5D8w==}
     engines: {node: '>=20.16.0'}
@@ -3612,6 +3632,12 @@ packages:
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+
+  tweetnacl-util@0.15.1:
+    resolution: {integrity: sha512-RKJBIj8lySrShN4w6i/BonWp2Z/uxwC3h4y7xsRrpP59ZboCd0GpEVsOnMDYLMmKBpYhb5TgHzZXy7wTfYFBRw==}
+
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   type-detect@4.0.8:
     resolution: {integrity: sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==}
@@ -6380,6 +6406,10 @@ snapshots:
     dependencies:
       react-native: 0.79.2(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.2.7)
 
+  expo-secure-store@57.0.1(expo@57.0.7):
+    dependencies:
+      expo: 57.0.7(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.7(react@19.2.7))(react-native@0.79.2(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.2.7))(react@19.2.7)(typescript@5.8.3)
+
   expo-server@57.0.1: {}
 
   expo-status-bar@2.2.3(react-native@0.79.2(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.2.7))(react@19.2.7):
@@ -7850,6 +7880,10 @@ snapshots:
       punycode: 2.3.1
 
   tslib@2.8.1: {}
+
+  tweetnacl-util@0.15.1: {}
+
+  tweetnacl@1.0.3: {}
 
   type-detect@4.0.8: {}
 

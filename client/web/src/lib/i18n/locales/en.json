@@ -167,7 +167,9 @@
     "deleteConversation": "Delete conversation",
     "loadError": "Failed to load data",
     "uploadError": "File upload failed",
-    "offline": "Offline"
+    "offline": "Offline",
+    "couldNotDecrypt": "Could not decrypt message",
+    "deleteError": "Failed to delete message"
   },
   "calls": {
     "callControls": "Call controls",
@@ -313,7 +315,7 @@
       "calls": "Calls",
       "media": "Media",
       "audio-video": "Audio & Video",
-      "accessibility": "Accessibility & Reader",
+      "accessibility": "Accessibility",
       "shortcuts": "Keyboard Shortcuts",
       "language": "Language & Region",
       "advanced": "Advanced",

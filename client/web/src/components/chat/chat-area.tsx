@@ -21,6 +21,7 @@ import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
 import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db"
 import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline"
+import { encryptMessage, decryptMessage, stripEncryptionPrefix, isEncrypted } from "../../lib/crypto"
 
 interface Attachment {
   id: string
@@ -39,6 +40,7 @@ interface Message {
   createdAt: string
   editedAt: string | null
   deletedAt?: string | null
+  encrypted?: string
   sender: {
     username: string
     displayName: string | null
@@ -108,8 +110,10 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     setLoading(true)
     if (offline) {
       getCachedMessagesDB(conversationId).then((cached) => {
-        if (cached.length > 0) {
-          setMessages(cached as Message[])
+        const cleaned = (cached as Message[]).filter((m) => !m.deletedAt)
+        cacheMessages(conversationId, cleaned)
+        if (cleaned.length > 0) {
+          setMessages(cleaned)
           setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
         }
         setLoading(false)
@@ -120,16 +124,36 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       api<Message[]>(`/api/conversations/${conversationId}/messages`),
       api<ConversationInfo>(`/api/conversations/${conversationId}`),
     ])
-      .then(([msgs, info]) => {
-        setMessages(msgs)
+      .then(async ([msgs, info]) => {
+        const isDmConv = info.type === "dm"
+        let theirKey: string | null = null
+        if (isDmConv) {
+          const other = info.members.find((m: any) => m.id !== currentUserId)
+          if (other) {
+            try {
+              const res = await api<{ publicKey: string }>(`/api/e2ee/key/${other.id}`)
+              theirKey = res.publicKey
+            } catch {}
+          }
+        }
+        const decrypted = await Promise.all(msgs.map(async (m) => {
+          if (m.encrypted === "true" && isEncrypted(m.content)) {
+            const decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(m.content), theirKey ?? undefined)
+            if (decrypted) return { ...m, content: decrypted, encrypted: "true" }
+          }
+          return m
+        }))
+        setMessages(decrypted)
         setConvInfo(info)
-        cacheMessagesDB(conversationId, msgs)
-        cacheMessages(conversationId, msgs)
+        cacheMessagesDB(conversationId, decrypted)
+        cacheMessages(conversationId, decrypted)
       })
       .catch(() => {
         getCachedMessagesDB(conversationId).then((cached) => {
-          if (cached.length > 0) {
-            setMessages(cached as Message[])
+          const cleaned = (cached as Message[]).filter((m) => !m.deletedAt)
+          cacheMessages(conversationId, cleaned)
+          if (cleaned.length > 0) {
+            setMessages(cleaned)
             setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
           } else {
             showToast(t("chat.loadError"))
@@ -138,6 +162,27 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       })
       .finally(() => setLoading(false))
   }, [conversationId])
+
+  const isDm = convInfo?.type === "dm" || (!convInfo?.type && conversationId.length > 0)
+  const otherUserId = isDm ? convInfo?.members.find((m) => m.id !== currentUserId)?.id : null
+
+  const theirPublicKeyCache = useRef<string | null>(null)
+
+  const getTheirPublicKey = useCallback(async (): Promise<string | null> => {
+    if (!otherUserId) return null
+    if (theirPublicKeyCache.current) return theirPublicKeyCache.current
+    try {
+      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${otherUserId}`)
+      theirPublicKeyCache.current = res.publicKey
+      return res.publicKey
+    } catch {
+      return null
+    }
+  }, [otherUserId])
+
+  useEffect(() => {
+    theirPublicKeyCache.current = null
+  }, [otherUserId])
 
   const { setActiveConversationId, setView } = useNav()
   const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
@@ -171,17 +216,29 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   }
 
   useEffect(() => {
-    const unsubNew = wsClient.on("message:new", (data: any) => {
+    const unsubNew = wsClient.on("message:new", async (data: any) => {
       if (data.conversationId === conversationId) {
+        let content = data.content
+        if (data.encrypted === "true" && isEncrypted(content)) {
+          let decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content))
+          if (!decrypted && isDm && data.senderId !== currentUserId) {
+            try {
+              const res = await api<{ publicKey: string }>(`/api/e2ee/key/${data.senderId}`)
+              decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), res.publicKey)
+            } catch {}
+          }
+          if (decrypted) content = decrypted
+        }
         const msg: Message = {
           id: data.id,
-          content: data.content,
+          content,
           type: data.messageType || data.type,
           senderId: data.senderId,
           createdAt: data.createdAt,
           editedAt: null,
           sender: data.sender,
           attachment: data.attachment,
+          encrypted: data.encrypted,
         }
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev
@@ -202,9 +259,11 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     })
     const unsubDeleted = wsClient.on("message:deleted", (data) => {
       if (data.conversationId === conversationId) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === data.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m)),
-        )
+        setMessages((prev) => {
+          const next = prev.map((m) => (m.id === data.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m))
+          cacheMessages(conversationId, next.filter((m) => !m.deletedAt))
+          return next
+        })
       }
     })
     return () => {
@@ -299,9 +358,24 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
 
   const handleSend = useCallback(
     (content: string, messageType?: string, attachment?: AttachmentData) => {
-      wsClient.send("message:send", { conversationId, content, messageType, attachment })
+      let finalContent = content
+      let encrypted = false
+      if (otherUserId && isDm) {
+        getTheirPublicKey().then(async (theirKey) => {
+          if (theirKey) {
+            const ciphertext = await encryptMessage(conversationId, content, theirKey)
+            if (ciphertext) {
+              finalContent = "e2ee:" + ciphertext
+              encrypted = true
+            }
+          }
+          wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
+        })
+      } else {
+        wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
+      }
     },
-    [conversationId],
+    [conversationId, otherUserId, isDm, getTheirPublicKey],
   )
 
   const handleEdit = useCallback(
@@ -326,11 +400,20 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   }, [])
 
   const handleDelete = useCallback(
-    (msg: Message) => {
-      wsClient.send("message:delete", { messageId: msg.id, conversationId })
+    async (msg: Message) => {
+      setMessages((prev) => {
+        const next = prev.map((m) => (m.id === msg.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m))
+        cacheMessages(conversationId, next.filter((m) => !m.deletedAt))
+        return next
+      })
       setMenuMessageId(null)
+      try {
+        await api(`/api/conversations/${conversationId}/messages/${msg.id}`, { method: "DELETE" })
+      } catch {
+        showToast(t("chat.deleteError"))
+      }
     },
-    [conversationId],
+    [conversationId, showToast, t],
   )
 
   const handleLeaveConversation = useCallback(async () => {
@@ -818,21 +901,26 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             {messages.map((msg) => {
           const isMe = msg.senderId === currentUserId
           const isDeleted = !!msg.deletedAt
+          if (isDeleted) {
+            return (
+              <div key={msg.id} className="flex justify-center relative">
+                <div className="bg-surface text-text-muted border border-border italic rounded-3xl px-4 py-1.5 text-xs">
+                  {t("chat.messageDeleted")}
+                </div>
+              </div>
+            )
+          }
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative`} role="article">
               <div
                 className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
-                  isDeleted
-                    ? "bg-surface text-text-muted border border-border italic"
-                    : isMe
-                      ? "bg-accent text-white rounded-br-lg"
-                      : "bg-surface text-text-primary border border-border rounded-bl-lg"
+                  isMe
+                    ? "bg-accent text-white rounded-br-lg"
+                    : "bg-surface text-text-primary border border-border rounded-bl-lg"
                 }`}
               >
-                {!isMe && !isDeleted && <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>}
-                {isDeleted ? (
-                  <p className="text-sm leading-relaxed italic">{t("chat.messageDeleted")}</p>
-                ) : editingMessageId === msg.id ? (
+                {!isMe && <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>}
+                {editingMessageId === msg.id ? (
                   <div className="flex items-center gap-2">
                     <input
                       ref={editInputRef}
@@ -875,16 +963,21 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                     <Download className="h-4 w-4 text-text-muted shrink-0" />
                   </button>
                 ) : (
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                )}
-                {!isDeleted && (
-                  <p className={`text-[11px] mt-1 ${isMe ? "text-white/60" : "text-text-muted"}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    {msg.editedAt && <span className="ml-1">{t("chat.edited")}</span>}
+                  <p className="text-sm leading-relaxed">
+                    {msg.encrypted === "true" && !isEncrypted(msg.content) && (
+                      <span className="inline-flex items-center mr-1.5 text-accent" title="End-to-end encrypted">
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </span>
+                    )}
+                    {msg.encrypted === "true" && isEncrypted(msg.content) ? t("chat.couldNotDecrypt") : msg.content}
                   </p>
                 )}
+                <p className={`text-[11px] mt-1 ${isMe ? "text-white/60" : "text-text-muted"}`}>
+                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {msg.editedAt && <span className="ml-1">{t("chat.edited")}</span>}
+                </p>
               </div>
-              {isMe && !isDeleted && editingMessageId !== msg.id && (
+              {isMe && editingMessageId !== msg.id && (
                 <div className="relative ml-1 self-start mt-2">
                   <button
                     onClick={() => setMenuMessageId(menuMessageId === msg.id ? null : msg.id)}

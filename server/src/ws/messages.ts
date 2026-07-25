@@ -21,6 +21,7 @@ interface SendMessagePayload {
   conversationId: string
   content: string
   messageType?: "text" | "image" | "file"
+  encrypted?: boolean
   attachment?: AttachmentPayload
 }
 
@@ -62,6 +63,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
         senderId: userId,
         content: payload.content,
         type: payload.messageType ?? "text",
+        encrypted: payload.encrypted ? "true" : "false",
       })
       .returning()
 
@@ -97,6 +99,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       sender: { id: userId, ...user },
       content: msg.content,
       messageType: msg.type,
+      encrypted: msg.encrypted,
       createdAt: msg.createdAt,
     }
     if (attachment) {
@@ -193,12 +196,7 @@ export async function handleDeleteMessage(ws: WebSocket, payload: DeleteMessageP
       ws.send(JSON.stringify({ type: "error", error: "Not your message" }))
       return
     }
-    if (msg.deletedAt) {
-      ws.send(JSON.stringify({ type: "error", error: "Message already deleted" }))
-      return
-    }
-
-    await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, payload.messageId))
+    await db.delete(messages).where(eq(messages.id, payload.messageId))
 
     const event = {
       type: "message:deleted",

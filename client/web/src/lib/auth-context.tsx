@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { api, setTokens, clearTokens, getTokens } from "./api"
 import { wsClient } from "./ws"
+import { getOrCreateKeyPair } from "./crypto"
 
 interface User {
   id: string
@@ -31,16 +32,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [needsSetup, setNeedsSetup] = useState(false)
 
+  const syncKey = useCallback(async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const kp = await getOrCreateKeyPair()
+        await api("/api/e2ee/key", {
+          method: "PUT",
+          body: JSON.stringify({ key: kp.publicKey }),
+        })
+        return
+      } catch {
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 1000))
+      }
+    }
+  }, [])
+
   const fetchMe = useCallback(async () => {
     try {
       const me = await api<User>("/api/users/me")
       setUser(me)
       wsClient.connect()
+      await syncKey()
     } catch {
       clearTokens()
       setUser(null)
     }
-  }, [])
+  }, [syncKey])
 
   useEffect(() => {
     const { accessToken } = getTokens()
@@ -59,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)
     wsClient.connect()
-  }, [])
+    await syncKey()
+  }, [syncKey])
 
   const register = useCallback(async (username: string, email: string, password: string) => {
     const data = await api<{ user: User; accessToken: string; refreshToken: string; needsSetup?: boolean }>("/api/auth/register", {
@@ -69,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(data.accessToken, data.refreshToken)
     setUser(data.user)
     wsClient.connect()
+    await syncKey()
     if (data.needsSetup) setNeedsSetup(true)
-  }, [])
+  }, [syncKey])
 
   const completeSetup = useCallback(() => {
     setNeedsSetup(false)
@@ -80,6 +99,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearTokens()
     wsClient.disconnect()
     setUser(null)
+    try {
+      localStorage.removeItem("e2ee:keypair")
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith("e2ee:conv-keys:")) keysToRemove.push(key)
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k))
+    } catch {}
   }, [])
 
   return <AuthContext.Provider value={{ user, loading, needsSetup, login, register, logout, completeSetup }}>{children}</AuthContext.Provider>
