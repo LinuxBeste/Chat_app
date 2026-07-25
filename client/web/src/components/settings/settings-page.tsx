@@ -15,6 +15,7 @@ import {
   BookOpen, Sliders, Cloud, Zap, Type, Image, FileText, Hash,
   Clock, Calendar, Ruler, Layers, Headphones, Mic2,
   Phone, Trash2, Square, Grid3X3, Search, Sparkles, Wifi, RefreshCw,
+  Keyboard,
 } from "lucide-react"
 
 interface TOTPStatus { enabled: boolean }
@@ -134,6 +135,11 @@ interface Preferences {
   downloadLocation?: string; imageSaveQuality?: number
   // Reader
   readerMode?: boolean; fontSizeReader?: number; lineSpacing?: number
+  // Shortcuts
+  shortcutNavigateUp?: string; shortcutNavigateDown?: string; shortcutNewChat?: string
+  shortcutSearch?: string; shortcutToggleSidebar?: string; shortcutJumpToDm?: string
+  shortcutMarkRead?: string; shortcutQuickReply?: string; shortcutToggleMute?: string
+  shortcutToggleTheme?: string; shortcutQuickSwitch?: string; shortcutCreateGroup?: string
 }
 
 const defaultPrefs: Preferences = {
@@ -203,12 +209,16 @@ const defaultPrefs: Preferences = {
   voiceMessageQuality: "medium", maxFileSize: 25, downloadLocation: "default",
   imageSaveQuality: 90,
   readerMode: false, fontSizeReader: 16, lineSpacing: 1.6,
+  shortcutNavigateUp: "ArrowUp", shortcutNavigateDown: "ArrowDown", shortcutNewChat: "Ctrl+N",
+  shortcutSearch: "Ctrl+K", shortcutToggleSidebar: "Ctrl+B", shortcutJumpToDm: "Ctrl+Shift+K",
+  shortcutMarkRead: "Escape", shortcutQuickReply: "R", shortcutToggleMute: "Ctrl+Shift+M",
+  shortcutToggleTheme: "Ctrl+Shift+T", shortcutQuickSwitch: "Ctrl+Tab", shortcutCreateGroup: "Ctrl+Shift+N",
 }
 
 type SettingsTab =
   "account" | "security" | "appearance" | "notifications" | "privacy" |
   "chat" | "accessibility" | "language" | "calls" | "media" |
-  "audio-video" | "advanced" | "reader" | "about"
+  "audio-video" | "advanced" | "shortcuts" | "about"
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
@@ -327,7 +337,7 @@ export function SettingsPage() {
     { id: "media", label: t("settings.tabs.media"), icon: Image, group: t("settings.groups.communication") },
     { id: "audio-video", label: t("settings.tabs.audio-video"), icon: Mic2, group: t("settings.groups.communication") },
     { id: "accessibility", label: t("settings.tabs.accessibility"), icon: Eye, group: t("settings.groups.experience") },
-    { id: "reader", label: t("settings.tabs.reader"), icon: BookOpen, group: t("settings.groups.experience") },
+    { id: "shortcuts", label: t("settings.tabs.shortcuts"), icon: Keyboard, group: t("settings.groups.experience") },
     { id: "language", label: t("settings.tabs.language"), icon: Globe, group: t("settings.groups.experience") },
     { id: "advanced", label: t("settings.tabs.advanced"), icon: Terminal, group: t("settings.groups.system") },
     { id: "about", label: t("settings.tabs.about"), icon: Info },
@@ -607,17 +617,20 @@ export function SettingsPage() {
     { key: "settings.audio-video.echoCancellation", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.echoCancellation"), keywords: ["echo"] },
     { key: "settings.audio-video.backgroundBlur", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.backgroundBlur"), keywords: ["blur"] },
     { key: "settings.audio-video.virtualBackground", tab: "audio-video" as SettingsTab, label: t("settings.audio-video.virtualBackground") },
-    // Accessibility
+    // Accessibility & Reader
     { key: "settings.accessibility.reduceMotion", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.reduceMotion"), keywords: ["motion"] },
     { key: "settings.accessibility.reduceTransparency", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.reduceTransparency"), keywords: ["transparency"] },
     { key: "settings.accessibility.colorBlindMode", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.colorBlindMode") },
     { key: "settings.accessibility.highContrast", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.highContrast"), keywords: ["contrast"] },
     { key: "settings.accessibility.screenReader", tab: "accessibility" as SettingsTab, label: t("settings.accessibility.screenReader"), keywords: ["reader"] },
-    // Reader
-    { key: "settings.reader.fontSize", tab: "reader" as SettingsTab, label: t("settings.reader.fontSize") },
-    { key: "settings.reader.lineHeight", tab: "reader" as SettingsTab, label: t("settings.reader.lineHeight") },
-    { key: "settings.reader.columnWidth", tab: "reader" as SettingsTab, label: t("settings.reader.columnWidth") },
-    { key: "settings.reader.theme", tab: "reader" as SettingsTab, label: t("settings.reader.theme") },
+    { key: "settings.reader.fontSize", tab: "accessibility" as SettingsTab, label: t("settings.reader.fontSize") },
+    { key: "settings.reader.lineHeight", tab: "accessibility" as SettingsTab, label: t("settings.reader.lineHeight") },
+    { key: "settings.reader.columnWidth", tab: "accessibility" as SettingsTab, label: t("settings.reader.columnWidth") },
+    { key: "settings.reader.theme", tab: "accessibility" as SettingsTab, label: t("settings.reader.theme") },
+    // Shortcuts
+    { key: "settings.shortcuts.navigation", tab: "shortcuts" as SettingsTab, label: t("settings.shortcuts.navigation"), keywords: ["keys", "keyboard"] },
+    { key: "settings.shortcuts.messaging", tab: "shortcuts" as SettingsTab, label: t("settings.shortcuts.messaging"), keywords: ["keys", "keyboard"] },
+    { key: "settings.shortcuts.app", tab: "shortcuts" as SettingsTab, label: t("settings.shortcuts.app"), keywords: ["keys", "keyboard"] },
     // Language
     { key: "settings.language.interface", tab: "language" as SettingsTab, label: t("settings.language.interface") },
     { key: "settings.language.translation", tab: "language" as SettingsTab, label: t("settings.language.translation") },
@@ -1432,13 +1445,6 @@ export function SettingsPage() {
                   control={<Select value={prefs.chatBubbleDir ?? "auto"} onChange={(v) => updatePref("chatBubbleDir", v)}
                     options={[{ value: "auto", label: t("settings.accessibility.directionOptions.auto") }, { value: "left", label: t("settings.accessibility.directionOptions.left") }, { value: "right", label: t("settings.accessibility.directionOptions.right") }]} />} />
               </Section>
-            </>
-          )}
-
-          {/* === READER === */}
-          {tab === "reader" && (
-            <>
-              <h1 className="text-lg font-semibold text-text-primary">{t("settings.reader.title")}</h1>
               <Section icon={BookOpen} title={t("settings.reader.readingMode")}>
                 <Row id="settings.reader.readerMode" label={t("settings.reader.readerMode")} desc={t("settings.reader.readerModeDesc")} control={<Toggle checked={prefs.readerMode ?? false} onChange={(v) => updatePref("readerMode", v)} />} />
                 <Row id="settings.reader.fontSize" label={t("settings.reader.fontSize")} desc={t("settings.reader.fontSizeDesc")}
@@ -1483,6 +1489,55 @@ export function SettingsPage() {
                 <Row id="settings.language.measurement" label={t("settings.language.measurement")} desc={t("settings.language.measurementDesc")}
                   control={<Select value={prefs.measurementSystem ?? "metric"} onChange={(v) => updatePref("measurementSystem", v)}
                     options={[{ value: "metric", label: t("settings.language.measurementOptions.metric") }, { value: "imperial", label: t("settings.language.measurementOptions.imperial") }]} />} />
+              </Section>
+            </>
+          )}
+
+          {/* === SHORTCUTS === */}
+          {tab === "shortcuts" && (
+            <>
+              <h1 className="text-lg font-semibold text-text-primary">{t("settings.shortcuts.title")}</h1>
+              <Section icon={Keyboard} title={t("settings.shortcuts.navigation")}>
+                <Row id="settings.shortcuts.navigateUp" label={t("settings.shortcuts.navigateUp")} desc={t("settings.shortcuts.navigateUpDesc")}
+                  control={<input value={prefs.shortcutNavigateUp ?? "ArrowUp"} onChange={(e) => updatePref("shortcutNavigateUp", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.navigateDown" label={t("settings.shortcuts.navigateDown")} desc={t("settings.shortcuts.navigateDownDesc")}
+                  control={<input value={prefs.shortcutNavigateDown ?? "ArrowDown"} onChange={(e) => updatePref("shortcutNavigateDown", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.quickSwitch" label={t("settings.shortcuts.quickSwitch")} desc={t("settings.shortcuts.quickSwitchDesc")}
+                  control={<input value={prefs.shortcutQuickSwitch ?? "Ctrl+Tab"} onChange={(e) => updatePref("shortcutQuickSwitch", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.jumpToDm" label={t("settings.shortcuts.jumpToDm")} desc={t("settings.shortcuts.jumpToDmDesc")}
+                  control={<input value={prefs.shortcutJumpToDm ?? "Ctrl+Shift+K"} onChange={(e) => updatePref("shortcutJumpToDm", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+              </Section>
+              <Section icon={MessageSquare} title={t("settings.shortcuts.messaging")}>
+                <Row id="settings.shortcuts.newChat" label={t("settings.shortcuts.newChat")} desc={t("settings.shortcuts.newChatDesc")}
+                  control={<input value={prefs.shortcutNewChat ?? "Ctrl+N"} onChange={(e) => updatePref("shortcutNewChat", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.quickReply" label={t("settings.shortcuts.quickReply")} desc={t("settings.shortcuts.quickReplyDesc")}
+                  control={<input value={prefs.shortcutQuickReply ?? "R"} onChange={(e) => updatePref("shortcutQuickReply", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.createGroup" label={t("settings.shortcuts.createGroup")} desc={t("settings.shortcuts.createGroupDesc")}
+                  control={<input value={prefs.shortcutCreateGroup ?? "Ctrl+Shift+N"} onChange={(e) => updatePref("shortcutCreateGroup", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.markRead" label={t("settings.shortcuts.markRead")} desc={t("settings.shortcuts.markReadDesc")}
+                  control={<input value={prefs.shortcutMarkRead ?? "Escape"} onChange={(e) => updatePref("shortcutMarkRead", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+              </Section>
+              <Section icon={Sliders} title={t("settings.shortcuts.app")}>
+                <Row id="settings.shortcuts.search" label={t("settings.shortcuts.search")} desc={t("settings.shortcuts.searchDesc")}
+                  control={<input value={prefs.shortcutSearch ?? "Ctrl+K"} onChange={(e) => updatePref("shortcutSearch", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.toggleSidebar" label={t("settings.shortcuts.toggleSidebar")} desc={t("settings.shortcuts.toggleSidebarDesc")}
+                  control={<input value={prefs.shortcutToggleSidebar ?? "Ctrl+B"} onChange={(e) => updatePref("shortcutToggleSidebar", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.toggleTheme" label={t("settings.shortcuts.toggleTheme")} desc={t("settings.shortcuts.toggleThemeDesc")}
+                  control={<input value={prefs.shortcutToggleTheme ?? "Ctrl+Shift+T"} onChange={(e) => updatePref("shortcutToggleTheme", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
+                <Row id="settings.shortcuts.toggleMute" label={t("settings.shortcuts.toggleMute")} desc={t("settings.shortcuts.toggleMuteDesc")}
+                  control={<input value={prefs.shortcutToggleMute ?? "Ctrl+Shift+M"} onChange={(e) => updatePref("shortcutToggleMute", e.target.value)}
+                    className="h-8 w-28 rounded-2xl border border-border bg-bg-primary px-3 text-xs text-text-primary font-mono outline-none focus:border-accent/50 text-center" />} />
               </Section>
             </>
           )}
