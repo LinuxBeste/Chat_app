@@ -21,10 +21,28 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
-      "package": "com.chatapp.mobile"
+      "package": "com.chatapp.mobile",
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_VIDEO"
+      ]
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-dev-client",
+      "expo-secure-store",
+      "expo-system-ui",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to share images in chats.",
+          "cameraPermission": "The app accesses your camera to take photos for chats."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ]
     ]
   }
 }

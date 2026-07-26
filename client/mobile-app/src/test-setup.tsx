@@ -95,13 +95,9 @@ vi.mock("react-i18next", () => ({
         "auth.somethingWentWrong": "Something went wrong",
         "auth.welcomeBack": "Welcome back",
         "common.required": "required",
-        "common.save": "Save",
-        "common.cancel": "Cancel",
         "settings.dark": "Dark",
         "settings.light": "Light",
         "settings.language": "Language",
-        "common.save": "Save",
-        "common.cancel": "Cancel",
         "status.online": "Online",
         "status.away": "Away",
         "status.busy": "Busy",
@@ -128,17 +124,20 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
 }))
 
-vi.mock("react-native-safe-area-context", async (importOriginal) => {
-  const React = await import("react")
-  const h = React.createElement || ((React as any).default?.createElement || React.default?.createElement)
-  const ce = (type: string, props: any, ...children: any[]) =>
-    (h || ((React as any).default || React).createElement)(type, props, ...children)
-  return {
-    SafeAreaProvider: ({ children }: any) => ce("div", { className: "safe-area-provider" }, children),
-    SafeAreaView: ({ children, style }: any) => ce("div", { className: "safe-area-view", style }, children),
-    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-  }
-})
+vi.mock("react-native-safe-area-context", () => ({
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaView: ({ children }: any) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
+vi.mock("react-native-gesture-handler", () => ({
+  GestureHandlerRootView: ({ children }: any) => children,
+  Gesture: { Tap: () => {}, Pan: () => {}, Pinch: () => {}, Kick: () => {} },
+  State: {},
+  PanGestureHandler: ({ children }: any) => children,
+  TapGestureHandler: ({ children }: any) => children,
+  LongPressGestureHandler: ({ children }: any) => children,
+}))
 
 vi.mock("react-native-gesture-handler", async () => {
   const React = await import("react")
