@@ -1,6 +1,7 @@
 import nacl from "tweetnacl"
 import { encodeBase64, decodeBase64, encodeUTF8, decodeUTF8 } from "tweetnacl-util"
 import * as SecureStore from "expo-secure-store"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const KEY_STORE_KEY = "e2ee:keypair"
 const CONVERSATION_KEYS_KEY = "e2ee:conv-keys"
@@ -57,21 +58,21 @@ export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8
   } catch { return null }
 }
 
-function getConvKey(conversationId: string): Uint8Array | null {
-  const raw = localStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
+async function getConvKey(conversationId: string): Promise<Uint8Array | null> {
+  const raw = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
   if (raw) return decodeBase64(raw)
   return null
 }
 
-function setConvKey(conversationId: string, key: Uint8Array) {
-  localStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
+async function setConvKey(conversationId: string, key: Uint8Array) {
+  await AsyncStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
 }
 
 export async function encryptMessage(conversationId: string, content: string, theirPublicKey?: string): Promise<string | null> {
-  let sharedKey = getConvKey(conversationId)
+  let sharedKey = await getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)
-    if (sharedKey) setConvKey(conversationId, sharedKey)
+    if (sharedKey) await setConvKey(conversationId, sharedKey)
   }
   if (!sharedKey) return null
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength)
@@ -81,10 +82,10 @@ export async function encryptMessage(conversationId: string, content: string, th
 }
 
 export async function decryptMessage(conversationId: string, ciphertext: string, theirPublicKey?: string): Promise<string | null> {
-  let sharedKey = getConvKey(conversationId)
+  let sharedKey = await getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)
-    if (sharedKey) setConvKey(conversationId, sharedKey)
+    if (sharedKey) await setConvKey(conversationId, sharedKey)
   }
   if (!sharedKey) return null
   const parts = ciphertext.split(".")
@@ -106,16 +107,13 @@ export function stripEncryptionPrefix(content: string): string {
   return content.startsWith("e2ee:") ? content.slice(5) : content
 }
 
-export function resetConversationKey(conversationId: string) {
-  localStorage.removeItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
+export async function resetConversationKey(conversationId: string) {
+  await AsyncStorage.removeItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
 }
 
 export async function deleteKeyPair() {
   await removeKeypair()
-  const keysToRemove: string[] = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.startsWith(CONVERSATION_KEYS_KEY)) keysToRemove.push(key)
-  }
-  keysToRemove.forEach((k) => localStorage.removeItem(k))
+  const allKeys = await AsyncStorage.getAllKeys()
+  const keysToRemove = allKeys.filter((k) => k.startsWith(CONVERSATION_KEYS_KEY))
+  await AsyncStorage.multiRemove(keysToRemove)
 }

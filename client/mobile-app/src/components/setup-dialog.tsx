@@ -2,6 +2,7 @@ import { useState } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from "react-native"
 import { useAuth } from "../lib/auth-context"
 import { api } from "../lib/api"
+import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
 import { Check, Sun, Moon, ChevronRight } from "lucide-react-native"
 
@@ -16,6 +17,7 @@ const languages = [
 export function SetupDialog() {
   const { t, i18n } = useTranslation()
   const { completeSetup } = useAuth()
+  const { mode: theme, toggle: toggleTheme } = useTheme()
   const [step, setStep] = useState(0)
   const [displayName, setDisplayName] = useState("")
   const [saving, setSaving] = useState(false)
@@ -78,13 +80,13 @@ export function SetupDialog() {
               <Text style={s.title}>Choose Theme</Text>
               <Text style={s.desc}>Pick light or dark mode</Text>
               <View style={s.themeRow}>
-                <TouchableOpacity style={s.themeBtn}>
-                  <Sun size={32} color="#E8E8F0" />
-                  <Text style={s.themeLabel}>Light</Text>
+                <TouchableOpacity style={[s.themeBtn, theme === "light" && s.themeBtnActive]} onPress={() => { if (theme !== "light") toggleTheme() }}>
+                  <Sun size={32} color={theme === "light" ? "#6C8CFF" : "#E8E8F0"} />
+                  <Text style={[s.themeLabel, theme === "light" && s.themeLabelActive]}>Light</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.themeBtn, s.themeBtnActive]}>
-                  <Moon size={32} color="#6C8CFF" />
-                  <Text style={[s.themeLabel, s.themeLabelActive]}>Dark</Text>
+                <TouchableOpacity style={[s.themeBtn, theme === "dark" && s.themeBtnActive]} onPress={() => { if (theme !== "dark") toggleTheme() }}>
+                  <Moon size={32} color={theme === "dark" ? "#6C8CFF" : "#E8E8F0"} />
+                  <Text style={[s.themeLabel, theme === "dark" && s.themeLabelActive]}>Dark</Text>
                 </TouchableOpacity>
               </View>
             </>

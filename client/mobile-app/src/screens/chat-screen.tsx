@@ -100,7 +100,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   const getTheirKey = useCallback(async (userId: string): Promise<string | null> => {
     if (theirKeyRef.current) return theirKeyRef.current
     try {
-      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`)
+      const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
       theirKeyRef.current = res.publicKey
       return res.publicKey
     } catch { return null }
@@ -157,7 +157,6 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     api<Msg[]>(`/api/conversations/${conversationId}/messages`).then((msgs) => {
       setMessages(msgs); decryptMessages(msgs)
     }).catch(() => {})
-    loadMedia()
     checkFriendStatus()
     checkBlocked()
     loadPinnedMessages()
@@ -239,13 +238,18 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
   const navigateToDm = async (targetUserId: string) => {
     try {
-      const conv = await api<{ id: string }>("/api/conversations", {
+      const existing = await api<{ id: string } | null>(`/api/conversations/dm/${targetUserId}`)
+      if (existing) {
+        setShowInfo(false)
+        onBack()
+        return
+      }
+      await api<{ id: string }>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
       })
       setShowInfo(false)
       onBack()
-      setTimeout(() => { /* parent handles navigation */ }, 100)
     } catch {}
   }
 
@@ -288,18 +292,15 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     return () => { unsubs.forEach((u) => u()) }
   }, [conversationId])
 
-  const loadMedia = async () => {
-    try {
-      const msgs = await api<Msg[]>(`/api/conversations/${conversationId}/messages?limit=50`)
-      setMediaItems(msgs.filter((m) => m.messageType === "image" || (m.fileUrl && m.fileType?.startsWith("image/"))))
-    } catch {}
-  }
+  useEffect(() => {
+    setMediaItems(messages.filter((m) => m.messageType === "image" || (m.fileUrl && m.fileType?.startsWith("image/"))))
+  }, [messages])
 
   const decryptMessages = useCallback(async (msgs: Msg[]) => {
     const entries = await Promise.all(
       msgs.map(async (m) => {
         if (isEncrypted(m.content)) {
-          const key = m.senderId !== user!.id && otherMember?.id ? await getTheirKey(otherMember.id) : undefined
+          const key = m.senderId !== user!.id ? await getTheirKey(m.senderId) : undefined
           const plain = await decryptMessage(conversationId, stripEncryptionPrefix(m.content), key ?? undefined)
           return [m.id, plain || m.content] as [string, string]
         }
@@ -307,7 +308,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       })
     )
     setDecrypted((p) => ({ ...p, ...Object.fromEntries(entries) }))
-  }, [conversationId, otherMember?.id])
+  }, [conversationId])
 
   const send = async () => {
     if (!input.trim()) return
@@ -405,6 +406,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
   const showContextMenu = (item: Msg) => {
     const me = item.senderId === user!.id
+    const isDeleted = !!item.deletedAt
     const buttons: { text: string; onPress?: () => void; style?: "cancel" | "destructive" }[] = [
       { text: "Copy", onPress: () => Clipboard.setStringAsync(decrypted[item.id] || item.content) },
       { text: "Reply", onPress: () => setReplyingTo(item) },

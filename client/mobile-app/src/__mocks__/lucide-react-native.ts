@@ -1,0 +1,52 @@
+import React from "react"
+
+const iconNames = [
+  "Activity", "Airplay", "AlarmCheck", "AlarmMinus", "AlarmPlus", "Alarm", "AlertCircle",
+  "AlertTriangle", "AlignCenter", "AlignJustify", "AlignLeft", "AlignRight",
+  "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "AtSign", "Bell",
+  "BellOff", "Bold", "Book", "Bookmark", "Camera", "CameraOff", "Check",
+  "CheckCircle", "ChevronDown", "ChevronLeft", "ChevronRight", "ChevronUp",
+  "Clock", "Code", "Copy", "CornerDownLeft", "Cpu", "CreditCard", "Download",
+  "Edit", "ExternalLink", "Eye", "EyeOff", "File", "FileText", "Film",
+  "Filter", "Flag", "Folder", "Github", "Globe", "Grid", "Hash", "Heart",
+  "HelpCircle", "Home", "Image", "Inbox", "Info", "Italic", "Key", "Layers",
+  "Layout", "Link", "Link2", "List", "Loader", "Lock", "LogIn", "LogOut",
+  "Mail", "Map", "MapPin", "Maximize", "Menu", "MessageCircle", "MessageSquare",
+  "Mic", "MicOff", "Minimize", "Minus", "MinusCircle", "Monitor", "Moon",
+  "MoreHorizontal", "MoreVertical", "Move", "Music", "Navigation", "Paperclip",
+  "Pause", "Pencil", "Percent", "Phone", "PhoneCall", "PhoneForwarded",
+  "PhoneIncoming", "PhoneMissed", "PhoneOff", "PhoneOutgoing", "PieChart",
+  "Play", "Plus", "PlusCircle", "Power", "Printer", "Radio", "RefreshCw",
+  "Repeat", "Reply", "RotateCcw", "RotateCw", "Save", "Search", "Send",
+  "Server", "Settings", "Share", "Shield", "ShoppingCart", "Shuffle",
+  "Sidebar", "SkipBack", "SkipForward", "Sliders", "Smartphone", "Smile",
+  "Speaker", "Star", "StopCircle", "Sun", "Tablet", "Tag", "Target",
+  "Terminal", "ThumbsDown", "ThumbsUp", "ToggleLeft", "ToggleRight", "Trash",
+  "Trash2", "TrendingDown", "TrendingUp", "Triangle", "Truck", "Tv", "Type",
+  "Umbrella", "Underline", "Undo", "Unlock", "Upload", "User", "UserCheck",
+  "UserMinus", "UserPlus", "UserX", "Users", "Video", "VideoOff", "Volume",
+  "Volume1", "Volume2", "VolumeX", "Watch", "Wifi", "WifiOff", "X",
+  "XCircle", "XSquare", "Zap", "ZapOff", "ZoomIn", "ZoomOut",
+]
+
+const icons: Record<string, React.FC<{ size?: number; color?: string; strokeWidth?: number; className?: string }>> = {}
+
+for (const name of iconNames) {
+  icons[name] = ({ size = 24, color = "currentColor", className, ...props }) =>
+    React.createElement("svg", {
+      "data-testid": `icon-${name}`,
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: color,
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className,
+      ...props,
+    })
+}
+
+export default icons
+export const { Search, Send, Plus, X, Menu, User, Settings, Bell, Home, LogOut, MessageSquare, MessageCircle, ArrowLeft, ArrowRight, ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check, CheckCircle, AlertTriangle, AlertCircle, Info, HelpCircle, Trash, Trash2, Edit, Eye, EyeOff, Lock, Unlock, Key, Camera, CameraOff, Mic, MicOff, Phone, PhoneCall, PhoneOff, Video, VideoOff, Image, File, FileText, Download, Upload, Copy, Share, Clock, Map, MapPin, Navigation, Grid, List, Heart, Star, Bookmark, Flag, Smile, Paperclip, AtSign, Hash, Bold, Italic, Underline, Type, Code, Terminal, Monitor, Smartphone, Tablet, Tv, Watch, Sun, Moon, Cloud, Wifi, WifiOff, Github, Globe, Server, Cpu, CreditCard, ShoppingCart, Gift, Package, Truck, Percent, DollarSign, Euro, Circle, Square, Triangle, Shield, Zap, RotateCcw, RotateCw, RefreshCw, Repeat, Shuffle, Play, Pause, StopCircle, SkipBack, SkipForward, Maximize, Minimize, Volume, Volume1, Volume2, VolumeX, ExternalLink } = icons
