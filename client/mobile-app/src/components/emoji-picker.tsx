@@ -1,0 +1,299 @@
+import { useState, useMemo } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Dimensions } from "react-native"
+import { Search, X } from "lucide-react-native"
+
+const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
+  {
+    name: "Smileys",
+    emojis: [
+      "😀", "😃", "😄", "😁", "😅", "😂", "🤣", "😊", "😇", "🙂", "😉", "😌",
+      "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😜", "🤪", "😝", "🤑",
+      "🤗", "🤭", "🫢", "🤫", "🤔", "😐", "😑", "😶", "😏", "😒", "🙄", "😬",
+      "😮", "😯", "😲", "😳", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "😈",
+      "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "🤖",
+    ],
+  },
+  {
+    name: "Gestures",
+    emojis: [
+      "👋", "🤚", "🖐️", "✋", "🖖", "🫱", "🫲", "🫳", "🫴", "👌", "🤌", "🤏",
+      "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "👍",
+      "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "🫶", "👐", "🤲", "🤝", "🙏",
+    ],
+  },
+  {
+    name: "People",
+    emojis: [
+      "💪", "🦵", "🦶", "👂", "🦻", "👀", "👁️", "🧠", "🫀", "🫁", "🦷", "🦴",
+      "👶", "🧒", "👦", "👧", "🧑", "👨", "👩", "🧔", "👵", "🧓", "👴", "👲",
+    ],
+  },
+  {
+    name: "Nature",
+    emojis: [
+      "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮",
+      "🐷", "🐸", "🐵", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺",
+      "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🪳",
+      "🌹", "🌸", "🌺", "🌻", "🌷", "🌿", "🍀", "🌵", "🎄", "🌲", "🌳", "🌴",
+      "☀️", "🌈", "🌊", "⛰️", "🏔️", "🌋", "🔥", "⭐", "🌙", "💫",
+    ],
+  },
+  {
+    name: "Food",
+    emojis: [
+      "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒",
+      "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌽",
+      "🥕", "🧄", "🧅", "🥔", "🍠", "🥐", "🍞", "🥖", "🥨", "🧀", "🥚", "🍳",
+      "🥞", "🧇", "🥓", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🥗", "🥘",
+      "🍝", "🍜", "🍲", "🍛", "🍣", "🍱", "🥟", "🦐", "🍦", "🍩", "🍪", "🎂",
+      "🍫", "🍬", "🍭", "🍮", "🍯", "☕", "🍵", "🥤", "🍺", "🍻", "🥂", "🍷",
+    ],
+  },
+  {
+    name: "Activities",
+    emojis: [
+      "⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓",
+      "🏸", "🏒", "🏑", "🥍", "🏏", "🪃", "🥅", "⛳", "🎣", "🤿", "🎽", "🛹",
+      "🛼", "🛷", "⛸️", "🎿", "⛷️", "🏂", "🏋️", "🤼", "🤸", "🤺", "⛹️", "🤾",
+      "🏌️", "🏇", "🧘", "🏄", "🏊", "🤽", "🚣", "🧗", "🚵", "🚴", "🎯", "🎮",
+      "🎲", "♠️", "♥️", "♦️", "♣️", "🃏", "🀄", "🎴", "🎭", "🎨", "🎵", "🎶",
+    ],
+  },
+  {
+    name: "Travel",
+    emojis: [
+      "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚",
+      "🚛", "🚜", "🏍️", "🛵", "🛺", "🚲", "🛴", "🚏", "🛣️", "🛤️", "⛽",
+      "🛞", "🚨", "🚥", "🚦", "🛑", "🚧", "⚓", "🛳️", "⛵", "🛶", "🚤", "🛸",
+      "🚁", "🛩️", "✈️", "🚀", "🛰️", "💺", "🚉", "🚄", "🚅", "🚇", "🚃", "🚠",
+    ],
+  },
+  {
+    name: "Objects",
+    emojis: [
+      "⌚", "📱", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🕹️", "💿", "📀", "📷", "📸",
+      "📹", "🎥", "📽️", "🎞️", "📞", "☎️", "📟", "📠", "📺", "📻", "🎙️", "🎚️",
+      "🔋", "🔌", "💡", "🔦", "🕯️", "🧯", "💸", "💵", "💴", "💰", "💳", "💎",
+      "📧", "✉️", "📩", "📨", "📬", "📤", "📥", "📦", "📃", "📑", "📊", "📈",
+      "🔧", "🔨", "🪛", "🔩", "⚙️", "🗜️", "🔗", "🧲", "🔬", "🔭", "📡", "💉",
+      "💊", "🩺", "🚪", "🪟", "🛏️", "🛋️", "🚽", "🚿", "🛁", "🪥", "🧹", "🔑",
+    ],
+  },
+  {
+    name: "Symbols",
+    emojis: [
+      "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕",
+      "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️", "🕉️", "☸️",
+      "✡️", "🔯", "🕎", "☯️", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏",
+      "♐", "♑", "♒", "♓", "⛎", "🔀", "🔁", "🔂", "▶️", "⏩", "⏭️", "⏯️",
+      "◀️", "⏪", "⏮️", "🔼", "⏫", "🔽", "⏬", "⏸️", "⏹️", "⏺️", "✅", "❌",
+    ],
+  },
+]
+
+const EMOJI_NAMES: Record<string, string[]> = {
+  "😀": ["grinning", "happy", "smile"], "😃": ["grinning big eyes", "happy"], "😄": ["grinning smiling eyes", "happy"],
+  "😁": ["beaming", "happy", "smile"], "😅": ["grinning sweat", "happy", "nervous"], "😂": ["joy", "laugh", "tears"],
+  "🤣": ["rolling", "laugh", "floor"], "😊": ["blush", "smile", "happy"], "😇": ["innocent", "angel", "halo"],
+  "🙂": ["slightly", "smile"], "😉": ["wink", "flirt"], "😌": ["relieved"], "😍": ["heart eyes", "love", "crush"],
+  "🥰": ["smiling hearts", "love"], "😘": ["kiss", "blow kiss"], "😗": ["kissing"], "😙": ["kissing smiling eyes"],
+  "😚": ["kissing closed eyes"], "😋": ["savouring", "yum", "tongue"], "😛": ["tongue", "playful"],
+  "😜": ["winking tongue", "joke"], "🤪": ["zany", "crazy"], "😝": ["squinting tongue"], "🤑": ["money", "rich", "tongue"],
+  "🤗": ["hug", "hugging"], "🤭": ["hand over mouth", "oops"], "🫢": ["eyes mouth"], "🤫": ["shush", "quiet"],
+  "🤔": ["thinking", "hmm"], "😐": ["neutral"], "😑": ["expressionless"], "😶": ["no mouth", "silent"],
+  "😏": ["smirk"], "😒": ["unamused"], "🙄": ["eye roll"], "😬": ["grimace", "cringe"], "😮": ["surprised", "open mouth"],
+  "😯": ["hushed"], "😲": ["astonished", "shocked"], "😳": ["flushed", "embarrassed"], "🥺": ["pleading", "puppy eyes"],
+  "😢": ["cry", "sad", "tear"], "😭": ["loudly crying", "sob", "cry"], "😤": ["steam", "frustrated"], "😠": ["angry"],
+  "😡": ["pout", "rage"], "🤬": ["cursing", "swear"], "😈": ["smiling devil", "evil"], "👿": ["angry devil"],
+  "💀": ["skull", "dead"], "☠️": ["skull crossbones", "poison"], "💩": ["poop", "shit"], "🤡": ["clown"],
+  "👹": ["ogre", "monster"], "👺": ["goblin"], "👻": ["ghost"], "👽": ["alien"], "🤖": ["robot"],
+  "👋": ["wave", "hello", "bye"], "🤚": ["raised back hand"], "🖐️": ["splayed fingers"], "✋": ["raised hand", "high five", "stop"],
+  "🖖": ["vulcan salute", "spock"], "🫱": ["rightwards hand"], "🫲": ["leftwards hand"], "🫳": ["palm down"],
+  "🫴": ["palm up"], "👌": ["ok hand"], "🤌": ["pinched fingers", "italian"], "🤏": ["pinching", "small"],
+  "✌️": ["victory", "peace"], "🤞": ["crossed fingers", "luck"], "🫰": ["index thumb crossed"], "🤟": ["love you gesture"],
+  "🤘": ["sign of horns", "rock"], "🤙": ["call me", "shaka"], "👈": ["backhand left"], "👉": ["backhand right"],
+  "👆": ["backhand up"], "🖕": ["middle finger"], "👇": ["backhand down"], "👍": ["thumbs up", "like"],
+  "👎": ["thumbs down", "dislike"], "✊": ["raised fist"], "👊": ["oncoming fist"], "🤛": ["left fist"],
+  "🤜": ["right fist"], "👏": ["clap", "applause"], "🙌": ["raised hands", "hooray"], "🫶": ["heart hands"],
+  "👐": ["open hands", "hug"], "🤲": ["palms together"], "🤝": ["handshake", "deal"], "🙏": ["folded hands", "please", "pray"],
+  "💪": ["biceps", "strong"], "🦵": ["leg"], "🦶": ["foot"], "👂": ["ear"], "🦻": ["ear hearing aid"], "👀": ["eyes"],
+  "👁️": ["eye"], "🧠": ["brain"], "🫀": ["heart", "anatomical"], "🫁": ["lungs"], "🦷": ["tooth"], "🦴": ["bone"],
+  "👶": ["baby"], "🧒": ["child"], "👦": ["boy"], "👧": ["girl"], "🧑": ["person"], "👨": ["man"], "👩": ["woman"],
+  "🧔": ["beard", "bearded"], "👵": ["old woman"], "🧓": ["older person"], "👴": ["old man"], "👲": ["man skullcap"],
+  "🐶": ["dog", "puppy"], "🐱": ["cat", "kitty"], "🐭": ["mouse"], "🐹": ["hamster"], "🐰": ["rabbit", "bunny"],
+  "🦊": ["fox"], "🐻": ["bear"], "🐼": ["panda"], "🐨": ["koala"], "🐯": ["tiger"], "🦁": ["lion"], "🐮": ["cow"],
+  "🐷": ["pig"], "🐸": ["frog"], "🐵": ["monkey face"], "🐔": ["chicken"], "🐧": ["penguin"], "🐦": ["bird"],
+  "🐤": ["chick"], "🦆": ["duck"], "🦅": ["eagle"], "🦉": ["owl"], "🦇": ["bat"], "🐺": ["wolf"], "🐗": ["boar"],
+  "🐴": ["horse"], "🦄": ["unicorn"], "🐝": ["bee", "honey"], "🐛": ["bug"], "🦋": ["butterfly"], "🐌": ["snail"],
+  "🐞": ["ladybug", "ladybird"], "🐜": ["ant"], "🦟": ["mosquito"], "🦗": ["cricket"], "🪳": ["cockroach"],
+  "🌹": ["rose", "flower"], "🌸": ["cherry blossom"], "🌺": ["hibiscus"], "🌻": ["sunflower"], "🌷": ["tulip"],
+  "🌿": ["herb", "plant"], "🍀": ["clover", "shamrock", "luck"], "🌵": ["cactus"], "🎄": ["christmas", "tree"],
+  "🌲": ["evergreen"], "🌳": ["deciduous"], "🌴": ["palm"], "☀️": ["sun", "sunny"], "🌈": ["rainbow"],
+  "🌊": ["wave", "ocean", "sea"], "⛰️": ["mountain"], "🏔️": ["snow mountain"], "🌋": ["volcano"],
+  "🔥": ["fire", "lit"], "⭐": ["star"], "🌙": ["moon", "crescent"], "💫": ["dizzy", "star"],
+  "🍏": ["green apple"], "🍎": ["red apple"], "🍐": ["pear"], "🍊": ["tangerine", "orange"], "🍋": ["lemon"],
+  "🍌": ["banana"], "🍉": ["watermelon"], "🍇": ["grapes"], "🍓": ["strawberry"], "🫐": ["blueberry"],
+  "🍈": ["melon"], "🍒": ["cherries"], "🍑": ["peach"], "🥭": ["mango"], "🍍": ["pineapple"], "🥥": ["coconut"],
+  "🥝": ["kiwi"], "🍅": ["tomato"], "🍆": ["eggplant"], "🥑": ["avocado"], "🥦": ["broccoli"], "🥬": ["leafy green"],
+  "🥒": ["cucumber"], "🌽": ["corn", "maize"], "🥕": ["carrot"], "🧄": ["garlic"], "🧅": ["onion"], "🥔": ["potato"],
+  "🍠": ["sweet potato"], "🥐": ["croissant"], "🍞": ["bread"], "🥖": ["baguette"], "🥨": ["pretzel"], "🧀": ["cheese"],
+  "🥚": ["egg"], "🍳": ["cooking", "frying"], "🥞": ["pancakes"], "🧇": ["waffle"], "🥓": ["bacon"],
+  "🍔": ["burger", "hamburger"], "🍟": ["fries", "french fries"], "🍕": ["pizza"], "🌭": ["hot dog"],
+  "🥪": ["sandwich"], "🌮": ["taco"], "🌯": ["burrito"], "🥗": ["salad"], "🥘": ["paella", "pan"],
+  "🍝": ["spaghetti", "pasta"], "🍜": ["noodles", "ramen"], "🍲": ["stew", "pot"], "🍛": ["curry"], "🍣": ["sushi"],
+  "🍱": ["bento"], "🥟": ["dumpling"], "🦐": ["shrimp", "prawn"], "🍦": ["ice cream", "soft serve"],
+  "🍩": ["doughnut", "donut"], "🍪": ["cookie"], "🎂": ["birthday", "cake"], "🍫": ["chocolate"], "🍬": ["candy"],
+  "🍭": ["lollipop"], "🍮": ["custard", "flan"], "🍯": ["honey"], "☕": ["coffee", "tea"], "🍵": ["tea", "teacup"],
+  "🥤": ["drink", "cup"], "🍺": ["beer"], "🍻": ["clinking beers"], "🥂": ["clink", "toast", "champagne"],
+  "🍷": ["wine"], "⚽": ["soccer", "football"], "🏀": ["basketball"], "🏈": ["football", "american"],
+  "⚾": ["baseball"], "🥎": ["softball"], "🎾": ["tennis"], "🏐": ["volleyball"], "🏉": ["rugby"], "🥏": ["frisbee"],
+  "🎱": ["pool", "8 ball"], "🪀": ["yo-yo"], "🏓": ["ping pong", "table tennis"], "🏸": ["badminton"],
+  "🏒": ["hockey"], "🏑": ["field hockey"], "🥍": ["lacrosse"], "🏏": ["cricket"], "🪃": ["boomerang"],
+  "🥅": ["goal"], "⛳": ["golf"], "🎣": ["fishing"], "🤿": ["diving mask"], "🎽": ["running shirt"],
+  "🛹": ["skateboard"], "🛼": ["roller skate"], "🛷": ["sledge", "sled"], "⛸️": ["skate", "ice"], "🎿": ["ski"],
+  "⛷️": ["skier"], "🏂": ["snowboarder"], "🏋️": ["weight lifter"], "🤼": ["wrestlers"],
+  "🤸": ["gymnastics", "cartwheel"], "🤺": ["fencing"], "⛹️": ["bouncing ball"], "🤾": ["handball"],
+  "🏌️": ["golfing"], "🏇": ["horse racing"], "🧘": ["lotus", "yoga"], "🏄": ["surfing"], "🏊": ["swimming"],
+  "🤽": ["water polo"], "🚣": ["rowing"], "🧗": ["climbing"], "🚵": ["mountain biking"], "🚴": ["biking"],
+  "🎯": ["dart", "target", "bullseye"], "🎮": ["video game", "controller"], "🎲": ["die", "dice"],
+  "♠️": ["spade"], "♥️": ["heart", "hearts"], "♦️": ["diamond", "diamonds"], "♣️": ["club", "clubs"],
+  "🃏": ["joker"], "🀄": ["mahjong"], "🎴": ["flower cards"], "🎭": ["theater", "masks"],
+  "🎨": ["artist", "palette"], "🎵": ["music", "note"], "🎶": ["musical notes"],
+  "🚗": ["car"], "🚕": ["taxi"], "🚙": ["suv", "jeep"], "🚌": ["bus"], "🚎": ["trolleybus"],
+  "🏎️": ["race car"], "🚓": ["police car"], "🚑": ["ambulance"], "🚒": ["fire truck"], "🚐": ["minibus"],
+  "🛻": ["pickup"], "🚚": ["delivery truck"], "🚛": ["articulated lorry"], "🚜": ["tractor"],
+  "🏍️": ["motorcycle"], "🛵": ["scooter"], "🛺": ["rickshaw"], "🚲": ["bike", "bicycle"], "🛴": ["kick scooter"],
+  "🚏": ["bus stop"], "🛣️": ["highway"], "🛤️": ["railway"], "⛽": ["fuel", "gas"], "🛞": ["wheel"],
+  "🚨": ["siren", "police"], "🚥": ["traffic light"], "🚦": ["vertical traffic light"], "🛑": ["stop", "octagonal"],
+  "🚧": ["construction"], "⚓": ["anchor"], "🛳️": ["ship"], "⛵": ["sailboat"], "🛶": ["canoe"], "🚤": ["speedboat"],
+  "🛸": ["ufo", "flying saucer"], "🚁": ["helicopter"], "🛩️": ["small airplane"], "✈️": ["airplane"],
+  "🚀": ["rocket"], "🛰️": ["satellite"], "💺": ["seat"], "🚉": ["station"], "🚄": ["bullet train"],
+  "🚅": ["shinkansen"], "🚇": ["metro", "subway"], "🚃": ["train car"], "🚠": ["cable car"],
+  "⌚": ["watch"], "📱": ["mobile", "iphone"], "💻": ["laptop", "computer"], "⌨️": ["keyboard"],
+  "🖥️": ["desktop", "monitor"], "🖨️": ["printer"], "🖱️": ["mouse"], "🕹️": ["joystick"],
+  "💿": ["cd", "disc", "optical"], "📀": ["dvd"], "📷": ["camera"], "📸": ["camera flash"],
+  "📹": ["video camera"], "🎥": ["movie camera"], "📽️": ["projector"], "🎞️": ["film"],
+  "📞": ["telephone receiver"], "☎️": ["telephone"], "📟": ["pager"], "📠": ["fax"],
+  "📺": ["tv", "television"], "📻": ["radio"], "🎙️": ["studio microphone"], "🎚️": ["level slider"],
+  "🔋": ["battery"], "🔌": ["plug"], "💡": ["bulb", "idea"], "🔦": ["flashlight"], "🕯️": ["candle"],
+  "🧯": ["fire extinguisher"], "💸": ["wings money"], "💵": ["dollar"], "💴": ["yen"], "💰": ["money bag"],
+  "💳": ["credit card"], "💎": ["diamond", "gem"], "📧": ["email", "mail"], "✉️": ["envelope"],
+  "📩": ["mail with arrow"], "📨": ["incoming envelope"], "📬": ["mailbox"], "📤": ["outbox"],
+  "📥": ["inbox"], "📦": ["package", "parcel"], "📃": ["document", "page"], "📑": ["bookmarks"],
+  "📊": ["chart", "bar graph"], "📈": ["trend", "chart up"],
+  "🔧": ["wrench", "tool"], "🔨": ["hammer"], "🪛": ["screwdriver"], "🔩": ["nut bolt"],
+  "⚙️": ["gear", "settings"], "🗜️": ["clamp", "compression"], "🔗": ["link", "chain"], "🧲": ["magnet"],
+  "🔬": ["microscope"], "🔭": ["telescope"], "📡": ["satellite dish", "antenna"],
+  "💉": ["syringe", "needle"], "💊": ["pill"], "🩺": ["stethoscope"], "🚪": ["door"], "🪟": ["window"],
+  "🛏️": ["bed"], "🛋️": ["couch"], "🚽": ["toilet"], "🚿": ["shower"], "🛁": ["bathtub"], "🪥": ["toothbrush"],
+  "🧹": ["broom"], "🔑": ["key"],
+  "❤️": ["red heart", "love"], "🧡": ["orange heart"], "💛": ["yellow heart"], "💚": ["green heart"],
+  "💙": ["blue heart"], "💜": ["purple heart"], "🖤": ["black heart"], "🤍": ["white heart"],
+  "🤎": ["brown heart"], "💔": ["broken heart"], "❣️": ["heart exclamation"], "💕": ["two hearts"],
+  "💞": ["revolving hearts"], "💓": ["beating heart"], "💗": ["growing heart"], "💖": ["sparkling heart"],
+  "💘": ["cupid", "heart arrow"], "💝": ["heart ribbon", "gift"], "💟": ["heart decoration"],
+  "☮️": ["peace"], "✝️": ["cross", "christian"], "☪️": ["islam", "star crescent"], "🕉️": ["om"],
+  "☸️": ["dharma", "buddhist"], "✡️": ["star of david"], "🔯": ["six pointed star"], "🕎": ["menorah"],
+  "☯️": ["yin yang"],
+  "♈": ["aries"], "♉": ["taurus"], "♊": ["gemini"], "♋": ["cancer"], "♌": ["leo"], "♍": ["virgo"],
+  "♎": ["libra"], "♏": ["scorpio"], "♐": ["sagittarius"], "♑": ["capricorn"], "♒": ["aquarius"],
+  "♓": ["pisces"], "⛎": ["ophiuchus"],
+  "🔀": ["shuffle"], "🔁": ["repeat"], "🔂": ["repeat single"], "▶️": ["play"], "⏩": ["fast forward"],
+  "⏭️": ["next track"], "⏯️": ["play pause"], "◀️": ["reverse"], "⏪": ["rewind", "fast reverse"],
+  "⏮️": ["previous track"], "🔼": ["up button"], "⏫": ["fast up"], "🔽": ["down button"], "⏬": ["fast down"],
+  "⏸️": ["pause"], "⏹️": ["stop"], "⏺️": ["record"],
+  "✅": ["check", "check mark"], "❌": ["cross mark", "wrong"],
+}
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window")
+const COL_COUNT = 8
+const EMOJI_SIZE = (SCREEN_WIDTH - 64) / COL_COUNT
+
+export function EmojiPicker({ visible, onSelect, onClose }: { visible: boolean; onSelect: (emoji: string) => void; onClose: () => void }) {
+  const [activeCategory, setActiveCategory] = useState(0)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), [])
+
+  const filteredEmojis = useMemo(() => {
+    if (!searchQuery) return null
+    const q = searchQuery.toLowerCase()
+    return allEmojis.filter((emoji) => {
+      const names = EMOJI_NAMES[emoji] || []
+      return names.some((name) => name.includes(q)) || emoji === q
+    })
+  }, [searchQuery, allEmojis])
+
+  const displayEmojis = filteredEmojis ?? EMOJI_CATEGORIES[activeCategory].emojis
+
+  const handleSelect = (emoji: string) => {
+    onSelect(emoji)
+    onClose()
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={s.container}>
+          <View style={s.searchRow}>
+            <Search size={14} color="#585870" />
+            <TextInput
+              style={s.searchInput}
+              placeholder="Search emoji..."
+              placeholderTextColor="#585870"
+              value={searchQuery}
+              onChangeText={(v) => { setSearchQuery(v); setActiveCategory(0) }}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <X size={14} color="#585870" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {!filteredEmojis && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.catRow} contentContainerStyle={s.catContent}>
+              {EMOJI_CATEGORIES.map((cat, i) => (
+                <TouchableOpacity
+                  key={cat.name}
+                  style={[s.catTab, i === activeCategory && s.catTabActive]}
+                  onPress={() => setActiveCategory(i)}
+                >
+                  <Text style={s.catEmoji}>{cat.emojis[0]}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+          <ScrollView style={s.gridScroll} showsVerticalScrollIndicator={false}>
+            <View style={s.grid}>
+              {displayEmojis.map((emoji) => (
+                <TouchableOpacity key={emoji} style={s.item} onPress={() => handleSelect(emoji)}>
+                  <Text style={s.emoji}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {searchQuery && displayEmojis.length === 0 && (
+              <Text style={s.noResults}>No emojis found</Text>
+            )}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  )
+}
+
+const s = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
+  container: { width: SCREEN_WIDTH - 32, maxHeight: "70%", backgroundColor: "#101016", borderRadius: 24, borderWidth: 1, borderColor: "#252538", overflow: "hidden" },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538", backgroundColor: "#0A0A0F" },
+  searchInput: { flex: 1, color: "#E8E8F0", fontSize: 13, padding: 0 },
+  catRow: { borderBottomWidth: 1, borderBottomColor: "#252538", backgroundColor: "#0A0A0F" },
+  catContent: { paddingHorizontal: 8, paddingVertical: 6, gap: 4 },
+  catTab: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: "#181825" },
+  catTabActive: { backgroundColor: "rgba(108,140,255,0.2)" },
+  catEmoji: { fontSize: 16 },
+  gridScroll: { maxHeight: 350 },
+  grid: { flexDirection: "row", flexWrap: "wrap", padding: 8 },
+  item: { width: EMOJI_SIZE, height: EMOJI_SIZE, justifyContent: "center", alignItems: "center" },
+  emoji: { fontSize: 24 },
+  noResults: { color: "#585870", textAlign: "center", paddingVertical: 32, fontSize: 13 },
+})

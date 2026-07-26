@@ -1,0 +1,155 @@
+{
+  "app": { "name": "チャットアプリ" },
+  "nav": {
+    "messages": "メッセージ",
+    "communities": "コミュニティ",
+    "events": "イベント",
+    "groups": "グループ",
+    "calls": "通話",
+    "files": "ファイル",
+    "notifications": "通知",
+    "admin": "管理",
+    "profile": "プロフィール",
+    "settings": "設定",
+    "logout": "ログアウト",
+    "search": "検索"
+  },
+  "auth": {
+    "welcomeBack": "おかえりなさい",
+    "signInToContinue": "続行するにはサインイン",
+    "createAccount": "アカウント作成",
+    "registerToStart": "登録して始める",
+    "username": "ユーザー名",
+    "email": "メール",
+    "password": "パスワード",
+    "signIn": "サインイン",
+    "create": "アカウント作成",
+    "noAccount": "アカウントをお持ちでない場合 ",
+    "hasAccount": "すでにアカウントをお持ちの場合 ",
+    "register": "登録",
+    "login": "ログイン",
+    "emailOrUsername": "メールまたはユーザー名",
+    "hidePassword": "パスワードを非表示",
+    "showPassword": "パスワードを表示",
+    "switchToRegister": "登録",
+    "switchToSignIn": "ログイン",
+    "somethingWentWrong": "問題が発生しました",
+    "invalidCredentials": "認証情報が無効です",
+    "networkError": "サーバーに接続できません"
+  },
+  "chat": {
+    "chats": "チャット",
+    "typeMessage": "メッセージを入力...",
+    "searchPlaceholder": "メッセージを検索...",
+    "send": "送信",
+    "back": "戻る",
+    "newConversation": "新しい会話",
+    "noMessages": "メッセージがありません",
+    "noConversations": "会話がありません",
+    "today": "今日"
+  },
+  "groups": {
+    "title": "グループ",
+    "newGroup": "新しいグループ",
+    "noGroups": "グループがありません",
+    "deleteGroup": "グループを削除",
+    "addParticipants": "参加者を追加"
+  },
+  "files": {
+    "title": "ファイル",
+    "upload": "アップロード",
+    "newFolder": "新しいフォルダ",
+    "noFiles": "共有ファイルがありません",
+    "rename": "名前変更",
+    "move": "移動",
+    "delete": "削除"
+  },
+  "communities": {
+    "title": "コミュニティ",
+    "create": "コミュニティを作成",
+    "join": "コミュニティに参加",
+    "inviteCode": "招待コード",
+    "noCommunities": "コミュニティがありません",
+    "channels": "チャンネル",
+    "voiceChannels": "ボイスチャンネル",
+    "members": "メンバー",
+    "settings": "コミュニティ設定"
+  },
+  "notifications": {
+    "title": "通知",
+    "unread": "未読",
+    "noNotifications": "通知がありません",
+    "markRead": "既読にする",
+    "markAllRead": "すべて既読にする"
+  },
+  "calls": {
+    "title": "最近の通話",
+    "outgoing": "発信",
+    "incoming": "着信",
+    "missed": "不在",
+    "noCalls": "通話履歴がありません"
+  },
+  "profile": {
+    "title": "プロフィール",
+    "displayName": "表示名",
+    "bio": "自己紹介",
+    "status": "ステータス",
+    "save": "保存",
+    "avatar": "アバター"
+  },
+  "settings": {
+    "title": "設定",
+    "account": "アカウント",
+    "security": "セキュリティ",
+    "appearance": "外観",
+    "notifications": "通知",
+    "privacy": "プライバシー",
+    "language": "言語",
+    "about": "について",
+    "theme": "テーマ",
+    "light": "ライト",
+    "dark": "ダーク",
+    "customThemes": "カスタムテーマ"
+  },
+  "events": {
+    "title": "イベント",
+    "create": "イベントを作成",
+    "upcoming": "今後のイベント",
+    "past": "過去のイベント",
+    "noEvents": "イベントがありません",
+    "rsvp": "出欠",
+    "going": "参加",
+    "maybe": "未定",
+    "declined": "不参加"
+  },
+  "admin": {
+    "title": "管理パネル",
+    "stats": "統計",
+    "users": "ユーザー",
+    "reports": "通報",
+    "bans": "BAN",
+    "activity": "アクティビティ",
+    "manageAdmins": "管理者管理"
+  },
+  "status": {
+    "online": "オンライン",
+    "away": "離席中",
+    "busy": "取り込み中",
+    "offline": "オフライン",
+    "setCustom": "カスタムステータスを設定"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "search": "検索",
+    "noResults": "結果なし",
+    "required": "が必要です"
+  }
+}

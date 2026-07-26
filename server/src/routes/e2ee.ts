@@ -22,7 +22,7 @@ router.get("/key/:userId", authGuard, async (req: Request, res: Response) => {
       .limit(1)
 
     if (!record) {
-      res.status(404).json({ error: "No public key found" })
+      res.json({ publicKey: null })
       return
     }
     res.json({ publicKey: record.key })

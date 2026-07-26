@@ -1,0 +1,81 @@
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Modal } from "react-native"
+import { api } from "../lib/api"
+
+interface User {
+  id: string
+  username: string
+  displayName?: string
+}
+
+interface AddParticipantsModalProps {
+  visible: boolean
+  conversationId: string
+  onClose: () => void
+}
+
+export function AddParticipantsModal({ visible, conversationId, onClose }: AddParticipantsModalProps) {
+  const [search, setSearch] = useState("")
+  const [results, setResults] = useState<User[]>([])
+
+  const searchUsers = async (q: string) => {
+    setSearch(q)
+    if (!q.trim()) { setResults([]); return }
+    try {
+      const data = await api<User[]>(`/api/users/search?q=${encodeURIComponent(q)}`)
+      setResults(data)
+    } catch { setResults([]) }
+  }
+
+  const addParticipant = async (userId: string) => {
+    try {
+      await api(`/api/conversations/${conversationId}/participants`, {
+        method: "POST",
+        body: JSON.stringify({ userId }),
+      })
+    } catch {}
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={s.overlay}>
+        <View style={s.modal}>
+          <Text style={s.title}>Add Participants</Text>
+          <TextInput
+            style={s.input}
+            placeholder="Search users..."
+            placeholderTextColor="#585870"
+            value={search}
+            onChangeText={searchUsers}
+          />
+          <FlatList
+            data={results}
+            keyExtractor={(u) => u.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={s.item} onPress={() => addParticipant(item.id)}>
+                <Text style={s.name}>{item.displayName || item.username}</Text>
+                <Text style={s.addBtn}>+ Add</Text>
+              </TouchableOpacity>
+            )}
+            style={{ maxHeight: 300 }}
+          />
+          <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+            <Text style={s.closeText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+const s = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
+  modal: { width: "100%", maxWidth: 360, backgroundColor: "#101016", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "#252538" },
+  title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
+  input: { backgroundColor: "#0A0A0F", borderRadius: 12, padding: 14, color: "#E8E8F0", fontSize: 15, borderWidth: 1, borderColor: "#252538", marginBottom: 12 },
+  item: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  name: { color: "#E8E8F0", fontSize: 15 },
+  addBtn: { color: "#6C8CFF", fontSize: 14, fontWeight: "600" },
+  closeBtn: { marginTop: 16, alignItems: "center", padding: 8 },
+  closeText: { color: "#8888A0", fontSize: 15 },
+})

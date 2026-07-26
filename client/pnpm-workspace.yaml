@@ -1,6 +1,7 @@
 packages:
   - "web"
   - "mobile"
+  - "mobile-app"
   - "shared"
 allowBuilds:
   esbuild: set this to true or false

@@ -1,0 +1,155 @@
+{
+  "app": { "name": "Chat App" },
+  "nav": {
+    "messages": "Mensajes",
+    "communities": "Comunidades",
+    "events": "Eventos",
+    "groups": "Grupos",
+    "calls": "Llamadas",
+    "files": "Archivos",
+    "notifications": "Notificaciones",
+    "admin": "Admin",
+    "profile": "Perfil",
+    "settings": "Ajustes",
+    "logout": "Cerrar sesión",
+    "search": "Buscar"
+  },
+  "auth": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "signInToContinue": "Inicia sesión para continuar",
+    "createAccount": "Crear cuenta",
+    "registerToStart": "Regístrate para empezar",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signIn": "Iniciar sesión",
+    "create": "Crear cuenta",
+    "noAccount": "¿No tienes cuenta? ",
+    "hasAccount": "¿Ya tienes cuenta? ",
+    "register": "Registrarse",
+    "login": "Iniciar sesión",
+    "emailOrUsername": "Correo o usuario",
+    "hidePassword": "Ocultar contraseña",
+    "showPassword": "Mostrar contraseña",
+    "switchToRegister": "Registrarse",
+    "switchToSignIn": "Iniciar sesión",
+    "somethingWentWrong": "Algo salió mal",
+    "invalidCredentials": "Credenciales inválidas",
+    "networkError": "No se puede conectar al servidor"
+  },
+  "chat": {
+    "chats": "Chats",
+    "typeMessage": "Escribe un mensaje...",
+    "searchPlaceholder": "Buscar mensajes...",
+    "send": "Enviar",
+    "back": "Atrás",
+    "newConversation": "Nueva conversación",
+    "noMessages": "Sin mensajes",
+    "noConversations": "Sin conversaciones",
+    "today": "Hoy"
+  },
+  "groups": {
+    "title": "Grupos",
+    "newGroup": "Nuevo grupo",
+    "noGroups": "Sin grupos",
+    "deleteGroup": "Eliminar grupo",
+    "addParticipants": "Añadir participantes"
+  },
+  "files": {
+    "title": "Archivos",
+    "upload": "Subir",
+    "newFolder": "Nueva carpeta",
+    "noFiles": "Sin archivos compartidos",
+    "rename": "Renombrar",
+    "move": "Mover",
+    "delete": "Eliminar"
+  },
+  "communities": {
+    "title": "Comunidades",
+    "create": "Crear comunidad",
+    "join": "Unirse a comunidad",
+    "inviteCode": "Código de invitación",
+    "noCommunities": "Sin comunidades",
+    "channels": "Canales",
+    "voiceChannels": "Canales de voz",
+    "members": "Miembros",
+    "settings": "Ajustes de comunidad"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "unread": "no leídas",
+    "noNotifications": "Sin notificaciones",
+    "markRead": "Marcar como leído",
+    "markAllRead": "Marcar todo como leído"
+  },
+  "calls": {
+    "title": "Llamadas recientes",
+    "outgoing": "Saliente",
+    "incoming": "Entrante",
+    "missed": "Perdida",
+    "noCalls": "Sin historial de llamadas"
+  },
+  "profile": {
+    "title": "Perfil",
+    "displayName": "Nombre para mostrar",
+    "bio": "Biografía",
+    "status": "Estado",
+    "save": "Guardar",
+    "avatar": "Avatar"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "account": "Cuenta",
+    "security": "Seguridad",
+    "appearance": "Apariencia",
+    "notifications": "Notificaciones",
+    "privacy": "Privacidad",
+    "language": "Idioma",
+    "about": "Acerca de",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "customThemes": "Temas personalizados"
+  },
+  "events": {
+    "title": "Eventos",
+    "create": "Crear evento",
+    "upcoming": "Próximos",
+    "past": "Pasados",
+    "noEvents": "Sin eventos",
+    "rsvp": "RSVP",
+    "going": "Asistiré",
+    "maybe": "Tal vez",
+    "declined": "Rechazado"
+  },
+  "admin": {
+    "title": "Panel de administración",
+    "stats": "Estadísticas",
+    "users": "Usuarios",
+    "reports": "Reportes",
+    "bans": "Sanciones",
+    "activity": "Actividad",
+    "manageAdmins": "Gestionar admins"
+  },
+  "status": {
+    "online": "En línea",
+    "away": "Ausente",
+    "busy": "Ocupado",
+    "offline": "Desconectado",
+    "setCustom": "Establecer estado personalizado"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "noResults": "Sin resultados",
+    "required": "es requerido"
+  }
+}
