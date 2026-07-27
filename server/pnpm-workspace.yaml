@@ -1,5 +1,0 @@
-packages:
-  - "."
-allowBuilds:
-  bcrypt: true
-  esbuild: true

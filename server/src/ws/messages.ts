@@ -189,6 +189,10 @@ export async function handleDeleteMessage(ws: WebSocket, payload: DeleteMessageP
       ws.send(JSON.stringify({ type: "error", error: "Message not found" }))
       return
     }
+    if (msg.deletedAt) {
+      ws.send(JSON.stringify({ type: "error", error: "Message already deleted" }))
+      return
+    }
     if (msg.senderId !== userId) {
       ws.send(JSON.stringify({ type: "error", error: "Not your message" }))
       return

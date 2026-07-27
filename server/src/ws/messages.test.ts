@@ -23,7 +23,7 @@ const { mockChain, mockSelect, mockInsert, mockUpdate, mockLimit } = vi.hoisted(
 })
 
 vi.mock("../lib/db.js", () => ({
-  db: { select: mockSelect, insert: mockInsert, update: mockUpdate },
+  db: { select: mockSelect, insert: mockInsert, update: mockUpdate, delete: vi.fn(() => ({ where: vi.fn(() => ({ then: (resolve: any) => Promise.resolve(undefined).then(resolve) })) })) },
 }))
 
 const { mockRedisPublish } = vi.hoisted(() => {
