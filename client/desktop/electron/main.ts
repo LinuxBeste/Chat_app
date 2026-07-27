@@ -279,7 +279,9 @@ ipcMain.handle("e2ee:store-keypair", async (_event, keypairJson: string) => {
     const encrypted = safeStorage.encryptString(keypairJson)
     writeFileSync(join(app.getPath("userData"), KEY_FILE), encrypted)
     return true
-  } catch { return false }
+  } catch {
+    return false
+  }
 })
 
 ipcMain.handle("e2ee:get-keypair", async () => {
@@ -288,14 +290,18 @@ ipcMain.handle("e2ee:get-keypair", async () => {
     if (!existsSync(path)) return null
     const encrypted = readFileSync(path)
     return safeStorage.decryptString(encrypted)
-  } catch { return null }
+  } catch {
+    return null
+  }
 })
 
 ipcMain.handle("e2ee:delete-keypair", async () => {
   try {
     const path = join(app.getPath("userData"), KEY_FILE)
     if (existsSync(path)) unlinkSync(path)
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 })
 
 ipcMain.handle("e2ee:store-conv-keys", async (_event, dataJson: string) => {
@@ -304,7 +310,9 @@ ipcMain.handle("e2ee:store-conv-keys", async (_event, dataJson: string) => {
     const encrypted = safeStorage.encryptString(dataJson)
     writeFileSync(join(app.getPath("userData"), CONV_KEYS_FILE), encrypted)
     return true
-  } catch { return false }
+  } catch {
+    return false
+  }
 })
 
 ipcMain.handle("e2ee:get-conv-keys", async () => {
@@ -313,12 +321,16 @@ ipcMain.handle("e2ee:get-conv-keys", async () => {
     if (!existsSync(path)) return null
     const encrypted = readFileSync(path)
     return safeStorage.decryptString(encrypted)
-  } catch { return null }
+  } catch {
+    return null
+  }
 })
 
 ipcMain.handle("e2ee:delete-conv-keys", async () => {
   try {
     const path = join(app.getPath("userData"), CONV_KEYS_FILE)
     if (existsSync(path)) unlinkSync(path)
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 })
