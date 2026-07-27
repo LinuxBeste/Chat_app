@@ -81,7 +81,10 @@ jobs:
           java-version: 17
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0" 2>&1 || \
+          echo "y" | $ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0" 2>&1 || true
+        shell: bash
 
       - run: pnpm install
 
