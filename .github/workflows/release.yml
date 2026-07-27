@@ -90,8 +90,12 @@ jobs:
 
       - name: Patch pika-gradle to skip plugin (compiler artifacts not published for 0.3.x)
         run: |
-          find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt" -exec sed -i "s/fun Project.applyPikaPlugin() {/fun Project.applyPikaPlugin() {\n  return\n  /" {} +
           find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts" -exec sed -i "s|implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|// implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|" {} +
+          find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt" -exec sh -c '
+            sed -i "/^import io.github.lukmccall.pika/d" "$1"
+            sed -i "/^internal fun Project.applyPikaPlugin() {/,/^}$/c\internal fun Project.applyPikaPlugin() = Unit" "$1"
+            sed -i "/^internal fun Project.configurePika(shouldBeEnabled: Boolean = true) {/,/^}$/c\internal fun Project.configurePika(shouldBeEnabled: Boolean = true) = Unit" "$1"
+          ' _ {} \;
 
       - name: Generate native projects
         run: npx expo prebuild --clean
