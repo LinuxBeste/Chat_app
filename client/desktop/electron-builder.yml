@@ -25,7 +25,7 @@ linux:
       arch: [x64]
   category: Network
   syncDesktopName: true
-  icon: build/icons
+  icon: icons/icon.png
   maintainer: dev@chatapp.local
   synopsis: Real-time chat application
   description: Full-stack chat application with real-time messaging, calls, communities, and more.
@@ -37,9 +37,9 @@ mac:
     - target: zip
       arch: [x64, arm64]
   category: public.app-category.social-networking
-  icon: build/icons/icon.icns
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  icon: icons/icon.icns
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
   hardenedRuntime: true
   gatekeeperAssess: false
 
@@ -49,14 +49,14 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
-  icon: build/icons/icon.ico
+  icon: icons/icon.ico
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: build/icons/icon.ico
-  uninstallerIcon: build/icons/icon.ico
-  installerHeaderIcon: build/icons/icon.ico
+  installerIcon: icons/icon.ico
+  uninstallerIcon: icons/icon.ico
+  installerHeaderIcon: icons/icon.ico
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Chat App

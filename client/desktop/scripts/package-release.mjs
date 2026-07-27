@@ -9,7 +9,7 @@ const ROOT = join(__dirname, "..")
 const RELEASE = join(ROOT, "release")
 
 const platform = process.argv[2] || process.platform
-const version = "1.0.0"
+const { version } = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"))
 
 function sha256(filePath) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex")
@@ -22,9 +22,17 @@ function getLabel(platform) {
   return platform
 }
 
+function createZip(sourceDir, outputPath) {
+  if (process.platform === "win32") {
+    execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${sourceDir}\\*' -DestinationPath '${outputPath}' -Force"`, { stdio: "inherit" })
+  } else {
+    execSync(`cd "${sourceDir}" && zip -r "${outputPath}" .`, { stdio: "inherit" })
+  }
+}
+
 async function main() {
   if (!existsSync(RELEASE)) {
-    console.error("No release directory found. Run 'pnpm package:${platform}' first.")
+    console.error(`No release directory found. Run 'pnpm package:${platform}' first.`)
     process.exit(1)
   }
 
@@ -59,7 +67,7 @@ async function main() {
   const archiveName = `ChatApp-${version}-${label}.zip`
   const archivePath = join(RELEASE, archiveName)
 
-  execSync(`cd "${distDir}" && zip -r "${archivePath}" .`, { stdio: "inherit" })
+  createZip(distDir, archivePath)
   console.log(`\nCreated: ${archiveName}`)
 }
 

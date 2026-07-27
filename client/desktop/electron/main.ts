@@ -11,6 +11,8 @@ import {
 import { join } from "path"
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
 
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
 const WEB_DIST = join(__dirname, "..", "..", "web", "dist")
 
 const isDev = !app.isPackaged
@@ -32,14 +34,17 @@ function loadWindowState(): { width: number; height: number; x?: number; y?: num
 }
 
 function saveWindowState() {
-  if (!mainWindow) return
-  try {
-    const bounds = mainWindow.getBounds()
-    const statePath = join(app.getPath("userData"), "window-state.json")
-    writeFileSync(statePath, JSON.stringify({ width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }))
-  } catch {
-    /* ignore */
-  }
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    if (!mainWindow) return
+    try {
+      const bounds = mainWindow.getBounds()
+      const statePath = join(app.getPath("userData"), "window-state.json")
+      writeFileSync(statePath, JSON.stringify({ width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }))
+    } catch {
+      /* ignore */
+    }
+  }, 300)
 }
 
 function menuAction(action: string) {
@@ -269,39 +274,51 @@ const CONV_KEYS_FILE = "e2ee-conv-keys.enc"
 ipcMain.handle("e2ee:is-available", () => safeStorage.isEncryptionAvailable())
 
 ipcMain.handle("e2ee:store-keypair", async (_event, keypairJson: string) => {
-  if (!safeStorage.isEncryptionAvailable()) return false
-  const encrypted = safeStorage.encryptString(keypairJson)
-  writeFileSync(join(app.getPath("userData"), KEY_FILE), encrypted)
-  return true
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return false
+    const encrypted = safeStorage.encryptString(keypairJson)
+    writeFileSync(join(app.getPath("userData"), KEY_FILE), encrypted)
+    return true
+  } catch { return false }
 })
 
 ipcMain.handle("e2ee:get-keypair", async () => {
-  const path = join(app.getPath("userData"), KEY_FILE)
-  if (!existsSync(path)) return null
-  const encrypted = readFileSync(path)
-  return safeStorage.decryptString(encrypted)
+  try {
+    const path = join(app.getPath("userData"), KEY_FILE)
+    if (!existsSync(path)) return null
+    const encrypted = readFileSync(path)
+    return safeStorage.decryptString(encrypted)
+  } catch { return null }
 })
 
 ipcMain.handle("e2ee:delete-keypair", async () => {
-  const path = join(app.getPath("userData"), KEY_FILE)
-  if (existsSync(path)) unlinkSync(path)
+  try {
+    const path = join(app.getPath("userData"), KEY_FILE)
+    if (existsSync(path)) unlinkSync(path)
+  } catch { /* ignore */ }
 })
 
 ipcMain.handle("e2ee:store-conv-keys", async (_event, dataJson: string) => {
-  if (!safeStorage.isEncryptionAvailable()) return false
-  const encrypted = safeStorage.encryptString(dataJson)
-  writeFileSync(join(app.getPath("userData"), CONV_KEYS_FILE), encrypted)
-  return true
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return false
+    const encrypted = safeStorage.encryptString(dataJson)
+    writeFileSync(join(app.getPath("userData"), CONV_KEYS_FILE), encrypted)
+    return true
+  } catch { return false }
 })
 
 ipcMain.handle("e2ee:get-conv-keys", async () => {
-  const path = join(app.getPath("userData"), CONV_KEYS_FILE)
-  if (!existsSync(path)) return null
-  const encrypted = readFileSync(path)
-  return safeStorage.decryptString(encrypted)
+  try {
+    const path = join(app.getPath("userData"), CONV_KEYS_FILE)
+    if (!existsSync(path)) return null
+    const encrypted = readFileSync(path)
+    return safeStorage.decryptString(encrypted)
+  } catch { return null }
 })
 
 ipcMain.handle("e2ee:delete-conv-keys", async () => {
-  const path = join(app.getPath("userData"), CONV_KEYS_FILE)
-  if (existsSync(path)) unlinkSync(path)
+  try {
+    const path = join(app.getPath("userData"), CONV_KEYS_FILE)
+    if (existsSync(path)) unlinkSync(path)
+  } catch { /* ignore */ }
 })
