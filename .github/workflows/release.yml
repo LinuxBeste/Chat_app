@@ -49,7 +49,7 @@ jobs:
       - name: Build and push server image
         uses: docker/build-push-action@v6
         with:
-          context: server
+          context: .
           push: true
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}/server:${{ github.ref_name }}
