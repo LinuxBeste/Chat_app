@@ -88,9 +88,6 @@ jobs:
 
       - run: pnpm install
 
-      - name: Pin react-native-screens to 4.18.x (compat with RN 0.79)
-        run: pnpm add react-native-screens@~4.18.0 --filter mobile-app
-
       - name: Patch pika-gradle to skip plugin (compiler artifacts not published for 0.3.x)
         run: |
           find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts" -exec sed -i "s|implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|// implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|" {} +
@@ -98,6 +95,15 @@ jobs:
             sed -i "/^import io.github.lukmccall.pika/d" "$1"
             sed -i "/^internal fun Project.applyPikaPlugin() {/,/^}$/c\internal fun Project.applyPikaPlugin() = Unit" "$1"
             sed -i "/^internal fun Project.configurePika(shouldBeEnabled: Boolean = true) {/,/^}$/c\internal fun Project.configurePika(shouldBeEnabled: Boolean = true) = Unit" "$1"
+          ' _ {} \;
+
+      - name: Patch Expo Promise.kt for RN 0.79 Promise interface compat
+        run: |
+          find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/kotlin/Promise.kt" -exec sh -c '
+            sed -i "/override fun reject(code: String?/s/code: String?/code: String/g" "$1"
+          ' _ {} \;
+          find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/kotlin/KPromiseWrapper.kt" -exec sh -c '
+            sed -i "s/bridgePromise.reject(code, message, cause)/bridgePromise.reject(code ?: \"\", message, cause)/" "$1"
           ' _ {} \;
 
       - name: Generate native projects
@@ -119,8 +125,15 @@ jobs:
 
       - name: Bypass Expo Kotlin version check
         run: |
-          sed -i "s/^buildscript {/buildscript {\n    ext.kspVersion = '2.0.21-1.0.28'/" build.gradle
+          sed -i "s/^buildscript {/buildscript {\n    ext.kotlinVersion = '2.2.21'\n    ext.kspVersion = '2.2.21-2.0.5'/" build.gradle
+          sed -i "s|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21')|" build.gradle
         working-directory: client/mobile-app/android
+
+      - name: Patch RN DOMRect private fields for Hermes incompatibility
+        run: |
+          find -L node_modules -path "*/react-native/src/private/webapis/geometry/DOMRect*.js" -exec sh -c '
+            sed -i "s/#x/_x/g; s/#y/_y/g; s/#width/_width/g; s/#height/_height/g; s/#length/_length/g" "$1"
+          ' _ {} \;
 
       - name: Fix Hermes compiler path
         run: |
