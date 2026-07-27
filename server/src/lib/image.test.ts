@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import { resizeImage, saveAvatar, saveAndScaleUpload } from "./image.js"
 
 vi.mock("sharp", () => {

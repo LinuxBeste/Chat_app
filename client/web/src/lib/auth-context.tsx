@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (key?.startsWith("e2ee:conv-keys:")) keysToRemove.push(key)
       }
       keysToRemove.forEach((k) => localStorage.removeItem(k))
-    } catch {}
+    } catch { /* Ignored */ }
   }, [])
 
   return (

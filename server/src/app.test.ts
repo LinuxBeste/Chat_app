@@ -17,7 +17,7 @@ beforeAll(() => {
 afterAll(() => {
   try {
     unlinkSync(testFilePath)
-  } catch {}
+  } catch { /* Ignored */ }
 })
 
 import app from "./app.js"

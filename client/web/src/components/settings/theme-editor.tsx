@@ -123,14 +123,14 @@ export function ThemeEditor(_props: ThemeEditorProps) {
       applyTheme(created)
       setName("")
       setEditing(false)
-    } catch {}
+    } catch { /* Ignored */ }
   }
 
   const activateTheme = async (t: CustomThemeData) => {
     try {
       await api(`/api/themes/${t.id}/activate`, { method: "POST" })
       applyTheme(t)
-    } catch {}
+    } catch { /* Ignored */ }
   }
 
   const deleteTheme = async (id: string) => {
@@ -138,7 +138,7 @@ export function ThemeEditor(_props: ThemeEditorProps) {
       await api(`/api/themes/${id}`, { method: "DELETE" })
       setThemes((prev) => prev.filter((t) => t.id !== id))
       if (customTheme?.id === id) clearCustomTheme()
-    } catch {}
+    } catch { /* Ignored */ }
   }
 
   const setColor = (key: string, value: string) => {

@@ -28,7 +28,7 @@ class WSClient {
 
   async connect() {
     const refreshed = await refreshAccess()
-    let token = refreshed ?? getTokens().accessToken
+    const token = refreshed ?? getTokens().accessToken
     if (!token) return
 
     const savedQueue = getPendingMessages()

@@ -67,7 +67,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       })
       .returning()
 
-    let attachment = payload.attachment
+    const attachment = payload.attachment
     if (attachment) {
       if (attachment.id) {
         await db.update(attachments).set({ messageId: msg.id }).where(eq(attachments.id, attachment.id))

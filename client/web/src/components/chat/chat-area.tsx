@@ -152,7 +152,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             try {
               const res = await api<{ publicKey: string }>(`/api/e2ee/key/${other.id}`)
               theirKey = res.publicKey
-            } catch {}
+            } catch { /* Ignored */ }
           }
         }
         const decrypted = await Promise.all(
@@ -255,7 +255,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             try {
               const res = await api<{ publicKey: string }>(`/api/e2ee/key/${data.senderId}`)
               decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), res.publicKey)
-            } catch {}
+            } catch { /* Ignored */ }
           }
           if (decrypted) content = decrypted
         }
