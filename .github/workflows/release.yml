@@ -104,7 +104,7 @@ jobs:
 
       - name: Pin Kotlin version for Expo
         run: |
-          sed -i "s/^buildscript {/buildscript {\n    ext.kotlinVersion = '2.1.20'/" build.gradle
+          sed -i "s/^buildscript {/buildscript {\n    ext.kspVersion = '2.1.20-2.0.1'/" build.gradle
         working-directory: client/mobile-app/android
 
       - name: Fix Hermes compiler path
