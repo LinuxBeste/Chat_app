@@ -21,11 +21,10 @@ linux:
       arch: [x64]
     - target: rpm
       arch: [x64]
-    - target: pacman
-      arch: [x64]
     - target: tar.xz
       arch: [x64]
   category: Network
+  syncDesktopName: true
   icon: build/icons
   maintainer: dev@chatapp.local
   synopsis: Real-time chat application

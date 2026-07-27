@@ -7,7 +7,8 @@
     "name": "Chat App",
     "email": "dev@chatapp.local"
   },
-  "homepage": "https://github.com/your-org/chat-app",
+  "homepage": "https://github.com/LinuxBeste/Chat_app",
+  "desktopName": "ChatApp",
   "license": "MIT",
   "main": "dist/main.js",
   "scripts": {
