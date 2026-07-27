@@ -120,7 +120,9 @@ export function SetupDialog() {
           body: JSON.stringify({ displayName: displayName.trim() }),
         })
       }
-    } catch { /* Ignored */ }
+    } catch {
+      /* Ignored */
+    }
     completeSetup()
     setSaving(false)
   }

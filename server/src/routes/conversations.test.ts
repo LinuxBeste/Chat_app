@@ -3,7 +3,6 @@ import request from "supertest"
 import app from "../app.js"
 import { verifyToken } from "../lib/jwt.js"
 
-
 const { mockData, queryQueue } = vi.hoisted(() => ({
   mockData: { current: [] as any[] },
   queryQueue: [] as any[][],
