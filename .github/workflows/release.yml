@@ -32,6 +32,9 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Lowercase repo
+        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       - run: pnpm install
       - run: pnpm --filter server run build
       - run: pnpm --filter web run build
@@ -49,8 +52,19 @@ jobs:
           context: server
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/server:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}/server:latest
+            ghcr.io/${{ env.REPO_LOWER }}/server:${{ github.ref_name }}
+            ghcr.io/${{ env.REPO_LOWER }}/server:latest
+
+  create-release:
+    needs: [android, desktop-linux, desktop-mac, desktop-win]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Generate release notes
         id: release_notes
