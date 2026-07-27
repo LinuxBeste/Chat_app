@@ -99,7 +99,7 @@ jobs:
 
       - name: Patch react-native-screens codegen type resolution bugs
         run: |
-          find -L node_modules -path "*/react-native-screens/src/fabric/*.ts" -exec sed -i "s/CT\.WithDefault<boolean, [^>]*>/boolean/g" {} +
+          find -L node_modules -path "*/react-native-screens/src/fabric" -type d -exec find {} -name "*.ts" \; | xargs sed -i "s/CT\.WithDefault<boolean, [^>]*>/boolean/g"
 
       - name: Generate native projects
         run: npx expo prebuild --clean
