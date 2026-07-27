@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, safeStorage } from "electron"
+import { app, BrowserWindow, ipcMain, Menu, MenuItemConstructorOptions, nativeImage, safeStorage, shell } from "electron"
 import { join } from "path"
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
 
@@ -6,6 +6,9 @@ const WEB_DIST = join(__dirname, "..", "..", "web", "dist")
 
 const isDev = !app.isPackaged
 const isMac = process.platform === "darwin"
+const APP_NAME = "Chat App"
+
+app.name = APP_NAME
 
 let mainWindow: BrowserWindow | null = null
 
@@ -30,8 +33,45 @@ function saveWindowState() {
   }
 }
 
+function sendToRenderer(channel: string, ...args: unknown[]) {
+  mainWindow?.webContents.send(channel, ...args)
+}
+
 function buildMenu() {
   const isMacOrLinux = ["darwin", "linux"].includes(process.platform)
+  const chatSubmenu: MenuItemConstructorOptions[] = [
+    {
+      label: "New Conversation",
+      accelerator: "CmdOrCtrl+N",
+      click: () => sendToRenderer("menu:new-conversation"),
+    },
+    {
+      label: "Mark as Read",
+      accelerator: "CmdOrCtrl+Shift+R",
+      click: () => sendToRenderer("menu:mark-read"),
+    },
+    { type: "separator" },
+    {
+      label: "Search",
+      accelerator: "CmdOrCtrl+K",
+      click: () => sendToRenderer("menu:search"),
+    },
+  ]
+  const helpSubmenu: MenuItemConstructorOptions[] = [
+    {
+      label: "About",
+      click: () => sendToRenderer("menu:about"),
+    },
+    { type: "separator" },
+    {
+      label: "Documentation",
+      click: () => shell.openExternal("https://github.com/anomalyco/opencode"),
+    },
+    {
+      label: "Report Issue",
+      click: () => shell.openExternal("https://github.com/anomalyco/opencode/issues"),
+    },
+  ]
   return Menu.buildFromTemplate([
     ...(isMacOrLinux
       ? [
@@ -50,8 +90,8 @@ function buildMenu() {
         ]
       : []),
     {
-      label: "File",
-      submenu: [isMac ? { role: "close" as const } : { role: "quit" as const }],
+      label: "Chat",
+      submenu: chatSubmenu,
     },
     {
       label: "Edit",
@@ -86,6 +126,10 @@ function buildMenu() {
         { role: "zoom" as const },
         ...(isMac ? [{ type: "separator" as const }, { role: "front" as const }] : [{ role: "close" as const }]),
       ],
+    },
+    {
+      label: "Help",
+      submenu: helpSubmenu,
     },
   ])
 }
