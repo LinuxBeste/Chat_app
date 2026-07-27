@@ -5,6 +5,7 @@ import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
 const WEB_DIST = join(__dirname, "..", "..", "web", "dist")
 
 const isDev = !app.isPackaged
+const isMac = process.platform === "darwin"
 
 let mainWindow: BrowserWindow | null = null
 
