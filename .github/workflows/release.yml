@@ -148,6 +148,11 @@ jobs:
           PYEOF
         working-directory: client/mobile-app/android
 
+      - name: Remove assetsPaths from configChanges (API 36+ flag incompatible with compileSdk 35)
+        run: |
+          sed -i 's/|assetsPaths//g' app/src/main/AndroidManifest.xml
+        working-directory: client/mobile-app/android
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
