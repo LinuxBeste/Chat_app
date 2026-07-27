@@ -1,7 +1,0 @@
-packages:
-  - "web"
-  - "mobile"
-  - "mobile-app"
-  - "shared"
-onlyBuiltDependencies:
-  - esbuild
