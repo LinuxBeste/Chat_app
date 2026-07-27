@@ -5,7 +5,13 @@ import { config } from "../config.js"
 import { handleSendMessage, handleTyping, handleEditMessage, handleDeleteMessage } from "./messages.js"
 import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
-import { handleVoiceJoin, handleVoiceLeave, handleVoiceOffer, handleVoiceAnswer, handleVoiceIceCandidate } from "./voice.js"
+import {
+  handleVoiceJoin,
+  handleVoiceLeave,
+  handleVoiceOffer,
+  handleVoiceAnswer,
+  handleVoiceIceCandidate,
+} from "./voice.js"
 import { getRedis } from "../lib/redis.js"
 import { createContextLogger } from "../lib/logger.js"
 import { clients, sendToUser, broadcast, sendToConversation } from "./clients.js"
@@ -54,7 +60,11 @@ export function createWSServer(server: import("http").Server) {
           const userId = event.callerId ?? event.userId
           if (userId) sendToUser(userId, event)
         }
-        if (["voice:user-joined", "voice:user-left", "voice:offer", "voice:answer", "voice:ice-candidate"].includes(event.type)) {
+        if (
+          ["voice:user-joined", "voice:user-left", "voice:offer", "voice:answer", "voice:ice-candidate"].includes(
+            event.type,
+          )
+        ) {
           const userId = event.targetUserId ?? event.userId
           if (userId) sendToUser(userId, event)
         }

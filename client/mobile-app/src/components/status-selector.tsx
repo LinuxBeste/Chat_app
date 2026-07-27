@@ -18,10 +18,12 @@ export function StatusSelector() {
   const [customText, setCustomText] = useState("")
 
   useEffect(() => {
-    api<{ status?: string; customStatus?: string }>("/api/users/me").then((u) => {
-      if (u.status) setCurrent(u.status)
-      if (u.customStatus) setCustomText(u.customStatus)
-    }).catch(() => {})
+    api<{ status?: string; customStatus?: string }>("/api/users/me")
+      .then((u) => {
+        if (u.status) setCurrent(u.status)
+        if (u.customStatus) setCustomText(u.customStatus)
+      })
+      .catch(() => {})
   }, [])
 
   const setStatus = (status: string) => {
@@ -34,7 +36,8 @@ export function StatusSelector() {
     <View>
       <TouchableOpacity style={styles.trigger} onPress={() => setVisible(true)}>
         <Text style={styles.triggerText}>
-          {statuses.find((st) => st.key === current)?.emoji} {t(statuses.find((st) => st.key === current)?.label || "status.online")}
+          {statuses.find((st) => st.key === current)?.emoji}{" "}
+          {t(statuses.find((st) => st.key === current)?.label || "status.online")}
         </Text>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade">
@@ -46,7 +49,9 @@ export function StatusSelector() {
                 style={[styles.menuItem, current === st.key && styles.menuItemActive]}
                 onPress={() => setStatus(st.key)}
               >
-                <Text style={styles.menuItemText}>{st.emoji} {t(st.label)}</Text>
+                <Text style={styles.menuItemText}>
+                  {st.emoji} {t(st.label)}
+                </Text>
               </TouchableOpacity>
             ))}
             <TextInput
@@ -68,9 +73,25 @@ const styles = StyleSheet.create({
   trigger: { padding: 4 },
   triggerText: { color: "#8888A0", fontSize: 12 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  menu: { backgroundColor: "#101016", borderRadius: 20, padding: 8, minWidth: 200, borderWidth: 1, borderColor: "#252538" },
+  menu: {
+    backgroundColor: "#101016",
+    borderRadius: 20,
+    padding: 8,
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   menuItem: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12 },
   menuItemActive: { backgroundColor: "rgba(108,140,255,0.1)" },
   menuItemText: { color: "#E8E8F0", fontSize: 15 },
-  customInput: { backgroundColor: "#0A0A0F", borderRadius: 12, padding: 12, color: "#E8E8F0", fontSize: 13, marginTop: 8, borderWidth: 1, borderColor: "#252538" },
+  customInput: {
+    backgroundColor: "#0A0A0F",
+    borderRadius: 12,
+    padding: 12,
+    color: "#E8E8F0",
+    fontSize: 13,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
 })

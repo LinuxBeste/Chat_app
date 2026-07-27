@@ -53,19 +53,22 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
     })
   }
 
-  const uploadFile = useCallback(async (file: File) => {
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      const result = await apiFormData<AttachmentData>("/api/uploads", formData)
-      onSend(result.url, file.type.startsWith("image/") ? "image" : "file", result)
-    } catch {
-      showToast(t("chat.uploadError"))
-    } finally {
-      setUploading(false)
-    }
-  }, [onSend])
+  const uploadFile = useCallback(
+    async (file: File) => {
+      setUploading(true)
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        const result = await apiFormData<AttachmentData>("/api/uploads", formData)
+        onSend(result.url, file.type.startsWith("image/") ? "image" : "file", result)
+      } catch {
+        showToast(t("chat.uploadError"))
+      } finally {
+        setUploading(false)
+      }
+    },
+    [onSend],
+  )
 
   const handleSend = () => {
     if (!value.trim() || uploading) return
@@ -105,12 +108,7 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
   }
 
   return (
-    <div
-      className="relative"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
       {dragOver && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-accent/20 border-2 border-dashed border-accent">
           <div className="flex flex-col items-center gap-2 text-accent">
@@ -119,21 +117,26 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
           </div>
         </div>
       )}
-      <div className="flex items-center gap-3 border-t border-border px-4 py-3" role="form" aria-label={t("chat.messageInput")}>
-        {offline && (() => {
-          const pendingCount = getPendingMessages().length
-          return (
-            <div className="flex items-center gap-1.5 text-yellow-400 text-xs shrink-0" title={t("chat.offline")}>
-              <WifiOff className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t("chat.offline")}</span>
-              {pendingCount > 0 && (
-                <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {pendingCount}
-                </span>
-              )}
-            </div>
-          )
-        })()}
+      <div
+        className="flex items-center gap-3 border-t border-border px-4 py-3"
+        role="form"
+        aria-label={t("chat.messageInput")}
+      >
+        {offline &&
+          (() => {
+            const pendingCount = getPendingMessages().length
+            return (
+              <div className="flex items-center gap-1.5 text-yellow-400 text-xs shrink-0" title={t("chat.offline")}>
+                <WifiOff className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{t("chat.offline")}</span>
+                {pendingCount > 0 && (
+                  <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {pendingCount}
+                  </span>
+                )}
+              </div>
+            )
+          })()}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
         <button
           onClick={handleFilePick}
@@ -141,7 +144,11 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
           aria-label={t("chat.attachFile")}
           className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Paperclip className="h-4 w-4" aria-hidden="true" />}
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Paperclip className="h-4 w-4" aria-hidden="true" />
+          )}
         </button>
         <div className="relative">
           <button
@@ -152,10 +159,7 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
             <Smile className="h-4 w-4" aria-hidden="true" />
           </button>
           {showEmojiPicker && (
-            <EmojiPicker
-              onEmojiSelect={handleEmojiSelect}
-              onClose={() => setShowEmojiPicker(false)}
-            />
+            <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
           )}
         </div>
         <input

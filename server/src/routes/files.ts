@@ -71,10 +71,7 @@ router.get(
       .where(
         or(
           eq(fileFolders.userId, userId),
-          and(
-            eq(fileFolderMembers.userId, userId),
-            eq(fileFolderMembers.folderId, fileFolders.id),
-          ),
+          and(eq(fileFolderMembers.userId, userId), eq(fileFolderMembers.folderId, fileFolders.id)),
         ),
       )
       .leftJoin(fileFolderMembers, eq(fileFolderMembers.folderId, fileFolders.id))

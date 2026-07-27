@@ -213,18 +213,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const applyTheme = useCallback(
-    (t: CustomThemeData) => {
-      setCustomTheme(t)
-      setLightThemeState(null)
-      setDarkThemeState(null)
-      localStorage.setItem("customThemeId", t.id)
-      localStorage.setItem("customTheme", t.theme)
-      localStorage.removeItem("lightTheme")
-      localStorage.removeItem("darkTheme")
-    },
-    [],
-  )
+  const applyTheme = useCallback((t: CustomThemeData) => {
+    setCustomTheme(t)
+    setLightThemeState(null)
+    setDarkThemeState(null)
+    localStorage.setItem("customThemeId", t.id)
+    localStorage.setItem("customTheme", t.theme)
+    localStorage.removeItem("lightTheme")
+    localStorage.removeItem("darkTheme")
+  }, [])
 
   const setLightTheme = useCallback((config: ThemeConfig | null) => {
     setLightThemeState(config)
@@ -262,21 +259,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (active) {
         applyTheme(active)
       }
-    } catch { /* offline */ }
+    } catch {
+      /* offline */
+    }
   }, [])
 
-  const applyPreset = useCallback(
-    (preset: ThemeConfig) => {
-      setCustomTheme(null)
-      setLightThemeState(preset)
-      setDarkThemeState(preset)
-      localStorage.removeItem("customThemeId")
-      localStorage.removeItem("customTheme")
-      localStorage.setItem("lightTheme", JSON.stringify(preset))
-      localStorage.setItem("darkTheme", JSON.stringify(preset))
-    },
-    [],
-  )
+  const applyPreset = useCallback((preset: ThemeConfig) => {
+    setCustomTheme(null)
+    setLightThemeState(preset)
+    setDarkThemeState(preset)
+    localStorage.removeItem("customThemeId")
+    localStorage.removeItem("customTheme")
+    localStorage.setItem("lightTheme", JSON.stringify(preset))
+    localStorage.setItem("darkTheme", JSON.stringify(preset))
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -304,10 +300,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider
       value={{
-        theme, toggleTheme, customTheme, themeConfig,
-        lightTheme, darkTheme,
-        setLightTheme, setDarkTheme,
-        applyTheme, clearCustomTheme, refreshCustomTheme, applyPreset,
+        theme,
+        toggleTheme,
+        customTheme,
+        themeConfig,
+        lightTheme,
+        darkTheme,
+        setLightTheme,
+        setDarkTheme,
+        applyTheme,
+        clearCustomTheme,
+        refreshCustomTheme,
+        applyPreset,
       }}
     >
       {children}

@@ -10,11 +10,7 @@ interface ButtonProps {
 
 export function Button({ title, onPress, variant = "primary", disabled, style }: ButtonProps) {
   return (
-    <TouchableOpacity
-      style={[s.btn, s[variant], disabled && s.disabled, style]}
-      onPress={onPress}
-      disabled={disabled}
-    >
+    <TouchableOpacity style={[s.btn, s[variant], disabled && s.disabled, style]} onPress={onPress} disabled={disabled}>
       <Text style={[s.text, variant === "secondary" && s.textSecondary, variant === "danger" && s.textDanger]}>
         {title}
       </Text>

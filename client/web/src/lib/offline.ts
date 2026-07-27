@@ -23,20 +23,26 @@ export function addPendingMessage(msg: QueuedMessage) {
     const queue = getPendingMessages()
     queue.push(msg)
     localStorage.setItem(PENDING_KEY, JSON.stringify(queue))
-  } catch { /* storage full */ }
+  } catch {
+    /* storage full */
+  }
 }
 
 export function removePendingMessage(id: string) {
   try {
     const queue = getPendingMessages().filter((m) => m.id !== id)
     localStorage.setItem(PENDING_KEY, JSON.stringify(queue))
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function clearPendingMessages() {
   try {
     localStorage.removeItem(PENDING_KEY)
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function getCachedMessages(conversationId: string): any[] {
@@ -51,13 +57,17 @@ export function getCachedMessages(conversationId: string): any[] {
 export function cacheMessages(conversationId: string, messages: any[]) {
   try {
     localStorage.setItem(CACHE_PREFIX + conversationId, JSON.stringify(messages.slice(-200)))
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function clearConversationCache(conversationId: string) {
   try {
     localStorage.removeItem(CACHE_PREFIX + conversationId)
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function isOnline(): boolean {

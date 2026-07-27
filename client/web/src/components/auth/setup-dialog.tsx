@@ -30,20 +30,22 @@ export function SetupDialog() {
       description: t("setup.chooseLanguageDesc"),
       content: (
         <div className="grid grid-cols-2 gap-2 py-2">
-          {supportedLanguages.filter((l) => ["en", "de", "fr", "es", "ja"].includes(l.code)).map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => i18n.changeLanguage(lang.code)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all cursor-pointer text-left ${
-                i18n.language === lang.code
-                  ? "border-accent bg-accent/5 text-accent"
-                  : "border-border text-text-primary hover:border-accent/50"
-              }`}
-            >
-              <span className="text-sm">{lang.native}</span>
-              {i18n.language === lang.code && <Check className="h-4 w-4 ml-auto shrink-0" />}
-            </button>
-          ))}
+          {supportedLanguages
+            .filter((l) => ["en", "de", "fr", "es", "ja"].includes(l.code))
+            .map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => i18n.changeLanguage(lang.code)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all cursor-pointer text-left ${
+                  i18n.language === lang.code
+                    ? "border-accent bg-accent/5 text-accent"
+                    : "border-border text-text-primary hover:border-accent/50"
+                }`}
+              >
+                <span className="text-sm">{lang.native}</span>
+                {i18n.language === lang.code && <Check className="h-4 w-4 ml-auto shrink-0" />}
+              </button>
+            ))}
         </div>
       ),
     },
@@ -53,7 +55,9 @@ export function SetupDialog() {
       content: (
         <div className="flex gap-3 py-4 justify-center">
           <button
-            onClick={() => { if (theme !== "light") toggleTheme() }}
+            onClick={() => {
+              if (theme !== "light") toggleTheme()
+            }}
             className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all cursor-pointer ${
               theme === "light" ? "border-accent bg-accent/5" : "border-border hover:border-accent/50"
             }`}
@@ -65,7 +69,9 @@ export function SetupDialog() {
             {theme === "light" && <Check className="h-4 w-4 text-accent" />}
           </button>
           <button
-            onClick={() => { if (theme !== "dark") toggleTheme() }}
+            onClick={() => {
+              if (theme !== "dark") toggleTheme()
+            }}
             className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all cursor-pointer ${
               theme === "dark" ? "border-accent bg-accent/5" : "border-border hover:border-accent/50"
             }`}
@@ -131,13 +137,13 @@ export function SetupDialog() {
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 w-8 rounded-full transition-colors ${
-                  i <= step ? "bg-accent" : "bg-border"
-                }`}
+                className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? "bg-accent" : "bg-border"}`}
               />
             ))}
           </div>
-          <span className="text-xs text-text-muted">{step + 1} / {steps.length}</span>
+          <span className="text-xs text-text-muted">
+            {step + 1} / {steps.length}
+          </span>
         </div>
 
         <h2 className="text-lg font-semibold text-text-primary mt-4">{current.title}</h2>
@@ -157,12 +163,17 @@ export function SetupDialog() {
             disabled={saving}
             className="flex-1 h-11 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            {saving
-              ? t("common.saving")
-              : step < steps.length - 1
-                ? <><span>{t("setup.next")}</span> <ArrowRight className="h-4 w-4" /></>
-                : <><Check className="h-4 w-4" /> <span>{t("setup.finish")}</span></>
-            }
+            {saving ? (
+              t("common.saving")
+            ) : step < steps.length - 1 ? (
+              <>
+                <span>{t("setup.next")}</span> <ArrowRight className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" /> <span>{t("setup.finish")}</span>
+              </>
+            )}
           </button>
         </div>
       </div>

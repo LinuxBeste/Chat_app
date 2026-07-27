@@ -41,10 +41,7 @@ router.post(
       const allIds = [...new Set([req.user!.userId, ...participantIds])]
 
       if (type === "dm") {
-        const dms = await db
-          .select({ id: conversations.id })
-          .from(conversations)
-          .where(eq(conversations.type, "dm"))
+        const dms = await db.select({ id: conversations.id }).from(conversations).where(eq(conversations.type, "dm"))
         let existing: { id: string } | undefined
         for (const dm of dms) {
           const members = await db
@@ -61,7 +58,12 @@ router.post(
 
         if (existing) {
           const [fullConv] = await db
-            .select({ id: conversations.id, type: conversations.type, name: conversations.name, createdAt: conversations.createdAt })
+            .select({
+              id: conversations.id,
+              type: conversations.type,
+              name: conversations.name,
+              createdAt: conversations.createdAt,
+            })
             .from(conversations)
             .where(eq(conversations.id, existing.id))
             .limit(1)
@@ -76,7 +78,9 @@ router.post(
             })
             .from(participants)
             .innerJoin(users, eq(users.id, participants.userId))
-            .where(and(eq(participants.conversationId, existing.id), sql`${participants.userId} != ${req.user!.userId}`))
+            .where(
+              and(eq(participants.conversationId, existing.id), sql`${participants.userId} != ${req.user!.userId}`),
+            )
             .limit(1)
 
           res.json({ ...fullConv, otherUser: other[0] ?? null })
@@ -281,10 +285,25 @@ router.post(
     await db.insert(participants).values(newIds.map((userId: string) => ({ conversationId: convId, userId })))
 
     const added = await db
-      .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, status: users.status, role: participants.role })
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatar: users.avatar,
+        status: users.status,
+        role: participants.role,
+      })
       .from(participants)
       .innerJoin(users, eq(users.id, participants.userId))
-      .where(and(eq(participants.conversationId, convId), sql`${participants.userId} IN (${sql.join(newIds.map((id: string) => sql`${id}::uuid`), sql`, `)})`))
+      .where(
+        and(
+          eq(participants.conversationId, convId),
+          sql`${participants.userId} IN (${sql.join(
+            newIds.map((id: string) => sql`${id}::uuid`),
+            sql`, `,
+          )})`,
+        ),
+      )
 
     res.status(201).json(added)
   }),

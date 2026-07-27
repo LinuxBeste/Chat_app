@@ -37,20 +37,14 @@ router.get(
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const [regToday] = await db
-      .select({ value: count() })
-      .from(users)
-      .where(gte(users.createdAt, today))
+    const [regToday] = await db.select({ value: count() }).from(users).where(gte(users.createdAt, today))
 
     const [onlineCount] = await db
       .select({ value: count() })
       .from(users)
       .where(sql`status IN ('online', 'away', 'busy')`)
 
-    const [msgToday] = await db
-      .select({ value: count() })
-      .from(messages)
-      .where(gte(messages.createdAt, today))
+    const [msgToday] = await db.select({ value: count() }).from(messages).where(gte(messages.createdAt, today))
 
     res.json({
       users: userCount.value,
@@ -78,7 +72,14 @@ router.get(
 
     const conditions = []
     if (q) {
-      conditions.push(or(like(users.username, `%${q}%`), like(users.email, `%${q}%`), like(users.displayName, `%${q}%`), like(users.id, `%${q}%`)))
+      conditions.push(
+        or(
+          like(users.username, `%${q}%`),
+          like(users.email, `%${q}%`),
+          like(users.displayName, `%${q}%`),
+          like(users.id, `%${q}%`),
+        ),
+      )
     }
     if (status && ["online", "away", "busy", "offline"].includes(status)) {
       conditions.push(eq(users.status, status as any))
@@ -135,10 +136,7 @@ router.get(
       return
     }
 
-    const [msgCount] = await db
-      .select({ value: count() })
-      .from(messages)
-      .where(eq(messages.senderId, user.id))
+    const [msgCount] = await db.select({ value: count() }).from(messages).where(eq(messages.senderId, user.id))
 
     const [convCount] = await db
       .select({ value: count() })
@@ -164,7 +162,10 @@ router.put(
   requireAdmin,
   catchAsync(async (req: Request, res: Response) => {
     const { suspended } = req.body
-    await db.update(users).set({ status: suspended ? "busy" : "offline" }).where(eq(users.id, req.params.id as string))
+    await db
+      .update(users)
+      .set({ status: suspended ? "busy" : "offline" })
+      .where(eq(users.id, req.params.id as string))
     res.json({ message: suspended ? "User suspended" : "User unsuspended" })
   }),
 )
@@ -215,17 +216,28 @@ router.get(
     const [total] = await db.select({ value: count() }).from(reports).where(where)
 
     const userIds = new Set<string>()
-    list.forEach((r) => { if (r.reportedBy) userIds.add(r.reportedBy); if (r.targetUserId) userIds.add(r.targetUserId) })
+    list.forEach((r) => {
+      if (r.reportedBy) userIds.add(r.reportedBy)
+      if (r.targetUserId) userIds.add(r.targetUserId)
+    })
     const userMap = new Map<string, string>()
     if (userIds.size > 0) {
-      const userRows = await db.select({ id: users.id, username: users.username }).from(users).where(sql`id IN (${Array.from(userIds).map((id) => sql`${id}`).join(", ")})`).catch(() => [])
+      const userRows = await db
+        .select({ id: users.id, username: users.username })
+        .from(users)
+        .where(
+          sql`id IN (${Array.from(userIds)
+            .map((id) => sql`${id}`)
+            .join(", ")})`,
+        )
+        .catch(() => [])
       userRows.forEach((u) => userMap.set(u.id, u.username))
     }
 
     const enriched = list.map((r) => ({
       ...r,
       reportedByName: userMap.get(r.reportedBy) || r.reportedBy.slice(0, 8),
-      targetUserName: r.targetUserId ? (userMap.get(r.targetUserId) || r.targetUserId.slice(0, 8)) : null,
+      targetUserName: r.targetUserId ? userMap.get(r.targetUserId) || r.targetUserId.slice(0, 8) : null,
     }))
 
     res.json({ reports: enriched, total: total.value, page, limit })
@@ -242,7 +254,10 @@ router.put(
       res.status(400).json({ error: "Invalid status" })
       return
     }
-    await db.update(reports).set({ status }).where(eq(reports.id, req.params.id as string))
+    await db
+      .update(reports)
+      .set({ status })
+      .where(eq(reports.id, req.params.id as string))
     res.json({ message: "Report updated" })
   }),
 )
@@ -340,10 +355,20 @@ router.get(
       .slice(0, limit)
 
     const userIds = new Set<string>()
-    all.forEach((a) => { if (a.userId) userIds.add(a.userId as string) })
+    all.forEach((a) => {
+      if (a.userId) userIds.add(a.userId as string)
+    })
     const userMap = new Map<string, string>()
     if (userIds.size > 0) {
-      const userRows = await db.select({ id: users.id, username: users.username }).from(users).where(sql`id IN (${Array.from(userIds).map((id) => sql`${id}`).join(", ")})`).catch(() => [])
+      const userRows = await db
+        .select({ id: users.id, username: users.username })
+        .from(users)
+        .where(
+          sql`id IN (${Array.from(userIds)
+            .map((id) => sql`${id}`)
+            .join(", ")})`,
+        )
+        .catch(() => [])
       userRows.forEach((u) => userMap.set(u.id, u.username))
     }
 
@@ -411,7 +436,10 @@ router.delete(
       return
     }
     config.admin.userIds.splice(idx, 1)
-    res.json({ message: "Admin removed", adminIds: config.admin.userIds.filter((id) => id !== config.admin.ownerUserId) })
+    res.json({
+      message: "Admin removed",
+      adminIds: config.admin.userIds.filter((id) => id !== config.admin.ownerUserId),
+    })
   }),
 )
 

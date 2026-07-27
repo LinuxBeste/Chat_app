@@ -5,9 +5,28 @@ import { CallOverlay } from "./call-overlay"
 import { AddParticipantsModal } from "./add-participants-modal"
 import { Avatar } from "../ui/avatar"
 import {
-  Phone, Video, MoreHorizontal, Edit3, Trash2, X, Check, FileText, Download,
-  Plus, Users, UserPlus, Copy, Ban, Shield, LogOut, ArrowLeft, Search, Bell,
-  BellOff, Flag, Camera,
+  Phone,
+  Video,
+  MoreHorizontal,
+  Edit3,
+  Trash2,
+  X,
+  Check,
+  FileText,
+  Download,
+  Plus,
+  Users,
+  UserPlus,
+  Copy,
+  Ban,
+  Shield,
+  LogOut,
+  ArrowLeft,
+  Search,
+  Bell,
+  BellOff,
+  Flag,
+  Camera,
 } from "lucide-react"
 import { api, apiFormData, BASE_URL } from "../../lib/api"
 
@@ -136,13 +155,19 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             } catch {}
           }
         }
-        const decrypted = await Promise.all(msgs.map(async (m) => {
-          if (m.encrypted === "true" && isEncrypted(m.content)) {
-            const decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(m.content), theirKey ?? undefined)
-            if (decrypted) return { ...m, content: decrypted, encrypted: "true" }
-          }
-          return m
-        }))
+        const decrypted = await Promise.all(
+          msgs.map(async (m) => {
+            if (m.encrypted === "true" && isEncrypted(m.content)) {
+              const decrypted = await decryptMessage(
+                conversationId,
+                stripEncryptionPrefix(m.content),
+                theirKey ?? undefined,
+              )
+              if (decrypted) return { ...m, content: decrypted, encrypted: "true" }
+            }
+            return m
+          }),
+        )
         setMessages(decrypted)
         setConvInfo(info)
         cacheMessagesDB(conversationId, decrypted)
@@ -190,7 +215,12 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const isGroup = convInfo?.type === "group" || convInfo?.type === "channel"
   const otherSender = messages.find((m) => m.senderId !== currentUserId)
   const otherMember = !isGroup ? convInfo?.members.find((m) => m.id !== currentUserId) : undefined
-  const dmName = otherSender?.sender?.displayName ?? otherSender?.sender?.username ?? otherMember?.displayName ?? otherMember?.username ?? t("chat.dmConversation")
+  const dmName =
+    otherSender?.sender?.displayName ??
+    otherSender?.sender?.username ??
+    otherMember?.displayName ??
+    otherMember?.username ??
+    t("chat.dmConversation")
   const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -208,11 +238,11 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const handleRemoveParticipant = async (userId: string) => {
     try {
       await api(`/api/conversations/${conversationId}/participants/${userId}`, { method: "DELETE" })
-      setConvInfo((prev) =>
-        prev ? { ...prev, members: prev.members.filter((m) => m.id !== userId) } : prev,
-      )
+      setConvInfo((prev) => (prev ? { ...prev, members: prev.members.filter((m) => m.id !== userId) } : prev))
       setShowMemberMenu(null)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   useEffect(() => {
@@ -260,8 +290,13 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     const unsubDeleted = wsClient.on("message:deleted", (data) => {
       if (data.conversationId === conversationId) {
         setMessages((prev) => {
-          const next = prev.map((m) => (m.id === data.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m))
-          cacheMessages(conversationId, next.filter((m) => !m.deletedAt))
+          const next = prev.map((m) =>
+            m.id === data.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m,
+          )
+          cacheMessages(
+            conversationId,
+            next.filter((m) => !m.deletedAt),
+          )
           return next
         })
       }
@@ -378,14 +413,11 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     [conversationId, otherUserId, isDm, getTheirPublicKey],
   )
 
-  const handleEdit = useCallback(
-    (msg: Message) => {
-      setEditingMessageId(msg.id)
-      setEditText(msg.content)
-      setMenuMessageId(null)
-    },
-    [],
-  )
+  const handleEdit = useCallback((msg: Message) => {
+    setEditingMessageId(msg.id)
+    setEditText(msg.content)
+    setMenuMessageId(null)
+  }, [])
 
   const handleEditConfirm = useCallback(() => {
     if (!editingMessageId || !editText.trim()) return
@@ -403,7 +435,10 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     async (msg: Message) => {
       setMessages((prev) => {
         const next = prev.map((m) => (m.id === msg.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m))
-        cacheMessages(conversationId, next.filter((m) => !m.deletedAt))
+        cacheMessages(
+          conversationId,
+          next.filter((m) => !m.deletedAt),
+        )
         return next
       })
       setMenuMessageId(null)
@@ -429,31 +464,39 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
-  const handleAvatarUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      const formData = new FormData()
-      formData.append("avatar", file)
-      const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData)
-      setConvInfo((prev) => (prev ? { ...prev, avatar: res.avatar } : prev))
-      showToast(t("chat.avatarUpdated"), "success")
-    } catch {
-      showToast(t("chat.avatarError"))
-    }
-    if (avatarInputRef.current) avatarInputRef.current.value = ""
-  }, [conversationId, showToast, t])
+  const handleAvatarUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      try {
+        const formData = new FormData()
+        formData.append("avatar", file)
+        const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData)
+        setConvInfo((prev) => (prev ? { ...prev, avatar: res.avatar } : prev))
+        showToast(t("chat.avatarUpdated"), "success")
+      } catch {
+        showToast(t("chat.avatarError"))
+      }
+      if (avatarInputRef.current) avatarInputRef.current.value = ""
+    },
+    [conversationId, showToast, t],
+  )
 
-  const navigateToDm = useCallback(async (targetUserId: string) => {
-    try {
-      const conv = await api<{ id: string }>("/api/conversations", {
-        method: "POST",
-        body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
-      })
-      setActiveConversationId(conv.id)
-      setView("chat")
-    } catch { /* ignore */ }
-  }, [setActiveConversationId, setView])
+  const navigateToDm = useCallback(
+    async (targetUserId: string) => {
+      try {
+        const conv = await api<{ id: string }>("/api/conversations", {
+          method: "POST",
+          body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
+        })
+        setActiveConversationId(conv.id)
+        setView("chat")
+      } catch {
+        /* ignore */
+      }
+    },
+    [setActiveConversationId, setView],
+  )
 
   const handleStartRename = useCallback(() => {
     setRenameText(convInfo?.name ?? "")
@@ -550,21 +593,20 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               <button onClick={handleRenameConfirm} className="text-accent hover:text-accent-hover cursor-pointer p-1">
                 <Check className="h-4 w-4" />
               </button>
-              <button onClick={handleRenameCancel} className="text-text-muted hover:text-text-secondary cursor-pointer p-1">
+              <button
+                onClick={handleRenameCancel}
+                className="text-text-muted hover:text-text-secondary cursor-pointer p-1"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
           ) : (
             <>
-              <h3 className="text-sm font-semibold text-text-primary">
-                {convInfo?.name ?? dmName}
-              </h3>
+              <h3 className="text-sm font-semibold text-text-primary">{convInfo?.name ?? dmName}</h3>
               {isGroup && convInfo && (
                 <p className="text-xs text-text-muted truncate">
                   {t("chat.membersCount", { count: convInfo.members.length })}
-                  {currentMember && (
-                    <span className="ml-2 lowercase text-accent">· {currentMember.role}</span>
-                  )}
+                  {currentMember && <span className="ml-2 lowercase text-accent">· {currentMember.role}</span>}
                 </p>
               )}
             </>
@@ -609,20 +651,24 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           >
             <Video className="h-4 w-4" aria-hidden="true" />
           </button>
-          {offline && (() => {
-            const pendingCount = getPendingMessages().length
-            return (
-              <div className="flex h-9 items-center gap-1.5 px-2 rounded-2xl text-yellow-400 bg-yellow-500/10 text-xs font-medium" title={t("chat.offline")}>
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
-                <span>{t("chat.offline")}</span>
-                {pendingCount > 0 && (
-                  <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {pendingCount}
-                  </span>
-                )}
-              </div>
-            )
-          })()}
+          {offline &&
+            (() => {
+              const pendingCount = getPendingMessages().length
+              return (
+                <div
+                  className="flex h-9 items-center gap-1.5 px-2 rounded-2xl text-yellow-400 bg-yellow-500/10 text-xs font-medium"
+                  title={t("chat.offline")}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
+                  <span>{t("chat.offline")}</span>
+                  {pendingCount > 0 && (
+                    <span className="ml-0.5 bg-yellow-400/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {pendingCount}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
           {isGroup && canManage && (
             <div className="relative">
               <button
@@ -646,7 +692,10 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       </div>
                       {canManage && m.id !== currentUserId && m.role !== "owner" && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleRemoveParticipant(m.id) }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveParticipant(m.id)
+                          }}
                           className="text-text-muted hover:text-danger cursor-pointer"
                           title={t("chat.remove")}
                         >
@@ -706,7 +755,13 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               </div>
               {isGroup && canManage && (
                 <>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
                   <button
                     onClick={() => avatarInputRef.current?.click()}
                     className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent-hover transition-colors cursor-pointer"
@@ -717,22 +772,22 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               )}
             </div>
             <h1 className="text-lg font-bold text-text-primary text-center">
-              {isGroup
-                ? (convInfo?.name ?? t("chat.groupConversation"))
-                : dmName
-              }
+              {isGroup ? (convInfo?.name ?? t("chat.groupConversation")) : dmName}
             </h1>
             <p className="text-sm text-text-muted mt-1">
               {isGroup
                 ? t("chat.membersCount", { count: convInfo?.members.length ?? 0 }) + " · " + (convInfo?.type ?? "group")
-                : dmName
-              }
+                : dmName}
             </p>
           </div>
 
           <div className="flex justify-center gap-8 pb-6 px-4">
             <button
-              onClick={() => { setShowConvMenu(false); const targetId = otherSender?.senderId ?? otherMember?.id; targetId && setCallState({ targetUserId: targetId, direction: "outgoing" }) }}
+              onClick={() => {
+                setShowConvMenu(false)
+                const targetId = otherSender?.senderId ?? otherMember?.id
+                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" })
+              }}
               className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
             >
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
@@ -741,7 +796,11 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               <span className="text-xs">{t("chat.call")}</span>
             </button>
             <button
-              onClick={() => { setShowConvMenu(false); const targetId = otherSender?.senderId ?? otherMember?.id; targetId && setCallState({ targetUserId: targetId, direction: "outgoing" }) }}
+              onClick={() => {
+                setShowConvMenu(false)
+                const targetId = otherSender?.senderId ?? otherMember?.id
+                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" })
+              }}
               className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
             >
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
@@ -764,7 +823,9 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             <>
               <div className="border-t border-border">
                 <div className="px-4 py-3">
-                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{t("chat.members")}</h3>
+                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                    {t("chat.members")}
+                  </h3>
                   {convInfo?.members.slice(0, 6).map((m) => (
                     <div
                       key={m.id}
@@ -779,11 +840,16 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-text-primary truncate">{m.displayName || m.username}</p>
-                        <p className="text-xs text-text-muted capitalize">{m.role} · {m.status}</p>
+                        <p className="text-xs text-text-muted capitalize">
+                          {m.role} · {m.status}
+                        </p>
                       </div>
                       {canManage && m.id !== currentUserId && m.role !== "owner" && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleRemoveParticipant(m.id) }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveParticipant(m.id)
+                          }}
                           className="text-text-muted hover:text-danger cursor-pointer shrink-0"
                         >
                           <X className="h-4 w-4" />
@@ -793,7 +859,10 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                   ))}
                   {convInfo && convInfo.members.length > 6 && (
                     <button
-                      onClick={() => { setShowConvMenu(false); setShowMemberMenu("header") }}
+                      onClick={() => {
+                        setShowConvMenu(false)
+                        setShowMemberMenu("header")
+                      }}
                       className="text-sm text-accent hover:text-accent-hover mt-1 cursor-pointer"
                     >
                       {t("chat.viewAllMembers", { count: convInfo.members.length })}
@@ -804,14 +873,20 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
 
               <div className="border-t border-border px-4 py-2">
                 <button
-                  onClick={() => { setShowConvMenu(false); setShowMemberMenu(showMemberMenu === "header" ? null : "header") }}
+                  onClick={() => {
+                    setShowConvMenu(false)
+                    setShowMemberMenu(showMemberMenu === "header" ? null : "header")
+                  }}
                   className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
                 >
                   <Users className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.manageMembers")}
                 </button>
                 {canManage && (
                   <button
-                    onClick={() => { setShowConvMenu(false); setShowAddPeople(true) }}
+                    onClick={() => {
+                      setShowConvMenu(false)
+                      setShowAddPeople(true)
+                    }}
                     className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
                   >
                     <Plus className="h-5 w-5 text-text-muted shrink-0" /> {t("chat.addPeople")}
@@ -883,7 +958,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               onClick={handleLeaveConversation}
               className="flex items-center gap-3 w-full py-3 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
             >
-              <LogOut className="h-5 w-5 shrink-0" /> {isGroup ? t("chat.leaveConversation") : t("chat.deleteConversation")}
+              <LogOut className="h-5 w-5 shrink-0" />{" "}
+              {isGroup ? t("chat.leaveConversation") : t("chat.deleteConversation")}
             </button>
           </div>
 
@@ -899,194 +975,240 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           >
             {loading && <p className="text-sm text-text-muted text-center">{t("common.loading")}</p>}
             {messages.map((msg) => {
-          const isMe = msg.senderId === currentUserId
-          const isDeleted = !!msg.deletedAt
-          if (isDeleted) {
-            return (
-              <div key={msg.id} className="flex justify-center relative">
-                <div className="bg-surface text-text-muted border border-border italic rounded-3xl px-4 py-1.5 text-xs">
-                  {t("chat.messageDeleted")}
-                </div>
-              </div>
-            )
-          }
-          return (
-            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative`} role="article">
-              <div
-                className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
-                  isMe
-                    ? "bg-accent text-white rounded-br-lg"
-                    : "bg-surface text-text-primary border border-border rounded-bl-lg"
-                }`}
-              >
-                {!isMe && <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>}
-                {editingMessageId === msg.id ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={editInputRef}
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEditConfirm()
-                        if (e.key === "Escape") handleEditCancel()
-                      }}
-                      className={`flex-1 bg-transparent text-sm outline-none border-b ${
-                        isMe ? "border-white/40 text-white" : "border-border text-text-primary"
-                      }`}
-                    />
-                    <button onClick={handleEditConfirm} className="cursor-pointer" aria-label={t("chat.confirmEdit")}>
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button onClick={handleEditCancel} className="cursor-pointer" aria-label={t("chat.cancelEdit")}>
-                      <X className="h-4 w-4" />
-                    </button>
+              const isMe = msg.senderId === currentUserId
+              const isDeleted = !!msg.deletedAt
+              if (isDeleted) {
+                return (
+                  <div key={msg.id} className="flex justify-center relative">
+                    <div className="bg-surface text-text-muted border border-border italic rounded-3xl px-4 py-1.5 text-xs">
+                      {t("chat.messageDeleted")}
+                    </div>
                   </div>
-                ) : msg.type === "image" ? (
-                  <img
-                    src={`${BASE_URL}${msg.content}`}
-                    alt={t("chat.sharedImage")}
-                    className="max-w-full rounded-2xl cursor-pointer"
-                    onClick={() => setFilePreview(msg)}
-                  />
-                ) : msg.type === "file" ? (
-                  <button
-                    onClick={() => setFilePreview(msg)}
-                    className="flex items-center gap-3 p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors w-full text-left no-underline cursor-pointer"
+                )
+              }
+              return (
+                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative`} role="article">
+                  <div
+                    className={`max-w-[70%] rounded-3xl px-4 py-2.5 ${
+                      isMe
+                        ? "bg-accent text-white rounded-br-lg"
+                        : "bg-surface text-text-primary border border-border rounded-bl-lg"
+                    }`}
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20">
-                      <FileText className="h-5 w-5 text-accent" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{displayName(msg.content, msg.attachment)}</p>
-                      <p className="text-xs text-text-muted">{t("chat.fileType", { ext: displayName(msg.content, msg.attachment).split(".").pop()?.toUpperCase() || "?" })}</p>
-                    </div>
-                    <Download className="h-4 w-4 text-text-muted shrink-0" />
-                  </button>
-                ) : (
-                  <p className="text-sm leading-relaxed">
-                    {msg.encrypted === "true" && !isEncrypted(msg.content) && (
-                      <span className="inline-flex items-center mr-1.5 text-accent" title="End-to-end encrypted">
-                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      </span>
-                    )}
-                    {msg.encrypted === "true" && isEncrypted(msg.content) ? t("chat.couldNotDecrypt") : msg.content}
-                  </p>
-                )}
-                <p className={`text-[11px] mt-1 ${isMe ? "text-white/60" : "text-text-muted"}`}>
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  {msg.editedAt && <span className="ml-1">{t("chat.edited")}</span>}
-                </p>
-              </div>
-              {isMe && editingMessageId !== msg.id && (
-                <div className="relative ml-1 self-start mt-2">
-                  <button
-                    onClick={() => setMenuMessageId(menuMessageId === msg.id ? null : msg.id)}
-                    aria-label={t("chat.messageMenu")}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
-                  >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </button>
-                  {menuMessageId === msg.id && (
-                    <div className="absolute right-0 top-8 z-50 bg-surface border border-border rounded-2xl shadow-lg py-1 min-w-[120px]">
+                    {!isMe && <p className="text-xs text-text-muted mb-1">{msg.sender.username}</p>}
+                    {editingMessageId === msg.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={editInputRef}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleEditConfirm()
+                            if (e.key === "Escape") handleEditCancel()
+                          }}
+                          className={`flex-1 bg-transparent text-sm outline-none border-b ${
+                            isMe ? "border-white/40 text-white" : "border-border text-text-primary"
+                          }`}
+                        />
+                        <button
+                          onClick={handleEditConfirm}
+                          className="cursor-pointer"
+                          aria-label={t("chat.confirmEdit")}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button onClick={handleEditCancel} className="cursor-pointer" aria-label={t("chat.cancelEdit")}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : msg.type === "image" ? (
+                      <img
+                        src={`${BASE_URL}${msg.content}`}
+                        alt={t("chat.sharedImage")}
+                        className="max-w-full rounded-2xl cursor-pointer"
+                        onClick={() => setFilePreview(msg)}
+                      />
+                    ) : msg.type === "file" ? (
                       <button
-                        onClick={() => handleEdit(msg)}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
+                        onClick={() => setFilePreview(msg)}
+                        className="flex items-center gap-3 p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors w-full text-left no-underline cursor-pointer"
                       >
-                        <Edit3 className="h-3.5 w-3.5" /> {t("chat.edit")}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20">
+                          <FileText className="h-5 w-5 text-accent" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{displayName(msg.content, msg.attachment)}</p>
+                          <p className="text-xs text-text-muted">
+                            {t("chat.fileType", {
+                              ext: displayName(msg.content, msg.attachment).split(".").pop()?.toUpperCase() || "?",
+                            })}
+                          </p>
+                        </div>
+                        <Download className="h-4 w-4 text-text-muted shrink-0" />
                       </button>
+                    ) : (
+                      <p className="text-sm leading-relaxed">
+                        {msg.encrypted === "true" && !isEncrypted(msg.content) && (
+                          <span className="inline-flex items-center mr-1.5 text-accent" title="End-to-end encrypted">
+                            <svg
+                              className="h-3 w-3"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          </span>
+                        )}
+                        {msg.encrypted === "true" && isEncrypted(msg.content) ? t("chat.couldNotDecrypt") : msg.content}
+                      </p>
+                    )}
+                    <p className={`text-[11px] mt-1 ${isMe ? "text-white/60" : "text-text-muted"}`}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {msg.editedAt && <span className="ml-1">{t("chat.edited")}</span>}
+                    </p>
+                  </div>
+                  {isMe && editingMessageId !== msg.id && (
+                    <div className="relative ml-1 self-start mt-2">
                       <button
-                        onClick={() => handleDelete(msg)}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-white/5 cursor-pointer"
+                        onClick={() => setMenuMessageId(menuMessageId === msg.id ? null : msg.id)}
+                        aria-label={t("chat.messageMenu")}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" /> {t("chat.delete")}
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </button>
+                      {menuMessageId === msg.id && (
+                        <div className="absolute right-0 top-8 z-50 bg-surface border border-border rounded-2xl shadow-lg py-1 min-w-[120px]">
+                          <button
+                            onClick={() => handleEdit(msg)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" /> {t("chat.edit")}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(msg)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-white/5 cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> {t("chat.delete")}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <MessageInput conversationId={conversationId} onSend={handleSend} />
+
+          {callState && (
+            <CallOverlay
+              conversationId={conversationId}
+              targetUserId={callState.targetUserId}
+              direction={callState.direction}
+              onEnd={() => setCallState(null)}
+            />
+          )}
+
+          {menuMessageId && <div className="fixed inset-0 z-40" onClick={() => setMenuMessageId(null)} />}
+
+          {showAddPeople && (
+            <AddParticipantsModal
+              conversationId={conversationId}
+              onClose={() => setShowAddPeople(false)}
+              onAdded={() => {
+                api<ConversationInfo>(`/api/conversations/${conversationId}`)
+                  .then(setConvInfo)
+                  .catch(() => {})
+              }}
+            />
+          )}
+
+          {filePreview && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+              onClick={() => {
+                setFilePreview(null)
+                setPreviewText(null)
+              }}
+            >
+              <div
+                className="w-full max-w-2xl max-h-[80vh] rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 pt-5 pb-3">
+                  <h3 className="text-sm font-semibold text-text-primary truncate">
+                    {displayName(filePreview.content, filePreview.attachment)}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setFilePreview(null)
+                      setPreviewText(null)
+                    }}
+                    className="text-text-muted hover:text-text-primary cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
+                  {filePreview.type === "image" ? (
+                    <img
+                      src={`${BASE_URL}${filePreview.content}`}
+                      alt={filePreview.attachment?.filename || ""}
+                      className="max-w-full rounded-2xl"
+                    />
+                  ) : filePreview.attachment?.mimeType?.startsWith("text/") ? (
+                    <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">
+                      {previewText ?? t("common.loading")}
+                    </pre>
+                  ) : filePreview.attachment?.mimeType === "application/pdf" ? (
+                    <iframe
+                      src={`${BASE_URL}${filePreview.content}`}
+                      className="w-full h-[60vh] rounded-2xl"
+                      title={filePreview.attachment?.filename || ""}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-4 py-8 text-text-muted">
+                      <FileText className="h-12 w-12" />
+                      <p className="text-sm">{t("files.cannotPreview")}</p>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`${BASE_URL}${filePreview.content}`)
+                            const blob = await res.blob()
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement("a")
+                            a.href = url
+                            a.download = displayName(filePreview.content, filePreview.attachment)
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            URL.revokeObjectURL(url)
+                          } catch {
+                            /* ignore */
+                          }
+                        }}
+                        className="flex items-center gap-2 h-10 px-5 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover cursor-pointer"
+                      >
+                        <Download className="h-4 w-4" />
+                        {t("files.download")}
                       </button>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
-          )
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
 
-      <MessageInput conversationId={conversationId} onSend={handleSend} />
-
-      {callState && (
-        <CallOverlay
-          conversationId={conversationId}
-          targetUserId={callState.targetUserId}
-          direction={callState.direction}
-          onEnd={() => setCallState(null)}
-        />
+          {showMemberMenu && <div className="fixed inset-0 z-40" onClick={() => setShowMemberMenu(null)} />}
+        </>
       )}
-
-      {menuMessageId && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuMessageId(null)} />
-      )}
-
-      {showAddPeople && (
-        <AddParticipantsModal
-          conversationId={conversationId}
-          onClose={() => setShowAddPeople(false)}
-          onAdded={() => {
-            api<ConversationInfo>(`/api/conversations/${conversationId}`).then(setConvInfo).catch(() => {})
-          }}
-        />
-      )}
-
-      {filePreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setFilePreview(null); setPreviewText(null) }}>
-          <div className="w-full max-w-2xl max-h-[80vh] rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-3">
-              <h3 className="text-sm font-semibold text-text-primary truncate">{displayName(filePreview.content, filePreview.attachment)}</h3>
-              <button onClick={() => { setFilePreview(null); setPreviewText(null) }} className="text-text-muted hover:text-text-primary cursor-pointer">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
-              {filePreview.type === "image" ? (
-                <img src={`${BASE_URL}${filePreview.content}`} alt={filePreview.attachment?.filename || ""} className="max-w-full rounded-2xl" />
-              ) : filePreview.attachment?.mimeType?.startsWith("text/") ? (
-                <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">{previewText ?? t("common.loading")}</pre>
-              ) : filePreview.attachment?.mimeType === "application/pdf" ? (
-                <iframe src={`${BASE_URL}${filePreview.content}`} className="w-full h-[60vh] rounded-2xl" title={filePreview.attachment?.filename || ""} />
-              ) : (
-                <div className="flex flex-col items-center gap-4 py-8 text-text-muted">
-                  <FileText className="h-12 w-12" />
-                  <p className="text-sm">{t("files.cannotPreview")}</p>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`${BASE_URL}${filePreview.content}`)
-                        const blob = await res.blob()
-                        const url = URL.createObjectURL(blob)
-                        const a = document.createElement("a")
-                        a.href = url
-                        a.download = displayName(filePreview.content, filePreview.attachment)
-                        document.body.appendChild(a)
-                        a.click()
-                        document.body.removeChild(a)
-                        URL.revokeObjectURL(url)
-                      } catch { /* ignore */ }
-                    }}
-                    className="flex items-center gap-2 h-10 px-5 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover cursor-pointer"
-                  >
-                    <Download className="h-4 w-4" />
-                    {t("files.download")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMemberMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowMemberMenu(null)} />
-      )}
-    </>
-  )}
-</div>
-)
+    </div>
+  )
 }

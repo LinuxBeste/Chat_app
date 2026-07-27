@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback } from "react"
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Alert, Modal, ScrollView, ActivityIndicator } from "react-native"
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
 import { Search, X } from "lucide-react-native"
@@ -39,14 +50,19 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
   ]
 
   useEffect(() => {
-    if (tab === "stats") api<Stats>("/api/admin/stats").then(setStats).catch(() => {})
+    if (tab === "stats")
+      api<Stats>("/api/admin/stats")
+        .then(setStats)
+        .catch(() => {})
   }, [tab])
 
   return (
     <View style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>{"<"} {t("common.back")}</Text>
+          <Text style={s.back}>
+            {"<"} {t("common.back")}
+          </Text>
         </TouchableOpacity>
         <Text style={s.title}>{t("admin.title")}</Text>
         <View style={{ width: 50 }} />
@@ -59,10 +75,7 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.tabsContent}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[s.tab, tab === item.key && s.tabActive]}
-              onPress={() => setTab(item.key)}
-            >
+            <TouchableOpacity style={[s.tab, tab === item.key && s.tabActive]} onPress={() => setTab(item.key)}>
               <Text style={[s.tabText, tab === item.key && s.tabTextActive]}>{item.label}</Text>
             </TouchableOpacity>
           )}
@@ -98,7 +111,9 @@ function AdminActivity() {
   const [logs, setLogs] = useState<any[]>([])
 
   useEffect(() => {
-    api<any[]>("/api/admin/activity").then(setLogs).catch(() => {})
+    api<any[]>("/api/admin/activity")
+      .then(setLogs)
+      .catch(() => {})
   }, [])
 
   return (
@@ -116,7 +131,9 @@ function AdminActivity() {
           </Text>
         </View>
       )}
-      ListEmptyComponent={<Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No activity logs</Text>}
+      ListEmptyComponent={
+        <Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No activity logs</Text>
+      }
     />
   )
 }
@@ -127,7 +144,9 @@ function AdminManagement() {
   const [adminMsg, setAdminMsg] = useState("")
 
   useEffect(() => {
-    api<any[]>("/api/admin/admins").then(setAdmins).catch(() => {})
+    api<any[]>("/api/admin/admins")
+      .then(setAdmins)
+      .catch(() => {})
   }, [])
 
   const addAdmin = async () => {
@@ -136,7 +155,9 @@ function AdminManagement() {
       await api("/api/admin/admins", { method: "POST", body: JSON.stringify({ userId: addAdminId.trim() }) })
       setAdminMsg("Admin added successfully")
       setAddAdminId("")
-      api<any[]>("/api/admin/admins").then(setAdmins).catch(() => {})
+      api<any[]>("/api/admin/admins")
+        .then(setAdmins)
+        .catch(() => {})
     } catch (e: any) {
       setAdminMsg(e?.message || "Failed to add admin")
     }
@@ -145,9 +166,15 @@ function AdminManagement() {
   const removeAdmin = (id: string) => {
     Alert.alert("Remove Admin", "", [
       { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => {
-        api(`/api/admin/admins/${id}`, { method: "DELETE" }).then(() => setAdmins((p) => p.filter((a) => a.id !== id))).catch(() => {})
-      }},
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          api(`/api/admin/admins/${id}`, { method: "DELETE" })
+            .then(() => setAdmins((p) => p.filter((a) => a.id !== id)))
+            .catch(() => {})
+        },
+      },
     ])
   }
 
@@ -157,18 +184,34 @@ function AdminManagement() {
         <Text style={{ color: "#E8E8F0", fontSize: 15, fontWeight: "600", marginBottom: 8 }}>Add Admin</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
-            style={{ flex: 1, backgroundColor: "#0A0A0F", borderRadius: 10, padding: 12, color: "#E8E8F0", fontSize: 14, borderWidth: 1, borderColor: "#252538" }}
+            style={{
+              flex: 1,
+              backgroundColor: "#0A0A0F",
+              borderRadius: 10,
+              padding: 12,
+              color: "#E8E8F0",
+              fontSize: 14,
+              borderWidth: 1,
+              borderColor: "#252538",
+            }}
             placeholder="User ID"
             placeholderTextColor="#585870"
             value={addAdminId}
             onChangeText={setAddAdminId}
             autoCapitalize="none"
           />
-          <TouchableOpacity style={{ backgroundColor: "#6C8CFF", borderRadius: 10, paddingHorizontal: 16, justifyContent: "center" }} onPress={addAdmin}>
+          <TouchableOpacity
+            style={{ backgroundColor: "#6C8CFF", borderRadius: 10, paddingHorizontal: 16, justifyContent: "center" }}
+            onPress={addAdmin}
+          >
             <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 14 }}>Add</Text>
           </TouchableOpacity>
         </View>
-        {adminMsg ? <Text style={{ color: adminMsg.includes("success") ? "#22C55E" : "#EF4444", fontSize: 12, marginTop: 4 }}>{adminMsg}</Text> : null}
+        {adminMsg ? (
+          <Text style={{ color: adminMsg.includes("success") ? "#22C55E" : "#EF4444", fontSize: 12, marginTop: 4 }}>
+            {adminMsg}
+          </Text>
+        ) : null}
       </View>
       <FlatList
         data={admins}
@@ -200,28 +243,51 @@ function AdminUsers() {
   const [detailUser, setDetailUser] = useState<AdminUser | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const loadUsers = useCallback(async (p: number) => {
-    setLoading(true)
-    try {
-      const data = await api<AdminUser[]>(`/api/admin/users?page=${p}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`)
-      setUsers(data)
-    } catch {}
-    setLoading(false)
-  }, [search])
+  const loadUsers = useCallback(
+    async (p: number) => {
+      setLoading(true)
+      try {
+        const data = await api<AdminUser[]>(
+          `/api/admin/users?page=${p}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`,
+        )
+        setUsers(data)
+      } catch {}
+      setLoading(false)
+    },
+    [search],
+  )
 
-  useEffect(() => { loadUsers(page) }, [page, loadUsers])
+  useEffect(() => {
+    loadUsers(page)
+  }, [page, loadUsers])
 
   const suspendUser = (id: string) => {
     Alert.alert("Suspend User", "", [
       { text: "Cancel", style: "cancel" },
-      { text: "Suspend", style: "destructive", onPress: () => { api(`/api/admin/users/${id}/suspend`, { method: "PUT" }).then(() => loadUsers(page)).catch(() => {}) }},
+      {
+        text: "Suspend",
+        style: "destructive",
+        onPress: () => {
+          api(`/api/admin/users/${id}/suspend`, { method: "PUT" })
+            .then(() => loadUsers(page))
+            .catch(() => {})
+        },
+      },
     ])
   }
 
   const deleteUser = (id: string) => {
     Alert.alert("Delete User", "This cannot be undone", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => { api(`/api/admin/users/${id}`, { method: "DELETE" }).then(() => setUsers((p) => p.filter((u) => u.id !== id))).catch(() => {}) }},
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          api(`/api/admin/users/${id}`, { method: "DELETE" })
+            .then(() => setUsers((p) => p.filter((u) => u.id !== id)))
+            .catch(() => {})
+        },
+      },
     ])
   }
 
@@ -233,9 +299,22 @@ function AdminUsers() {
           placeholder="Search users..."
           placeholderTextColor="#585870"
           value={search}
-          onChangeText={(v) => { setSearch(v); setPage(1) }}
+          onChangeText={(v) => {
+            setSearch(v)
+            setPage(1)
+          }}
         />
-        {search ? <TouchableOpacity onPress={() => { setSearch(""); setPage(1) }} style={{ padding: 8 }}><X size={16} color="#8888A0" /></TouchableOpacity> : null}
+        {search ? (
+          <TouchableOpacity
+            onPress={() => {
+              setSearch("")
+              setPage(1)
+            }}
+            style={{ padding: 8 }}
+          >
+            <X size={16} color="#8888A0" />
+          </TouchableOpacity>
+        ) : null}
       </View>
       {loading && <ActivityIndicator color="#6C8CFF" style={{ marginVertical: 20 }} />}
       <FlatList
@@ -271,24 +350,32 @@ function AdminUsers() {
         </TouchableOpacity>
       </View>
       <Modal visible={!!detailUser} transparent animationType="fade" onRequestClose={() => setDetailUser(null)}>
-        <View style={ss.overlay}><View style={ss.modal}>
-          <Text style={ss.modalTitle}>User Details</Text>
-          {detailUser && (
-            <>
-              <Text style={{ color: "#E8E8F0", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>{detailUser.username}</Text>
-              <Text style={{ color: "#8888A0", marginBottom: 4 }}>ID: {detailUser.id}</Text>
-              <Text style={{ color: "#8888A0", marginBottom: 4 }}>Email: {detailUser.email}</Text>
-              <Text style={{ color: "#8888A0", marginBottom: 4 }}>Joined: {new Date(detailUser.createdAt).toLocaleDateString()}</Text>
-              <Text style={{ color: detailUser.isSuspended === "true" ? "#EF4444" : "#22C55E", marginBottom: 4 }}>
-                Status: {detailUser.isSuspended === "true" ? "Suspended" : "Active"}
-              </Text>
-              <Text style={{ color: detailUser.isAdmin === "true" ? "#6C8CFF" : "#585870", marginBottom: 16 }}>
-                Role: {detailUser.isAdmin === "true" ? "Admin" : "User"}
-              </Text>
-            </>
-          )}
-          <TouchableOpacity style={ss.btn} onPress={() => setDetailUser(null)}><Text style={ss.btnText}>Close</Text></TouchableOpacity>
-        </View></View>
+        <View style={ss.overlay}>
+          <View style={ss.modal}>
+            <Text style={ss.modalTitle}>User Details</Text>
+            {detailUser && (
+              <>
+                <Text style={{ color: "#E8E8F0", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
+                  {detailUser.username}
+                </Text>
+                <Text style={{ color: "#8888A0", marginBottom: 4 }}>ID: {detailUser.id}</Text>
+                <Text style={{ color: "#8888A0", marginBottom: 4 }}>Email: {detailUser.email}</Text>
+                <Text style={{ color: "#8888A0", marginBottom: 4 }}>
+                  Joined: {new Date(detailUser.createdAt).toLocaleDateString()}
+                </Text>
+                <Text style={{ color: detailUser.isSuspended === "true" ? "#EF4444" : "#22C55E", marginBottom: 4 }}>
+                  Status: {detailUser.isSuspended === "true" ? "Suspended" : "Active"}
+                </Text>
+                <Text style={{ color: detailUser.isAdmin === "true" ? "#6C8CFF" : "#585870", marginBottom: 16 }}>
+                  Role: {detailUser.isAdmin === "true" ? "Admin" : "User"}
+                </Text>
+              </>
+            )}
+            <TouchableOpacity style={ss.btn} onPress={() => setDetailUser(null)}>
+              <Text style={ss.btnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   )
@@ -305,7 +392,9 @@ function AdminReports() {
     } catch {}
   }, [])
 
-  useEffect(() => { loadReports(filter) }, [filter, loadReports])
+  useEffect(() => {
+    loadReports(filter)
+  }, [filter, loadReports])
 
   const resolve = (id: string, status: string) => {
     api(`/api/admin/reports/${id}`, { method: "PUT", body: JSON.stringify({ status }) })
@@ -317,8 +406,14 @@ function AdminReports() {
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: "row", padding: 16, gap: 8 }}>
         {["all", "open", "resolved", "dismissed"].map((f) => (
-          <TouchableOpacity key={f} style={[ss.filterChip, filter === f && ss.filterChipActive]} onPress={() => setFilter(f)}>
-            <Text style={[ss.filterChipText, filter === f && ss.filterChipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
+          <TouchableOpacity
+            key={f}
+            style={[ss.filterChip, filter === f && ss.filterChipActive]}
+            onPress={() => setFilter(f)}
+          >
+            <Text style={[ss.filterChipText, filter === f && ss.filterChipTextActive]}>
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -329,12 +424,18 @@ function AdminReports() {
         renderItem={({ item }) => (
           <View style={ss.reportItem}>
             <Text style={ss.reportTitle}>{item.reason || "Report"}</Text>
-            <Text style={ss.reportMeta}>From: {item.reporterId || "unknown"} · Target: {item.targetUserId || "unknown"} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}</Text>
+            <Text style={ss.reportMeta}>
+              From: {item.reporterId || "unknown"} · Target: {item.targetUserId || "unknown"} ·{" "}
+              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+            </Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
               <TouchableOpacity style={ss.smallBtn} onPress={() => resolve(item.id, "resolved")}>
                 <Text style={ss.smallBtnText}>Resolve</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[ss.smallBtn, { backgroundColor: "#8888A0" }]} onPress={() => resolve(item.id, "dismissed")}>
+              <TouchableOpacity
+                style={[ss.smallBtn, { backgroundColor: "#8888A0" }]}
+                onPress={() => resolve(item.id, "dismissed")}
+              >
                 <Text style={ss.smallBtnText}>Dismiss</Text>
               </TouchableOpacity>
             </View>
@@ -352,11 +453,15 @@ function AdminBans() {
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    api<any[]>(`/api/admin/bans?page=${page}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`).then(setBans).catch(() => {})
+    api<any[]>(`/api/admin/bans?page=${page}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`)
+      .then(setBans)
+      .catch(() => {})
   }, [page, search])
 
   const unban = (id: string) => {
-    api(`/api/admin/bans/${id}`, { method: "DELETE" }).then(() => setBans((p) => p.filter((b) => b.id !== id))).catch(() => {})
+    api(`/api/admin/bans/${id}`, { method: "DELETE" })
+      .then(() => setBans((p) => p.filter((b) => b.id !== id)))
+      .catch(() => {})
   }
 
   return (
@@ -366,7 +471,10 @@ function AdminBans() {
         placeholder="Search bans..."
         placeholderTextColor="#585870"
         value={search}
-        onChangeText={(v) => { setSearch(v); setPage(1) }}
+        onChangeText={(v) => {
+          setSearch(v)
+          setPage(1)
+        }}
       />
       <FlatList
         data={bans}
@@ -374,7 +482,10 @@ function AdminBans() {
         renderItem={({ item }) => (
           <View style={ss.reportItem}>
             <Text style={ss.reportTitle}>{item.userId}</Text>
-            <Text style={ss.reportMeta}>{item.reason || "No reason"} · {item.expiresAt ? `Expires: ${new Date(item.expiresAt).toLocaleDateString()}` : "Permanent"}</Text>
+            <Text style={ss.reportMeta}>
+              {item.reason || "No reason"} ·{" "}
+              {item.expiresAt ? `Expires: ${new Date(item.expiresAt).toLocaleDateString()}` : "Permanent"}
+            </Text>
             <TouchableOpacity style={ss.smallBtn} onPress={() => unban(item.id)}>
               <Text style={ss.smallBtnText}>Unban</Text>
             </TouchableOpacity>
@@ -397,15 +508,40 @@ function AdminBans() {
 
 const ss = StyleSheet.create({
   statsGrid: { flexDirection: "row", flexWrap: "wrap", padding: 16, gap: 12 },
-  statCard: { width: "45%", backgroundColor: "#101016", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#252538", alignItems: "center", flex: 1, minWidth: 140 },
+  statCard: {
+    width: "45%",
+    backgroundColor: "#101016",
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#252538",
+    alignItems: "center",
+    flex: 1,
+    minWidth: 140,
+  },
   statValue: { color: "#E8E8F0", fontSize: 28, fontWeight: "700" },
   statLabel: { color: "#585870", fontSize: 12, marginTop: 4 },
-  searchInput: { backgroundColor: "#101016", borderRadius: 12, padding: 12, color: "#E8E8F0", fontSize: 15, borderWidth: 1, borderColor: "#252538", marginBottom: 12 },
+  searchInput: {
+    backgroundColor: "#101016",
+    borderRadius: 12,
+    padding: 12,
+    color: "#E8E8F0",
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#252538",
+    marginBottom: 12,
+  },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825" },
   filterChipActive: { backgroundColor: "#6C8CFF" },
   filterChipText: { color: "#8888A0", fontSize: 13 },
   filterChipTextActive: { color: "#FFFFFF", fontWeight: "600" },
-  userItem: { flexDirection: "row", padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538", alignItems: "center" },
+  userItem: {
+    flexDirection: "row",
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+    alignItems: "center",
+  },
   userName: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
   userEmail: { color: "#8888A0", fontSize: 13 },
   userMeta: { color: "#585870", fontSize: 11, marginTop: 2 },
@@ -416,15 +552,38 @@ const ss = StyleSheet.create({
   reportTitle: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
   reportMeta: { color: "#585870", fontSize: 12, marginTop: 4, marginBottom: 8 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
-  modal: { width: "100%", maxWidth: 360, backgroundColor: "#101016", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "#252538" },
+  modal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#101016",
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
-  btn: { backgroundColor: "#6C8CFF", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  btn: {
+    backgroundColor: "#6C8CFF",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+  },
   btnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 })
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0A0F" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
   title: { fontSize: 17, fontWeight: "600", color: "#E8E8F0" },

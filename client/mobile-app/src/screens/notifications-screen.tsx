@@ -22,25 +22,35 @@ const NOTIFICATION_ICONS: Record<string, typeof MessageSquare> = {
   call: Phone,
 }
 
-export function NotificationsScreen({ onNavigateToConversation }: { onNavigateToConversation?: (convId: string) => void }) {
+export function NotificationsScreen({
+  onNavigateToConversation,
+}: {
+  onNavigateToConversation?: (convId: string) => void
+}) {
   const { t } = useTranslation()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [tab, setTab] = useState<"all" | "unread">("all")
 
   const load = useCallback(() => {
-    api<Notification[]>("/api/notifications").then(setNotifications).catch(() => {})
+    api<Notification[]>("/api/notifications")
+      .then(setNotifications)
+      .catch(() => {})
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true); await load(); setRefreshing(false)
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
   }, [load])
 
   const markRead = (id: string) => {
     api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: "true" } : n))
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
   }
 
   const markAllRead = () => {
@@ -66,7 +76,9 @@ export function NotificationsScreen({ onNavigateToConversation }: { onNavigateTo
       <View style={s.header}>
         <Text style={s.title}>{t("notifications.title")}</Text>
         <View style={s.headerRight}>
-          <Text style={s.count}>{unread.length} {t("notifications.unread")}</Text>
+          <Text style={s.count}>
+            {unread.length} {t("notifications.unread")}
+          </Text>
           {unread.length > 0 && (
             <TouchableOpacity onPress={markAllRead} style={s.markAllBtn}>
               <Text style={s.markAllText}>{t("notifications.markAllRead")}</Text>
@@ -91,7 +103,10 @@ export function NotificationsScreen({ onNavigateToConversation }: { onNavigateTo
           return (
             <TouchableOpacity
               style={[s.item, item.isRead === "false" && s.unread]}
-              onPress={() => { markRead(item.id); if (item.conversationId) onNavigateToConversation?.(item.conversationId) }}
+              onPress={() => {
+                markRead(item.id)
+                if (item.conversationId) onNavigateToConversation?.(item.conversationId)
+              }}
             >
               <View style={s.iconWrap}>
                 <IconComp size={16} color="#6C8CFF" />
@@ -113,7 +128,15 @@ export function NotificationsScreen({ onNavigateToConversation }: { onNavigateTo
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0A0F" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
   count: { color: "#6C8CFF", fontSize: 13 },
@@ -125,8 +148,23 @@ const s = StyleSheet.create({
   body: { color: "#8888A0", fontSize: 13, marginTop: 2 },
   time: { color: "#585870", fontSize: 11, marginTop: 4 },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#6C8CFF", marginLeft: 12 },
-  iconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(108,140,255,0.1)", justifyContent: "center", alignItems: "center", marginRight: 12 },
-  filterRow: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(108,140,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  filterRow: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   filterBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825" },
   filterActive: { backgroundColor: "#6C8CFF" },
   filterText: { color: "#8888A0", fontSize: 13 },

@@ -5,7 +5,13 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { communities, communityMembers, communityChannels, communityVoiceChannels, communityInvites } from "../db/schema.js"
+import {
+  communities,
+  communityMembers,
+  communityChannels,
+  communityVoiceChannels,
+  communityInvites,
+} from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { logger } from "../lib/logger.js"
 
@@ -53,7 +59,10 @@ router.get(
     }
     const members = await db.select().from(communityMembers).where(eq(communityMembers.communityId, community.id))
     const channels = await db.select().from(communityChannels).where(eq(communityChannels.communityId, community.id))
-    const voiceChannels = await db.select().from(communityVoiceChannels).where(eq(communityVoiceChannels.communityId, community.id))
+    const voiceChannels = await db
+      .select()
+      .from(communityVoiceChannels)
+      .where(eq(communityVoiceChannels.communityId, community.id))
     res.json({ ...community, members, channels, voiceChannels })
   }),
 )
@@ -152,7 +161,12 @@ router.delete(
   catchAsync(async (req: Request, res: Response) => {
     await db
       .delete(communityMembers)
-      .where(and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.params.userId as string)))
+      .where(
+        and(
+          eq(communityMembers.communityId, req.params.id as string),
+          eq(communityMembers.userId, req.params.userId as string),
+        ),
+      )
     res.json({ message: "Member removed" })
   }),
 )
@@ -166,7 +180,12 @@ router.put(
     await db
       .update(communityMembers)
       .set({ role: req.body.role })
-      .where(and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.params.userId as string)))
+      .where(
+        and(
+          eq(communityMembers.communityId, req.params.id as string),
+          eq(communityMembers.userId, req.params.userId as string),
+        ),
+      )
     res.json({ message: "Role updated" })
   }),
 )

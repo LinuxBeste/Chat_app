@@ -3,8 +3,22 @@ import { api, apiFormData, BASE_URL } from "../../lib/api"
 import { useTranslation } from "react-i18next"
 import { useToast } from "../../lib/toast-context"
 import {
-  FileText, Image, Film, Music, Archive, Download, Upload, FolderPlus,
-  Folder, X, Loader2, Trash2, Users, Edit3, Check, FolderOpen,
+  FileText,
+  Image,
+  Film,
+  Music,
+  Archive,
+  Download,
+  Upload,
+  FolderPlus,
+  Folder,
+  X,
+  Loader2,
+  Trash2,
+  Users,
+  Edit3,
+  Check,
+  FolderOpen,
 } from "lucide-react"
 
 interface FileItem {
@@ -69,8 +83,12 @@ export function FilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    api<FileItem[]>("/api/files/list").then(setFiles).catch(() => {})
-    api<FolderData[]>("/api/files/folders").then(setFolders).catch(() => {})
+    api<FileItem[]>("/api/files/list")
+      .then(setFiles)
+      .catch(() => {})
+    api<FolderData[]>("/api/files/folders")
+      .then(setFolders)
+      .catch(() => {})
   }, [])
 
   const uploadFile = useCallback(async (file: File) => {
@@ -108,7 +126,7 @@ export function FilesPage() {
         method: "POST",
         body: JSON.stringify({ name: newFolderName.trim(), parentId: parentFolderId }),
       })
-      setFolders((prev) => prev.some((f) => f.id === folder.id) ? prev : [...prev, folder])
+      setFolders((prev) => (prev.some((f) => f.id === folder.id) ? prev : [...prev, folder]))
       setNewFolderName("")
       setShowNewFolder(false)
       setParentFolderId(null)
@@ -193,7 +211,9 @@ export function FilesPage() {
         body: JSON.stringify({ filename: renameValue.trim() }),
       })
       setFiles((prev) => prev.map((f) => (f.id === renamingFileId ? { ...f, filename: updated.filename } : f)))
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setRenamingFileId(null)
     setRenameValue("")
   }
@@ -210,7 +230,9 @@ export function FilesPage() {
         body: JSON.stringify({ folderId }),
       })
       setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)))
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setMovingFileId(null)
   }
 
@@ -276,11 +298,16 @@ export function FilesPage() {
             <FolderPlus className="h-4 w-4" />
             {t("files.newFolder")}
           </button>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) uploadFile(file)
-            if (fileInputRef.current) fileInputRef.current.value = ""
-          }} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) uploadFile(file)
+              if (fileInputRef.current) fileInputRef.current.value = ""
+            }}
+          />
         </div>
       </div>
 
@@ -295,22 +322,33 @@ export function FilesPage() {
                 onDragOver={handleFolderDragOver}
                 onDrop={(e) => handleFolderDrop(e, folder.id)}
                 className={`relative group rounded-2xl border p-3 cursor-pointer transition-all ${
-                  selectedFolderId === folder.id ? "border-accent bg-accent/5" : "border-border bg-surface hover:border-accent/50"
+                  selectedFolderId === folder.id
+                    ? "border-accent bg-accent/5"
+                    : "border-border bg-surface hover:border-accent/50"
                 }`}
                 onClick={() => setSelectedFolderId(selectedFolderId === folder.id ? null : folder.id)}
               >
-                <Folder className={`h-8 w-8 mb-1 ${selectedFolderId === folder.id ? "text-accent" : "text-text-muted"}`} />
+                <Folder
+                  className={`h-8 w-8 mb-1 ${selectedFolderId === folder.id ? "text-accent" : "text-text-muted"}`}
+                />
                 <p className="text-sm text-text-primary truncate">{folder.name}</p>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => { e.stopPropagation(); setShowFolderMembers(showFolderMembers === folder.id ? null : folder.id); loadFolderMembers(folder.id) }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowFolderMembers(showFolderMembers === folder.id ? null : folder.id)
+                      loadFolderMembers(folder.id)
+                    }}
                     className="p-1 rounded-lg text-text-muted hover:text-accent bg-surface/80 hover:bg-surface"
                     title={t("files.manageAccess")}
                   >
                     <Users className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id) }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteFolder(folder.id)
+                    }}
                     className="p-1 rounded-lg text-text-muted hover:text-danger bg-surface/80 hover:bg-surface"
                     title={t("files.deleteFolder")}
                   >
@@ -342,7 +380,10 @@ export function FilesPage() {
             {t("common.create")}
           </button>
           <button
-            onClick={() => { setShowNewFolder(false); setNewFolderName("") }}
+            onClick={() => {
+              setShowNewFolder(false)
+              setNewFolderName("")
+            }}
             className="h-10 w-10 flex items-center justify-center rounded-2xl text-text-muted hover:text-text-primary cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -355,7 +396,10 @@ export function FilesPage() {
         <div className="rounded-2xl border border-border bg-surface p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium text-text-primary">{t("files.folderAccess")}</p>
-            <button onClick={() => setShowFolderMembers(null)} className="text-text-muted hover:text-text-primary cursor-pointer">
+            <button
+              onClick={() => setShowFolderMembers(null)}
+              className="text-text-muted hover:text-text-primary cursor-pointer"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -365,7 +409,10 @@ export function FilesPage() {
                 <span className="text-text-primary font-mono text-xs">{m.userId.slice(0, 8)}...</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-text-muted capitalize">{m.permission}</span>
-                  <button onClick={() => removeFolderMember(m.userId)} className="text-text-muted hover:text-danger cursor-pointer">
+                  <button
+                    onClick={() => removeFolderMember(m.userId)}
+                    className="text-text-muted hover:text-danger cursor-pointer"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -379,7 +426,10 @@ export function FilesPage() {
               placeholder={t("files.userIdPlaceholder")}
               className="flex-1 h-9 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50"
             />
-            <button onClick={addFolderMember} className="h-9 px-3 rounded-2xl bg-accent text-white text-sm cursor-pointer">
+            <button
+              onClick={addFolderMember}
+              className="h-9 px-3 rounded-2xl bg-accent text-white text-sm cursor-pointer"
+            >
               {t("common.add")}
             </button>
           </div>
@@ -421,13 +471,19 @@ export function FilesPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                     <button
-                      onClick={(e) => { e.stopPropagation(); confirmRename() }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        confirmRename()
+                      }}
                       className="p-1.5 rounded-lg text-accent hover:bg-accent/10 transition-all cursor-pointer"
                     >
                       <Check className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); cancelRename() }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        cancelRename()
+                      }}
                       className="p-1.5 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
                     >
                       <X className="h-4 w-4" />
@@ -444,7 +500,10 @@ export function FilesPage() {
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={(e) => { e.stopPropagation(); startRename(f) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    startRename(f)
+                  }}
                   className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
                   aria-label={t("files.rename")}
                 >
@@ -466,13 +525,18 @@ export function FilesPage() {
                       <option value="">{t("files.moveTo")}</option>
                       <option value="__root__">{t("files.rootFolder")}</option>
                       {folders.map((folder) => (
-                        <option key={folder.id} value={folder.id}>{folder.name}</option>
+                        <option key={folder.id} value={folder.id}>
+                          {folder.name}
+                        </option>
                       ))}
                     </select>
                   </div>
                 ) : (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setMovingFileId(f.id) }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMovingFileId(f.id)
+                    }}
                     className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
                     aria-label={t("files.moveToFolder")}
                   >
@@ -497,26 +561,46 @@ export function FilesPage() {
 
       {/* File Preview Modal */}
       {filePreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setFilePreview(null); setPreviewText(null) }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => {
+            setFilePreview(null)
+            setPreviewText(null)
+          }}
+        >
           <div
             className="w-full max-w-2xl max-h-[80vh] rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-3">
               <h3 className="text-sm font-semibold text-text-primary truncate">{filePreview.filename}</h3>
-              <button onClick={() => { setFilePreview(null); setPreviewText(null) }} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => {
+                  setFilePreview(null)
+                  setPreviewText(null)
+                }}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
               {filePreview.mimeType.startsWith("image/") ? (
-                <img src={`${BASE_URL}${filePreview.url}`} alt={filePreview.filename} className="max-w-full rounded-2xl" />
+                <img
+                  src={`${BASE_URL}${filePreview.url}`}
+                  alt={filePreview.filename}
+                  className="max-w-full rounded-2xl"
+                />
               ) : filePreview.mimeType.startsWith("text/") ? (
                 <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">
                   {previewText ?? t("common.loading")}
                 </pre>
               ) : filePreview.mimeType === "application/pdf" ? (
-                <iframe src={`${BASE_URL}${filePreview.url}`} className="w-full h-[60vh] rounded-2xl" title={filePreview.filename} />
+                <iframe
+                  src={`${BASE_URL}${filePreview.url}`}
+                  className="w-full h-[60vh] rounded-2xl"
+                  title={filePreview.filename}
+                />
               ) : (
                 <div className="flex flex-col items-center gap-4 py-8 text-text-muted">
                   {fileIcon(filePreview.mimeType)}

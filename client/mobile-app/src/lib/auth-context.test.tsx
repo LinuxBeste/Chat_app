@@ -58,10 +58,13 @@ describe("AuthProvider", () => {
     expect(result.current.user).toEqual(userData)
     expect(result.current.loading).toBe(false)
     expect(mockWsConnect).toHaveBeenCalled()
-    expect(mockApi).toHaveBeenCalledWith("/api/auth/login", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ login: "test", password: "password" }),
-    }))
+    expect(mockApi).toHaveBeenCalledWith(
+      "/api/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ login: "test", password: "password" }),
+      }),
+    )
   })
 
   it("register calls api with username, email, password", async () => {
@@ -75,10 +78,13 @@ describe("AuthProvider", () => {
     })
 
     expect(result.current.user).toEqual(userData)
-    expect(mockApi).toHaveBeenCalledWith("/api/auth/register", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ username: "newuser", email: "new@test.com", password: "password" }),
-    }))
+    expect(mockApi).toHaveBeenCalledWith(
+      "/api/auth/register",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ username: "newuser", email: "new@test.com", password: "password" }),
+      }),
+    )
   })
 
   it("register sets needsSetup when flag is returned", async () => {

@@ -104,8 +104,7 @@ export const attachments = pgTable(
   "attachments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    messageId: uuid("message_id")
-      .references(() => messages.id),
+    messageId: uuid("message_id").references(() => messages.id),
     url: text("url").notNull(),
     mimeType: text("mime_type").notNull(),
     size: integer("size").notNull(),
@@ -120,7 +119,9 @@ export const attachments = pgTable(
 
 export const publicKeys = pgTable("public_keys", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   key: text("key").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -312,9 +313,9 @@ export const notifications = pgTable(
 
 export const totpSecrets = pgTable("totp_secrets", {
   id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .references(() => users.id)
-      .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
   secret: text("secret").notNull(),
   verified: text("verified").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

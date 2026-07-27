@@ -10,12 +10,14 @@ import { eq, and, or, ilike } from "drizzle-orm"
 
 const router: RouterType = Router()
 
-const requestSchema = z.object({
-  friendId: z.string().uuid().optional(),
-  username: z.string().min(1).max(30).optional(),
-}).refine((data) => data.friendId || data.username, {
-  message: "Either friendId or username is required",
-})
+const requestSchema = z
+  .object({
+    friendId: z.string().uuid().optional(),
+    username: z.string().min(1).max(30).optional(),
+  })
+  .refine((data) => data.friendId || data.username, {
+    message: "Either friendId or username is required",
+  })
 
 router.get(
   "/search",
@@ -85,14 +87,26 @@ router.get(
 
     let user
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) {
-      [user] = await db
-        .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, status: users.status })
+      ;[user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+          status: users.status,
+        })
         .from(users)
         .where(eq(users.id, q))
         .limit(1)
     } else {
-      [user] = await db
-        .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, status: users.status })
+      ;[user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+          status: users.status,
+        })
         .from(users)
         .where(eq(users.username, q))
         .limit(1)
@@ -143,11 +157,7 @@ router.post(
     let friendId = req.body.friendId
 
     if (!friendId && req.body.username) {
-      const [user] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.username, req.body.username))
-        .limit(1)
+      const [user] = await db.select({ id: users.id }).from(users).where(eq(users.username, req.body.username)).limit(1)
       if (!user) {
         res.status(404).json({ error: "User not found by username" })
         return
@@ -255,9 +265,7 @@ router.get(
       })
       .from(friends)
       .innerJoin(users, eq(users.id, friends.userId))
-      .where(
-        and(eq(friends.friendId, userId), eq(friends.status, "pending")),
-      )
+      .where(and(eq(friends.friendId, userId), eq(friends.status, "pending")))
 
     res.json(result)
   }),

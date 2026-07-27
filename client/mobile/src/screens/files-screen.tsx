@@ -2,13 +2,20 @@ import { View, Text, FlatList, StyleSheet } from "react-native"
 import { useState, useEffect } from "react"
 import { api } from "../lib/api"
 
-interface FileEntry { id: string; name: string; type: string; size: number }
+interface FileEntry {
+  id: string
+  name: string
+  type: string
+  size: number
+}
 
 export function FilesScreen() {
   const [files, setFiles] = useState<FileEntry[]>([])
 
   useEffect(() => {
-    api<FileEntry[]>("/api/uploads").then(setFiles).catch(() => {})
+    api<FileEntry[]>("/api/uploads")
+      .then(setFiles)
+      .catch(() => {})
   }, [])
 
   return (
@@ -24,7 +31,9 @@ export function FilesScreen() {
             <Text style={s.fileIcon}>📄</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.name}>{item.name}</Text>
-              <Text style={s.meta}>{item.type} · {(item.size / 1024).toFixed(1)} KB</Text>
+              <Text style={s.meta}>
+                {item.type} · {(item.size / 1024).toFixed(1)} KB
+              </Text>
             </View>
           </View>
         )}

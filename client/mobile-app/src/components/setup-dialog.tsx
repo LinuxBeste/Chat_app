@@ -23,7 +23,10 @@ export function SetupDialog() {
   const [saving, setSaving] = useState(false)
 
   const handleNext = async () => {
-    if (step < 3) { setStep(step + 1); return }
+    if (step < 3) {
+      setStep(step + 1)
+      return
+    }
     if (displayName.trim()) {
       setSaving(true)
       try {
@@ -80,11 +83,21 @@ export function SetupDialog() {
               <Text style={s.title}>Choose Theme</Text>
               <Text style={s.desc}>Pick light or dark mode</Text>
               <View style={s.themeRow}>
-                <TouchableOpacity style={[s.themeBtn, theme === "light" && s.themeBtnActive]} onPress={() => { if (theme !== "light") toggleTheme() }}>
+                <TouchableOpacity
+                  style={[s.themeBtn, theme === "light" && s.themeBtnActive]}
+                  onPress={() => {
+                    if (theme !== "light") toggleTheme()
+                  }}
+                >
                   <Sun size={32} color={theme === "light" ? "#6C8CFF" : "#E8E8F0"} />
                   <Text style={[s.themeLabel, theme === "light" && s.themeLabelActive]}>Light</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.themeBtn, theme === "dark" && s.themeBtnActive]} onPress={() => { if (theme !== "dark") toggleTheme() }}>
+                <TouchableOpacity
+                  style={[s.themeBtn, theme === "dark" && s.themeBtnActive]}
+                  onPress={() => {
+                    if (theme !== "dark") toggleTheme()
+                  }}
+                >
                   <Moon size={32} color={theme === "dark" ? "#6C8CFF" : "#E8E8F0"} />
                   <Text style={[s.themeLabel, theme === "dark" && s.themeLabelActive]}>Dark</Text>
                 </TouchableOpacity>
@@ -111,7 +124,9 @@ export function SetupDialog() {
           )}
 
           <View style={s.actions}>
-            <TouchableOpacity onPress={skip}><Text style={s.skip}>Skip</Text></TouchableOpacity>
+            <TouchableOpacity onPress={skip}>
+              <Text style={s.skip}>Skip</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={s.nextBtn} onPress={handleNext}>
               <Text style={s.nextText}>{step < 3 ? "Next" : saving ? "Saving..." : "Finish"}</Text>
               {step < 3 && <ChevronRight size={16} color="#FFFFFF" />}
@@ -125,7 +140,15 @@ export function SetupDialog() {
 
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center", padding: 24 },
-  card: { width: "100%", maxWidth: 380, backgroundColor: "#101016", borderRadius: 28, borderWidth: 1, borderColor: "#252538", padding: 28 },
+  card: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#101016",
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#252538",
+    padding: 28,
+  },
   progress: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 8 },
   dot: { width: 32, height: 4, borderRadius: 2, backgroundColor: "#252538" },
   dotActive: { backgroundColor: "#6C8CFF" },
@@ -135,20 +158,67 @@ const s = StyleSheet.create({
   emoji: { fontSize: 64, textAlign: "center", marginBottom: 12 },
   body: { color: "#8888A0", fontSize: 14, textAlign: "center", marginBottom: 8 },
   langGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 12 },
-  langBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#181825", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: "#252538" },
+  langBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#181825",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   langBtnActive: { borderColor: "#6C8CFF", backgroundColor: "rgba(108,140,255,0.1)" },
   langText: { color: "#E8E8F0", fontSize: 15 },
   langTextActive: { color: "#6C8CFF", fontWeight: "600" },
   themeRow: { flexDirection: "row", gap: 16, justifyContent: "center", marginBottom: 12 },
-  themeBtn: { width: 100, height: 80, borderRadius: 16, backgroundColor: "#181825", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#252538" },
+  themeBtn: {
+    width: 100,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   themeBtnActive: { borderColor: "#6C8CFF", backgroundColor: "rgba(108,140,255,0.1)" },
   themeLabel: { color: "#8888A0", fontSize: 12, marginTop: 6 },
   themeLabelActive: { color: "#6C8CFF", fontWeight: "600" },
-  avatarCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#181825", justifyContent: "center", alignItems: "center", alignSelf: "center", marginBottom: 16, borderWidth: 2, borderColor: "#252538" },
+  avatarCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "#252538",
+  },
   avatarText: { color: "#E8E8F0", fontSize: 28, fontWeight: "600" },
-  input: { backgroundColor: "#0A0A0F", borderRadius: 14, padding: 16, color: "#E8E8F0", fontSize: 16, borderWidth: 1, borderColor: "#252538", marginBottom: 8 },
+  input: {
+    backgroundColor: "#0A0A0F",
+    borderRadius: 14,
+    padding: 16,
+    color: "#E8E8F0",
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#252538",
+    marginBottom: 8,
+  },
   actions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20 },
   skip: { color: "#585870", fontSize: 15 },
-  nextBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#6C8CFF", borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 },
+  nextBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#6C8CFF",
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
   nextText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 })

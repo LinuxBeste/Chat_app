@@ -21,13 +21,19 @@ export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) =>
   const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(() => {
-    api<Call[]>("/api/calls").then(setCalls).catch(() => {})
+    api<Call[]>("/api/calls")
+      .then(setCalls)
+      .catch(() => {})
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true); await load(); setRefreshing(false)
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
   }, [load])
 
   const formatTime = (iso: string) => {
@@ -67,11 +73,16 @@ export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) =>
                 <Text style={s.name}>{info.label}</Text>
                 <Text style={s.meta}>
                   {formatTime(item.createdAt)}
-                  {item.duration ? ` · ${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, "0")}` : ""}
+                  {item.duration
+                    ? ` · ${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, "0")}`
+                    : ""}
                 </Text>
               </View>
               <Text style={[s.status, { color: info.color }]}>{item.status}</Text>
-              <TouchableOpacity style={{ marginLeft: 8, padding: 8 }} onPress={() => onStartCall?.(item.callerId === user?.id ? item.calleeId : item.callerId)}>
+              <TouchableOpacity
+                style={{ marginLeft: 8, padding: 8 }}
+                onPress={() => onStartCall?.(item.callerId === user?.id ? item.calleeId : item.callerId)}
+              >
                 <Phone size={16} color="#6C8CFF" />
               </TouchableOpacity>
             </View>
@@ -88,7 +99,15 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#252538" },
   title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
   item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538" },
-  iconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(34,197,94,0.1)", justifyContent: "center", alignItems: "center", marginRight: 14 },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(34,197,94,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
   missedIcon: { backgroundColor: "rgba(239,68,68,0.1)" },
   name: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
   meta: { color: "#585870", fontSize: 12, marginTop: 2 },

@@ -72,7 +72,11 @@ function setConvKey(conversationId: string, key: Uint8Array) {
   localStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
 }
 
-export async function encryptMessage(conversationId: string, content: string, theirPublicKey?: string): Promise<string | null> {
+export async function encryptMessage(
+  conversationId: string,
+  content: string,
+  theirPublicKey?: string,
+): Promise<string | null> {
   let sharedKey = getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)
@@ -87,7 +91,11 @@ export async function encryptMessage(conversationId: string, content: string, th
   return encodeBase64(nonce) + "." + encodeBase64(encrypted)
 }
 
-export async function decryptMessage(conversationId: string, ciphertext: string, theirPublicKey?: string): Promise<string | null> {
+export async function decryptMessage(
+  conversationId: string,
+  ciphertext: string,
+  theirPublicKey?: string,
+): Promise<string | null> {
   let sharedKey = getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)

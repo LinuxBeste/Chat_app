@@ -44,14 +44,20 @@ export function GroupsPage() {
       await api(`/api/conversations/${id}`, { method: "DELETE" })
       setGroups((prev) => prev.filter((g) => g.id !== id))
       if (selectedGroupId === id) setSelectedGroupId(null)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   const createGroup = async () => {
     if (!createName.trim()) return
     const conv = await api<Group>("/api/conversations", {
       method: "POST",
-      body: JSON.stringify({ type: "group", name: createName.trim(), participantIds: Array.from(selectedParticipants) }),
+      body: JSON.stringify({
+        type: "group",
+        name: createName.trim(),
+        participantIds: Array.from(selectedParticipants),
+      }),
     }).catch(() => null)
     if (conv) {
       setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)])
@@ -79,7 +85,9 @@ export function GroupsPage() {
 
   return (
     <div className="flex h-full">
-      <div className={`flex flex-col border-r border-border ${selectedGroupId ? "w-72 shrink-0 hidden md:flex" : "flex-1"}`}>
+      <div
+        className={`flex flex-col border-r border-border ${selectedGroupId ? "w-72 shrink-0 hidden md:flex" : "flex-1"}`}
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text-primary">{t("groups.title")}</h2>
           <button
@@ -91,9 +99,7 @@ export function GroupsPage() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {groups.length === 0 && (
-            <p className="text-sm text-text-muted text-center py-8">{t("groups.noGroups")}</p>
-          )}
+          {groups.length === 0 && <p className="text-sm text-text-muted text-center py-8">{t("groups.noGroups")}</p>}
           {groups.map((g) => (
             <button
               key={g.id}
@@ -115,7 +121,10 @@ export function GroupsPage() {
               </div>
               {g.createdBy === user?.id && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); deleteGroup(g.id) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteGroup(g.id)
+                  }}
                   className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer shrink-0"
                   title={t("common.delete")}
                 >
@@ -139,7 +148,15 @@ export function GroupsPage() {
       </div>
 
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowCreate(false); setCreateSearchQuery(""); setCreateSearchResults([]); setSelectedParticipants(new Set()) }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => {
+            setShowCreate(false)
+            setCreateSearchQuery("")
+            setCreateSearchResults([])
+            setSelectedParticipants(new Set())
+          }}
+        >
           <div
             className="w-full max-w-sm rounded-[32px] border border-border bg-surface p-6"
             onClick={(e) => e.stopPropagation()}
@@ -147,7 +164,12 @@ export function GroupsPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">{t("groups.createGroup")}</h3>
               <button
-                onClick={() => { setShowCreate(false); setCreateSearchQuery(""); setCreateSearchResults([]); setSelectedParticipants(new Set()) }}
+                onClick={() => {
+                  setShowCreate(false)
+                  setCreateSearchQuery("")
+                  setCreateSearchResults([])
+                  setSelectedParticipants(new Set())
+                }}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -179,7 +201,13 @@ export function GroupsPage() {
                     >
                       {u?.displayName || u?.username || id.slice(0, 8)}
                       <button
-                        onClick={() => setSelectedParticipants((prev) => { const next = new Set(prev); next.delete(id); return next })}
+                        onClick={() =>
+                          setSelectedParticipants((prev) => {
+                            const next = new Set(prev)
+                            next.delete(id)
+                            return next
+                          })
+                        }
                         className="hover:text-accent-hover cursor-pointer"
                       >
                         <X className="h-3 w-3" />

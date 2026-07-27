@@ -37,7 +37,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <TouchableOpacity
             key={toast.id}
-            style={[s.toast, toast.type === "error" && s.error, toast.type === "success" && s.success, toast.type === "info" && s.info]}
+            style={[
+              s.toast,
+              toast.type === "error" && s.error,
+              toast.type === "success" && s.success,
+              toast.type === "info" && s.info,
+            ]}
             onPress={() => dismiss(toast.id)}
           >
             <Text style={s.text}>{toast.message}</Text>
@@ -56,7 +61,16 @@ export function useToast() {
 
 const s = StyleSheet.create({
   container: { position: "absolute", bottom: 100, left: 16, right: 16, zIndex: 9999 },
-  toast: { borderRadius: 16, padding: 14, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  toast: {
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   error: { backgroundColor: "#EF4444" },
   success: { backgroundColor: "#22C55E" },
   info: { backgroundColor: "#4850BB" },

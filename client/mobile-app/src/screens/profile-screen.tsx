@@ -24,12 +24,14 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
   const [status, setStatus] = useState(user?.status || "online")
 
   useEffect(() => {
-    api("/api/users/me").then((u: any) => {
-      setDisplayName(u.displayName || "")
-      setBio(u.bio || "")
-      setStatus(u.status || "online")
-      setCustomStatus(u.customStatus || "")
-    }).catch(() => {})
+    api("/api/users/me")
+      .then((u: any) => {
+        setDisplayName(u.displayName || "")
+        setBio(u.bio || "")
+        setStatus(u.status || "online")
+        setCustomStatus(u.customStatus || "")
+      })
+      .catch(() => {})
   }, [])
 
   const saveProfile = async () => {
@@ -69,7 +71,9 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>{"<"} {t("common.back")}</Text>
+          <Text style={s.back}>
+            {"<"} {t("common.back")}
+          </Text>
         </TouchableOpacity>
         <Text style={s.title}>{t("profile.title")}</Text>
         <View style={{ width: 50 }} />
@@ -133,7 +137,13 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
 
         <View style={s.idSection}>
           <Text style={s.label}>User ID</Text>
-          <TouchableOpacity style={s.idRow} onPress={() => { Clipboard.setStringAsync(user?.id || ""); Alert.alert("Copied!") }}>
+          <TouchableOpacity
+            style={s.idRow}
+            onPress={() => {
+              Clipboard.setStringAsync(user?.id || "")
+              Alert.alert("Copied!")
+            }}
+          >
             <Text style={s.idText}>{user?.id}</Text>
           </TouchableOpacity>
         </View>
@@ -149,20 +159,53 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0A0F" },
   content: { paddingBottom: 40 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
   title: { fontSize: 17, fontWeight: "600", color: "#E8E8F0" },
   avatarSection: { alignItems: "center", paddingVertical: 32 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#181825", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#6C8CFF", marginBottom: 12 },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#6C8CFF",
+    marginBottom: 12,
+  },
   avatarText: { color: "#E8E8F0", fontSize: 32, fontWeight: "700" },
   username: { color: "#E8E8F0", fontSize: 20, fontWeight: "600" },
   email: { color: "#585870", fontSize: 14, marginTop: 4 },
   form: { paddingHorizontal: 24 },
   label: { color: "#8888A0", fontSize: 13, marginBottom: 8, marginTop: 16, fontWeight: "500" },
-  input: { backgroundColor: "#101016", borderRadius: 14, padding: 14, color: "#E8E8F0", fontSize: 15, borderWidth: 1, borderColor: "#252538" },
+  input: {
+    backgroundColor: "#101016",
+    borderRadius: 14,
+    padding: 14,
+    color: "#E8E8F0",
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   bioInput: { minHeight: 80, textAlignVertical: "top" },
-  saveBtn: { backgroundColor: "#6C8CFF", borderRadius: 16, height: 48, justifyContent: "center", alignItems: "center", marginTop: 28 },
+  saveBtn: {
+    backgroundColor: "#6C8CFF",
+    borderRadius: 16,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 28,
+  },
   saveText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
   idSection: { marginTop: 24 },
   idRow: { backgroundColor: "#101016", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#252538" },
@@ -170,6 +213,13 @@ const s = StyleSheet.create({
   logoutBtn: { marginTop: 20, alignItems: "center", padding: 12 },
   logoutText: { color: "#EF4444", fontSize: 15, fontWeight: "500" },
   statusRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  statusChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538" },
+  statusChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#181825",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   statusChipText: { color: "#8888A0", fontSize: 13, fontWeight: "500" },
 })

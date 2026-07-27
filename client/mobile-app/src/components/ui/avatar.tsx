@@ -15,6 +15,12 @@ export function Avatar({ name = "?", size = 44 }: AvatarProps) {
 }
 
 const s = StyleSheet.create({
-  avatar: { backgroundColor: "#181825", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#252538" },
+  avatar: {
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   text: { color: "#E8E8F0", fontWeight: "600" },
 })

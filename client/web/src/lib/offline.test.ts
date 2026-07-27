@@ -64,7 +64,10 @@ describe("offline message queue", () => {
 })
 
 describe("offline message cache", () => {
-  const msgs = [{ id: "m1", content: "hello" }, { id: "m2", content: "world" }]
+  const msgs = [
+    { id: "m1", content: "hello" },
+    { id: "m2", content: "world" },
+  ]
 
   it("returns empty cache initially", () => {
     expect(getCachedMessages("conv-1")).toEqual([])

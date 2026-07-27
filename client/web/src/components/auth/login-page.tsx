@@ -52,11 +52,12 @@ export function LoginPage() {
                   {supportedLanguages.map((lang) => (
                     <button
                       key={lang.code}
-                      onClick={() => { i18n.changeLanguage(lang.code); setShowLangPicker(false) }}
+                      onClick={() => {
+                        i18n.changeLanguage(lang.code)
+                        setShowLangPicker(false)
+                      }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer ${
-                        i18n.language === lang.code
-                          ? "text-accent bg-accent/5"
-                          : "text-text-primary hover:bg-white/5"
+                        i18n.language === lang.code ? "text-accent bg-accent/5" : "text-text-primary hover:bg-white/5"
                       }`}
                     >
                       <span className="text-text-muted text-xs mr-2">{lang.native}</span>
@@ -68,7 +69,9 @@ export function LoginPage() {
             </div>
             <button
               onClick={toggleTheme}
-              aria-label={t(theme === "dark" ? "settings.appearance.switchToLight" : "settings.appearance.switchToDark")}
+              aria-label={t(
+                theme === "dark" ? "settings.appearance.switchToLight" : "settings.appearance.switchToDark",
+              )}
               className="flex h-9 w-9 items-center justify-center rounded-2xl text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all cursor-pointer"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

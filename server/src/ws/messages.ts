@@ -70,10 +70,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
     let attachment = payload.attachment
     if (attachment) {
       if (attachment.id) {
-        await db
-          .update(attachments)
-          .set({ messageId: msg.id })
-          .where(eq(attachments.id, attachment.id))
+        await db.update(attachments).set({ messageId: msg.id }).where(eq(attachments.id, attachment.id))
       } else {
         await db.insert(attachments).values({
           messageId: msg.id,

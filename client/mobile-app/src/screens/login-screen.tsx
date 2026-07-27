@@ -1,5 +1,16 @@
 import { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal } from "react-native"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+  Modal,
+} from "react-native"
 import { MessageSquare, Eye, EyeOff, Globe, Sun, Moon } from "lucide-react-native"
 import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
@@ -22,12 +33,24 @@ export function LoginScreen() {
   const handleSubmit = async () => {
     setError("")
     if (mode === "login") {
-      if (!credential.trim()) { setError(t("auth.emailOrUsername") + " " + t("common.required")); return }
+      if (!credential.trim()) {
+        setError(t("auth.emailOrUsername") + " " + t("common.required"))
+        return
+      }
     } else {
-      if (!username.trim()) { setError(t("auth.username") + " " + t("common.required")); return }
-      if (!credential.trim()) { setError(t("auth.email") + " " + t("common.required")); return }
+      if (!username.trim()) {
+        setError(t("auth.username") + " " + t("common.required"))
+        return
+      }
+      if (!credential.trim()) {
+        setError(t("auth.email") + " " + t("common.required"))
+        return
+      }
     }
-    if (!password.trim()) { setError(t("auth.password") + " " + t("common.required")); return }
+    if (!password.trim()) {
+      setError(t("auth.password") + " " + t("common.required"))
+      return
+    }
 
     setLoading(true)
     try {
@@ -48,23 +71,40 @@ export function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={[st.container, { backgroundColor: c.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={[st.container, { backgroundColor: c.bg }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
         <View style={st.topActions}>
-          <TouchableOpacity style={[st.iconBtn, { borderColor: c.border }]} onPress={toggleTheme} aria-label={theme === "dark" ? t("settings.light") : t("settings.dark")}>
+          <TouchableOpacity
+            style={[st.iconBtn, { borderColor: c.border }]}
+            onPress={toggleTheme}
+            aria-label={theme === "dark" ? t("settings.light") : t("settings.dark")}
+          >
             {theme === "dark" ? <Sun size={16} color={c.textSecondary} /> : <Moon size={16} color={c.textSecondary} />}
           </TouchableOpacity>
-          <TouchableOpacity style={[st.iconBtn, { borderColor: c.border }]} onPress={() => setShowLangPicker(true)} aria-label={t("settings.language")}>
+          <TouchableOpacity
+            style={[st.iconBtn, { borderColor: c.border }]}
+            onPress={() => setShowLangPicker(true)}
+            aria-label={t("settings.language")}
+          >
             <Globe size={16} color={c.textSecondary} />
           </TouchableOpacity>
         </View>
         <View style={st.brand}>
-          <View style={st.brandIconWrap}><MessageSquare size={48} color="#6C8CFF" /></View>
+          <View style={st.brandIconWrap}>
+            <MessageSquare size={48} color="#6C8CFF" />
+          </View>
           <Text style={[st.brandName, { color: c.text }]}>{t("app.name")}</Text>
         </View>
         <View style={[st.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <Text style={[st.title, { color: c.text }]}>{mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}</Text>
-          <Text style={[st.sub, { color: c.textSecondary }]}>{mode === "login" ? t("auth.signInToContinue") : t("auth.registerToStart")}</Text>
+          <Text style={[st.title, { color: c.text }]}>
+            {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
+          </Text>
+          <Text style={[st.sub, { color: c.textSecondary }]}>
+            {mode === "login" ? t("auth.signInToContinue") : t("auth.registerToStart")}
+          </Text>
 
           {mode === "register" && (
             <TextInput
@@ -96,7 +136,11 @@ export function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
-            <TouchableOpacity style={st.pwToggle} onPress={() => setShowPassword(!showPassword)} aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}>
+            <TouchableOpacity
+              style={st.pwToggle}
+              onPress={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+            >
               {showPassword ? <EyeOff size={20} color={c.textMuted} /> : <Eye size={20} color={c.textMuted} />}
             </TouchableOpacity>
           </View>
@@ -121,7 +165,10 @@ export function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => { setMode(mode === "login" ? "register" : "login"); setError("") }}
+            onPress={() => {
+              setMode(mode === "login" ? "register" : "login")
+              setError("")
+            }}
             style={st.switchBtn}
             disabled={loading}
           >
@@ -133,16 +180,25 @@ export function LoginScreen() {
         </View>
       </ScrollView>
       <Modal visible={showLangPicker} transparent animationType="fade" onRequestClose={() => setShowLangPicker(false)}>
-        <TouchableOpacity style={[st.langOverlay, { backgroundColor: c.overlay }]} activeOpacity={1} onPress={() => setShowLangPicker(false)}>
+        <TouchableOpacity
+          style={[st.langOverlay, { backgroundColor: c.overlay }]}
+          activeOpacity={1}
+          onPress={() => setShowLangPicker(false)}
+        >
           <View style={[st.langSheet, { backgroundColor: c.sheetBg, borderTopColor: c.border }]}>
             <Text style={[st.langSheetTitle, { color: c.text }]}>{t("settings.language")}</Text>
             {supportedLanguages.map((lang) => (
               <TouchableOpacity
                 key={lang.code}
                 style={[st.langItem, { borderBottomColor: c.border }, i18n.language === lang.code && st.langItemActive]}
-                onPress={() => { i18n.changeLanguage(lang.code); setShowLangPicker(false) }}
+                onPress={() => {
+                  i18n.changeLanguage(lang.code)
+                  setShowLangPicker(false)
+                }}
               >
-                <Text style={[st.langNative, { color: c.text }, i18n.language === lang.code && st.langNativeActive]}>{lang.native}</Text>
+                <Text style={[st.langNative, { color: c.text }, i18n.language === lang.code && st.langNativeActive]}>
+                  {lang.native}
+                </Text>
                 <Text style={[st.langName, { color: c.textMuted }]}>{lang.name}</Text>
               </TouchableOpacity>
             ))}
@@ -156,11 +212,32 @@ export function LoginScreen() {
 const st = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   topActions: { position: "absolute", top: Platform.OS === "ios" ? 56 : 20, right: 20, flexDirection: "row", gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", borderWidth: 1, margin: 0 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    margin: 0,
+  },
   langOverlay: { flex: 1, justifyContent: "flex-end" },
-  langSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, paddingBottom: 40, paddingHorizontal: 20 },
+  langSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
   langSheetTitle: { fontSize: 18, fontWeight: "600", paddingVertical: 16, textAlign: "center" },
-  langItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1 },
+  langItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
   langItemActive: { backgroundColor: "rgba(108,140,255,0.08)", marginHorizontal: -20, paddingHorizontal: 20 },
   langNative: { fontSize: 16 },
   langNativeActive: { color: "#6C8CFF", fontWeight: "600" },
@@ -171,13 +248,36 @@ const st = StyleSheet.create({
   card: { width: "100%", maxWidth: 400, borderRadius: 28, borderWidth: 1, padding: 28 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 4 },
   sub: { fontSize: 14, marginBottom: 24 },
-  input: { width: "100%", height: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, fontSize: 15, marginBottom: 12 },
+  input: {
+    width: "100%",
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    marginBottom: 12,
+  },
   pwRow: { width: "100%", position: "relative", marginBottom: 12 },
   pwInput: { marginBottom: 0, paddingRight: 44 },
   pwToggle: { position: "absolute", right: 12, top: 13 },
-  errorBox: { backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" },
+  errorBox: {
+    backgroundColor: "rgba(239,68,68,0.1)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.3)",
+  },
   errorText: { color: "#EF4444", fontSize: 13, textAlign: "center" },
-  button: { width: "100%", height: 50, backgroundColor: "#6C8CFF", borderRadius: 14, justifyContent: "center", alignItems: "center", marginTop: 4 },
+  button: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#6C8CFF",
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
   switchBtn: { marginTop: 20, padding: 8 },

@@ -181,11 +181,7 @@ router.get(
   "/preferences",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const [pref] = await db
-      .select()
-      .from(userPreferences)
-      .where(eq(userPreferences.userId, req.user!.userId))
-      .limit(1)
+    const [pref] = await db.select().from(userPreferences).where(eq(userPreferences.userId, req.user!.userId)).limit(1)
     res.json(pref ? JSON.parse(pref.preferences) : {})
   }),
 )

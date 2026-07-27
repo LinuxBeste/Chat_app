@@ -68,28 +68,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchMe])
 
-  const login = useCallback(async (login: string, password: string) => {
-    const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ login, password }),
-    })
-    setTokens(data.accessToken, data.refreshToken)
-    setUser(data.user)
-    wsClient.connect()
-    await syncKey()
-  }, [syncKey])
+  const login = useCallback(
+    async (login: string, password: string) => {
+      const data = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ login, password }),
+      })
+      setTokens(data.accessToken, data.refreshToken)
+      setUser(data.user)
+      wsClient.connect()
+      await syncKey()
+    },
+    [syncKey],
+  )
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
-    const data = await api<{ user: User; accessToken: string; refreshToken: string; needsSetup?: boolean }>("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({ username, email, password }),
-    })
-    setTokens(data.accessToken, data.refreshToken)
-    setUser(data.user)
-    wsClient.connect()
-    await syncKey()
-    if (data.needsSetup) setNeedsSetup(true)
-  }, [syncKey])
+  const register = useCallback(
+    async (username: string, email: string, password: string) => {
+      const data = await api<{ user: User; accessToken: string; refreshToken: string; needsSetup?: boolean }>(
+        "/api/auth/register",
+        {
+          method: "POST",
+          body: JSON.stringify({ username, email, password }),
+        },
+      )
+      setTokens(data.accessToken, data.refreshToken)
+      setUser(data.user)
+      wsClient.connect()
+      await syncKey()
+      if (data.needsSetup) setNeedsSetup(true)
+    },
+    [syncKey],
+  )
 
   const completeSetup = useCallback(() => {
     setNeedsSetup(false)
@@ -110,7 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [])
 
-  return <AuthContext.Provider value={{ user, loading, needsSetup, login, register, logout, completeSetup }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, loading, needsSetup, login, register, logout, completeSetup }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

@@ -29,7 +29,10 @@ async function storeKeypair(kp: KeyPair): Promise<void> {
 async function loadKeypair(): Promise<KeyPair | null> {
   if (cachedKeyPair) return cachedKeyPair
   const json = await SecureStore.getItemAsync(KEY_STORE_KEY)
-  if (json) { cachedKeyPair = JSON.parse(json); return cachedKeyPair }
+  if (json) {
+    cachedKeyPair = JSON.parse(json)
+    return cachedKeyPair
+  }
   return null
 }
 
@@ -55,7 +58,9 @@ export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8
   if (!pair) return null
   try {
     return nacl.box.before(decodeBase64(theirPublicKey), decodeBase64(pair.secretKey))
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 async function getConvKey(conversationId: string): Promise<Uint8Array | null> {
@@ -68,7 +73,11 @@ async function setConvKey(conversationId: string, key: Uint8Array) {
   await AsyncStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
 }
 
-export async function encryptMessage(conversationId: string, content: string, theirPublicKey?: string): Promise<string | null> {
+export async function encryptMessage(
+  conversationId: string,
+  content: string,
+  theirPublicKey?: string,
+): Promise<string | null> {
   let sharedKey = await getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)
@@ -81,7 +90,11 @@ export async function encryptMessage(conversationId: string, content: string, th
   return encodeBase64(nonce) + "." + encodeBase64(encrypted)
 }
 
-export async function decryptMessage(conversationId: string, ciphertext: string, theirPublicKey?: string): Promise<string | null> {
+export async function decryptMessage(
+  conversationId: string,
+  ciphertext: string,
+  theirPublicKey?: string,
+): Promise<string | null> {
   let sharedKey = await getConvKey(conversationId)
   if (!sharedKey && theirPublicKey) {
     sharedKey = await computeSharedSecret(theirPublicKey)
@@ -96,7 +109,9 @@ export async function decryptMessage(conversationId: string, ciphertext: string,
     const decrypted = nacl.secretbox.open(encrypted, nonce, sharedKey)
     if (!decrypted) return null
     return encodeUTF8(decrypted)
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function isEncrypted(content: string): boolean {

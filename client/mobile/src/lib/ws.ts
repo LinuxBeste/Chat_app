@@ -21,7 +21,9 @@ class WSClient {
       try {
         const data = JSON.parse(e.data)
         if (data.type) this.emit(data.type as string, data)
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     this.ws.onclose = () => {
       this.emit("_disconnected", {})
@@ -46,7 +48,9 @@ class WSClient {
   on(type: string, handler: Handler) {
     if (!this.handlers.has(type)) this.handlers.set(type, new Set())
     this.handlers.get(type)!.add(handler)
-    return () => { this.handlers.get(type)?.delete(handler) }
+    return () => {
+      this.handlers.get(type)?.delete(handler)
+    }
   }
 
   private emit(type: string, data: Record<string, unknown>) {

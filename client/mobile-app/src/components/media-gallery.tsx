@@ -43,11 +43,26 @@ export function MediaGallery({ media, onClose }: MediaGalleryProps) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0A0F" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   close: { color: "#6C8CFF", fontSize: 15 },
   item: { flex: 1, aspectRatio: 1, padding: 2 },
   image: { flex: 1, borderRadius: 8 },
-  filePlaceholder: { flex: 1, backgroundColor: "#101016", borderRadius: 8, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#252538" },
+  filePlaceholder: {
+    flex: 1,
+    backgroundColor: "#101016",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   fileIcon: { fontSize: 28 },
 })

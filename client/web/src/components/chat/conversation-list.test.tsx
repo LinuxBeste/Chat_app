@@ -4,8 +4,22 @@ import userEvent from "@testing-library/user-event"
 import { ConversationList } from "./conversation-list"
 
 const mockConversations = [
-  { id: "conv-1", type: "dm", name: "Alice", avatar: null, createdAt: "2024-01-01T00:00:00Z", otherUser: { id: "user-1", username: "alice", displayName: "Alice", avatar: null, customStatus: "Busy coding" } },
-  { id: "conv-2", type: "dm", name: "Bob", avatar: null, createdAt: "2024-01-02T00:00:00Z", otherUser: { id: "user-2", username: "bob", displayName: "Bob", avatar: null, customStatus: null } },
+  {
+    id: "conv-1",
+    type: "dm",
+    name: "Alice",
+    avatar: null,
+    createdAt: "2024-01-01T00:00:00Z",
+    otherUser: { id: "user-1", username: "alice", displayName: "Alice", avatar: null, customStatus: "Busy coding" },
+  },
+  {
+    id: "conv-2",
+    type: "dm",
+    name: "Bob",
+    avatar: null,
+    createdAt: "2024-01-02T00:00:00Z",
+    otherUser: { id: "user-2", username: "bob", displayName: "Bob", avatar: null, customStatus: null },
+  },
 ]
 
 vi.mock("react-i18next", async () => {
@@ -15,7 +29,10 @@ vi.mock("react-i18next", async () => {
       t: (k: string) => {
         const parts = k.split(".")
         let obj: any = en
-        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        for (const p of parts) {
+          obj = obj?.[p]
+          if (obj === undefined) return k
+        }
         return typeof obj === "string" ? obj : k
       },
       i18n: { changeLanguage: vi.fn(), language: "en" },

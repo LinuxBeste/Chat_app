@@ -21,7 +21,11 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
     const unsub2 = wsClient.on("voice:user-left", (data: any) => {
       if (data.channelId === channelId) setParticipants((p) => p.filter((id) => id !== data.userId))
     })
-    return () => { unsub1(); unsub2(); wsClient.send("voice:leave", { channelId }) }
+    return () => {
+      unsub1()
+      unsub2()
+      wsClient.send("voice:leave", { channelId })
+    }
   }, [channelId])
 
   const toggleMute = () => {
@@ -54,13 +58,27 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
 }
 
 const s = StyleSheet.create({
-  container: { backgroundColor: "#101016", borderRadius: 20, padding: 20, margin: 16, borderWidth: 1, borderColor: "#252538" },
+  container: {
+    backgroundColor: "#101016",
+    borderRadius: 20,
+    padding: 20,
+    margin: 16,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   leaveBtn: { backgroundColor: "#EF4444", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
   leaveText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
   controls: { flexDirection: "row", gap: 12, marginBottom: 12 },
-  controlBtn: { backgroundColor: "#181825", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1, borderColor: "#252538" },
+  controlBtn: {
+    backgroundColor: "#181825",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   active: { borderColor: "#22C55E", backgroundColor: "rgba(34,197,94,0.1)" },
   controlText: { color: "#E8E8F0", fontSize: 14 },
   participants: { color: "#585870", fontSize: 12, textAlign: "center" },

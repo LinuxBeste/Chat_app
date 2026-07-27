@@ -312,155 +312,142 @@ router.delete("/sessions/:id", authGuard, async (req: Request, res: Response) =>
 
 // --- Email Verification ---
 
-router.post(
-  "/send-verification",
-  authGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.id, req.user!.userId)).limit(1)
-      if (!user) {
-        res.status(404).json({ error: "User not found" })
-        return
-      }
-      if (user.emailVerified === "true") {
-        res.json({ message: "Email already verified" })
-        return
-      }
-
-      const token = crypto.randomBytes(32).toString("hex")
-      await db.insert(emailVerificationTokens).values({
-        userId: user.id,
-        token,
-        type: "email_verify",
-        expiresAt: new Date(Date.now() + 86400000),
-      })
-
-      const verifyUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email?token=${token}`
-      log.info({ userId: user.id, verifyUrl }, "Verification email sent")
-      res.json({ message: "Verification email sent", verifyUrl })
-    } catch (err) {
-      log.error({ err }, "Send verification failed")
-      res.status(500).json({ error: "Internal server error" })
+router.post("/send-verification", authGuard, async (req: Request, res: Response) => {
+  try {
+    const [user] = await db.select().from(users).where(eq(users.id, req.user!.userId)).limit(1)
+    if (!user) {
+      res.status(404).json({ error: "User not found" })
+      return
     }
-  },
-)
+    if (user.emailVerified === "true") {
+      res.json({ message: "Email already verified" })
+      return
+    }
 
-router.get(
-  "/verify-email",
-  async (req: Request, res: Response) => {
-    try {
-      const token = req.query.token as string
-      if (!token) {
-        res.status(400).json({ error: "Verification token required" })
-        return
-      }
+    const token = crypto.randomBytes(32).toString("hex")
+    await db.insert(emailVerificationTokens).values({
+      userId: user.id,
+      token,
+      type: "email_verify",
+      expiresAt: new Date(Date.now() + 86400000),
+    })
 
-      const [record] = await db
-        .select()
-        .from(emailVerificationTokens)
-        .where(and(eq(emailVerificationTokens.token, token), eq(emailVerificationTokens.type, "email_verify")))
-        .limit(1)
+    const verifyUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email?token=${token}`
+    log.info({ userId: user.id, verifyUrl }, "Verification email sent")
+    res.json({ message: "Verification email sent", verifyUrl })
+  } catch (err) {
+    log.error({ err }, "Send verification failed")
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
 
-      if (!record) {
-        res.status(400).json({ error: "Invalid or expired verification token" })
-        return
-      }
+router.get("/verify-email", async (req: Request, res: Response) => {
+  try {
+    const token = req.query.token as string
+    if (!token) {
+      res.status(400).json({ error: "Verification token required" })
+      return
+    }
 
-      if (record.expiresAt < new Date()) {
-        await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
-        res.status(400).json({ error: "Verification token expired" })
-        return
-      }
+    const [record] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(and(eq(emailVerificationTokens.token, token), eq(emailVerificationTokens.type, "email_verify")))
+      .limit(1)
 
-      await db.update(users).set({ emailVerified: "true" }).where(eq(users.id, record.userId))
+    if (!record) {
+      res.status(400).json({ error: "Invalid or expired verification token" })
+      return
+    }
+
+    if (record.expiresAt < new Date()) {
       await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
-
-      res.json({ message: "Email verified successfully" })
-    } catch (err) {
-      log.error({ err }, "Verify email failed")
-      res.status(500).json({ error: "Internal server error" })
+      res.status(400).json({ error: "Verification token expired" })
+      return
     }
-  },
-)
+
+    await db.update(users).set({ emailVerified: "true" }).where(eq(users.id, record.userId))
+    await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
+
+    res.json({ message: "Email verified successfully" })
+  } catch (err) {
+    log.error({ err }, "Verify email failed")
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
 
 // --- Password Reset ---
 
-router.post(
-  "/forgot-password",
-  async (req: Request, res: Response) => {
-    try {
-      const { email } = req.body
-      if (!email) {
-        res.status(400).json({ error: "Email required" })
-        return
-      }
-
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
-      if (!user) {
-        res.json({ message: "If the email exists, a reset link has been sent" })
-        return
-      }
-
-      const token = crypto.randomBytes(32).toString("hex")
-      await db.insert(emailVerificationTokens).values({
-        userId: user.id,
-        token,
-        type: "password_reset",
-        expiresAt: new Date(Date.now() + 3600000),
-      })
-
-      const resetUrl = `${req.protocol}://${req.get("host")}/reset-password?token=${token}`
-      log.info({ userId: user.id, resetUrl }, "Password reset email sent")
-      res.json({ message: "If the email exists, a reset link has been sent", resetUrl })
-    } catch (err) {
-      log.error({ err }, "Forgot password failed")
-      res.status(500).json({ error: "Internal server error" })
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body
+    if (!email) {
+      res.status(400).json({ error: "Email required" })
+      return
     }
-  },
-)
 
-router.post(
-  "/reset-password",
-  async (req: Request, res: Response) => {
-    try {
-      const { token, newPassword } = req.body
-      if (!token || !newPassword) {
-        res.status(400).json({ error: "Token and new password required" })
-        return
-      }
-      if (newPassword.length < 8) {
-        res.status(400).json({ error: "Password must be at least 8 characters" })
-        return
-      }
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+    if (!user) {
+      res.json({ message: "If the email exists, a reset link has been sent" })
+      return
+    }
 
-      const [record] = await db
-        .select()
-        .from(emailVerificationTokens)
-        .where(and(eq(emailVerificationTokens.token, token), eq(emailVerificationTokens.type, "password_reset")))
-        .limit(1)
+    const token = crypto.randomBytes(32).toString("hex")
+    await db.insert(emailVerificationTokens).values({
+      userId: user.id,
+      token,
+      type: "password_reset",
+      expiresAt: new Date(Date.now() + 3600000),
+    })
 
-      if (!record) {
-        res.status(400).json({ error: "Invalid or expired reset token" })
-        return
-      }
+    const resetUrl = `${req.protocol}://${req.get("host")}/reset-password?token=${token}`
+    log.info({ userId: user.id, resetUrl }, "Password reset email sent")
+    res.json({ message: "If the email exists, a reset link has been sent", resetUrl })
+  } catch (err) {
+    log.error({ err }, "Forgot password failed")
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
 
-      if (record.expiresAt < new Date()) {
-        await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
-        res.status(400).json({ error: "Reset token expired" })
-        return
-      }
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body
+    if (!token || !newPassword) {
+      res.status(400).json({ error: "Token and new password required" })
+      return
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" })
+      return
+    }
 
-      const passwordHash = await hashPassword(newPassword)
-      await db.update(users).set({ passwordHash }).where(eq(users.id, record.userId))
+    const [record] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(and(eq(emailVerificationTokens.token, token), eq(emailVerificationTokens.type, "password_reset")))
+      .limit(1)
+
+    if (!record) {
+      res.status(400).json({ error: "Invalid or expired reset token" })
+      return
+    }
+
+    if (record.expiresAt < new Date()) {
       await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
-
-      res.json({ message: "Password reset successfully" })
-    } catch (err) {
-      log.error({ err }, "Reset password failed")
-      res.status(500).json({ error: "Internal server error" })
+      res.status(400).json({ error: "Reset token expired" })
+      return
     }
-  },
-)
+
+    const passwordHash = await hashPassword(newPassword)
+    await db.update(users).set({ passwordHash }).where(eq(users.id, record.userId))
+    await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, record.id))
+
+    res.json({ message: "Password reset successfully" })
+  } catch (err) {
+    log.error({ err }, "Reset password failed")
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
 
 // Simple TOTP implementation (RFC 6238)
 function totp(secret: string): string {

@@ -15,7 +15,9 @@ export function CallsScreen() {
   const [calls, setCalls] = useState<Call[]>([])
 
   useEffect(() => {
-    api<Call[]>("/api/calls").then(setCalls).catch(() => {})
+    api<Call[]>("/api/calls")
+      .then(setCalls)
+      .catch(() => {})
   }, [])
 
   const formatTime = (iso: string) => {

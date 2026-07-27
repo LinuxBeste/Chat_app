@@ -11,7 +11,10 @@ vi.mock("react-i18next", async () => {
       t: (k: string) => {
         const parts = k.split(".")
         let obj: any = en
-        for (const p of parts) { obj = obj?.[p]; if (obj === undefined) return k }
+        for (const p of parts) {
+          obj = obj?.[p]
+          if (obj === undefined) return k
+        }
         return typeof obj === "string" ? obj : k
       },
       i18n: { changeLanguage: vi.fn(), language: "en" },

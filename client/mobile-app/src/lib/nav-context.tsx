@@ -35,6 +35,12 @@ export function NavProvider({ children }: { children: ReactNode }) {
 
 export function useNav() {
   const ctx = useContext(NavContext)
-  if (!ctx) return { view: "chats" as NavView, setView: () => {}, activeConversationId: null, setActiveConversationId: () => {} }
+  if (!ctx)
+    return {
+      view: "chats" as NavView,
+      setView: () => {},
+      activeConversationId: null,
+      setActiveConversationId: () => {},
+    }
   return ctx
 }

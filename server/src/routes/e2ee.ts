@@ -39,10 +39,7 @@ router.put("/key", authGuard, validate(publishKeySchema), async (req: Request, r
     const existing = await db.select().from(publicKeys).where(eq(publicKeys.userId, userId)).limit(1)
 
     if (existing.length > 0) {
-      await db
-        .update(publicKeys)
-        .set({ key, updatedAt: new Date() })
-        .where(eq(publicKeys.userId, userId))
+      await db.update(publicKeys).set({ key, updatedAt: new Date() }).where(eq(publicKeys.userId, userId))
     } else {
       await db.insert(publicKeys).values({ userId, key })
     }

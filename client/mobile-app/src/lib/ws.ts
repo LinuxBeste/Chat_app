@@ -94,10 +94,9 @@ class WSClient {
 
   private scheduleReconnect() {
     if (this.reconnectTimer) return
-    const delay = Math.min(
-      INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts),
-      MAX_RECONNECT_DELAY,
-    ) + Math.random() * 1000
+    const delay =
+      Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts), MAX_RECONNECT_DELAY) +
+      Math.random() * 1000
     this.reconnectAttempts++
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
@@ -115,7 +114,9 @@ class WSClient {
   on(type: string, handler: MessageHandler) {
     if (!this.handlers.has(type)) this.handlers.set(type, new Set())
     this.handlers.get(type)!.add(handler)
-    return () => { this.handlers.get(type)?.delete(handler) }
+    return () => {
+      this.handlers.get(type)?.delete(handler)
+    }
   }
 
   private emit(type: string, data: Record<string, unknown>) {
@@ -124,7 +125,10 @@ class WSClient {
 
   disconnect() {
     this.intentionalClose = true
-    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     this.stopHeartbeat()
     this.ws?.close()
     this.ws = null

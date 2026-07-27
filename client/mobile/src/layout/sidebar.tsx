@@ -1,7 +1,17 @@
 import { useTranslation } from "react-i18next"
 import {
-  MessageSquare, Users, Phone, Bell, FileText, User, Settings, LogOut,
-  Globe, Calendar, Shield, X,
+  MessageSquare,
+  Users,
+  Phone,
+  Bell,
+  FileText,
+  User,
+  Settings,
+  LogOut,
+  Globe,
+  Calendar,
+  Shield,
+  X,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "../../../web/src/lib/utils"
@@ -49,9 +59,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, isAdmin, unreadC
   const { t } = useTranslation()
   const { view, setView } = useNav()
 
-  const visibleNavItems = navItems.filter(
-    (item) => item.view !== "admin" || isAdmin
-  )
+  const visibleNavItems = navItems.filter((item) => item.view !== "admin" || isAdmin)
 
   const handleNavClick = (v: View) => {
     setView(v)
@@ -74,9 +82,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, isAdmin, unreadC
         >
           C
         </div>
-        {!collapsed && (
-          <span className="text-sm font-semibold text-text-primary truncate">{t("nav.chatApp")}</span>
-        )}
+        {!collapsed && <span className="text-sm font-semibold text-text-primary truncate">{t("nav.chatApp")}</span>}
         {mobileOpen && (
           <button
             onClick={onMobileClose}

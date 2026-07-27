@@ -17,8 +17,7 @@ import { CallsPage } from "../../../web/src/components/calls/calls-page"
 import { AdminPage } from "../../../web/src/components/admin/admin-page"
 
 export type View =
-  | "chat" | "profile" | "files" | "groups" | "calls"
-  | "notifications" | "communities" | "events" | "settings" | "admin"
+  "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings" | "admin"
 
 interface NavContextValue {
   view: View
@@ -72,7 +71,11 @@ function renderPage(
 }
 
 interface DashboardLayoutProps {
-  renderOverride?: (view: View, activeConversationId: string | null, onConversationChange: (id: string | null) => void) => ReactNode
+  renderOverride?: (
+    view: View,
+    activeConversationId: string | null,
+    onConversationChange: (id: string | null) => void,
+  ) => ReactNode
 }
 
 export function DashboardLayout({ renderOverride }: DashboardLayoutProps) {
@@ -126,8 +129,7 @@ export function DashboardLayout({ renderOverride }: DashboardLayoutProps) {
           <main className="flex-1 overflow-hidden lg:rounded-tl-[32px] bg-bg-primary lg:m-3">
             {renderOverride
               ? renderOverride(view, activeConversationId, setActiveConversationId)
-              : renderPage(view, activeConversationId, setActiveConversationId)
-            }
+              : renderPage(view, activeConversationId, setActiveConversationId)}
           </main>
         </div>
       </div>

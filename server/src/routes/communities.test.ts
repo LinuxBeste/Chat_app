@@ -170,7 +170,9 @@ const VOICE_ID = "vc000000-0000-0000-0000-000000000001"
 describe("POST /api/communities/:id/voice", () => {
   it("creates a voice channel", async () => {
     queryQueue.push([{ role: "owner" }])
-    mockData.current = [{ id: VOICE_ID, communityId: COM_ID, name: "General Voice", createdAt: new Date().toISOString() }]
+    mockData.current = [
+      { id: VOICE_ID, communityId: COM_ID, name: "General Voice", createdAt: new Date().toISOString() },
+    ]
     const res = await request(app)
       .post(`/api/communities/${COM_ID}/voice`)
       .set("Authorization", "Bearer token")
@@ -192,9 +194,7 @@ describe("POST /api/communities/:id/voice", () => {
 
 describe("DELETE /api/communities/voice/:voiceId", () => {
   it("deletes a voice channel", async () => {
-    const res = await request(app)
-      .delete(`/api/communities/voice/${VOICE_ID}`)
-      .set("Authorization", "Bearer token")
+    const res = await request(app).delete(`/api/communities/voice/${VOICE_ID}`).set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("message", "Voice channel deleted")
   })

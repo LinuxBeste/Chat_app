@@ -32,12 +32,36 @@ vi.mock("../../lib/theme-context", () => ({
   })),
   themePresets: [],
   defaultLightTheme: {
-    colors: { "bg-primary": "#FAF9F6", "bg-secondary": "#FFFFFF", surface: "#FFFFFF", border: "#E4E2DD", accent: "#E8574A", "accent-hover": "#D64B3F", "text-primary": "#1C1917", "text-secondary": "#78716C", "text-muted": "#A8A29E" },
-    bubbleStyle: "cozy", borderRadius: 24, statusEmoji: "",
+    colors: {
+      "bg-primary": "#FAF9F6",
+      "bg-secondary": "#FFFFFF",
+      surface: "#FFFFFF",
+      border: "#E4E2DD",
+      accent: "#E8574A",
+      "accent-hover": "#D64B3F",
+      "text-primary": "#1C1917",
+      "text-secondary": "#78716C",
+      "text-muted": "#A8A29E",
+    },
+    bubbleStyle: "cozy",
+    borderRadius: 24,
+    statusEmoji: "",
   },
   defaultDarkTheme: {
-    colors: { "bg-primary": "#0A0A0F", "bg-secondary": "#101016", surface: "#181825", border: "#252538", accent: "#6C8CFF", "accent-hover": "#7FA0FF", "text-primary": "#E8E8F0", "text-secondary": "#8888A0", "text-muted": "#585870" },
-    bubbleStyle: "compact", borderRadius: 16, statusEmoji: "",
+    colors: {
+      "bg-primary": "#0A0A0F",
+      "bg-secondary": "#101016",
+      surface: "#181825",
+      border: "#252538",
+      accent: "#6C8CFF",
+      "accent-hover": "#7FA0FF",
+      "text-primary": "#E8E8F0",
+      "text-secondary": "#8888A0",
+      "text-muted": "#585870",
+    },
+    bubbleStyle: "compact",
+    borderRadius: 16,
+    statusEmoji: "",
   },
 }))
 
@@ -96,8 +120,22 @@ describe("SettingsPage", () => {
 
   it("shows all 14 setting tabs in sidebar", () => {
     render(<SettingsPage />)
-    const expectedTabs = ["Account", "Security", "Appearance", "Notifications", "Privacy & Safety",
-      "Chat", "Calls", "Media", "Audio & Video", "Accessibility", "Reader", "Language & Region", "Advanced", "About"]
+    const expectedTabs = [
+      "Account",
+      "Security",
+      "Appearance",
+      "Notifications",
+      "Privacy & Safety",
+      "Chat",
+      "Calls",
+      "Media",
+      "Audio & Video",
+      "Accessibility",
+      "Reader",
+      "Language & Region",
+      "Advanced",
+      "About",
+    ]
     for (const tab of expectedTabs) {
       expect(screen.getAllByText(tab).length).toBeGreaterThanOrEqual(1)
     }

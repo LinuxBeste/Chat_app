@@ -124,10 +124,9 @@ class WSClient {
 
   private scheduleReconnect() {
     if (this.reconnectTimer) return
-    const delay = Math.min(
-      INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts),
-      MAX_RECONNECT_DELAY,
-    ) + Math.random() * 1000
+    const delay =
+      Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts), MAX_RECONNECT_DELAY) +
+      Math.random() * 1000
     this.reconnectAttempts++
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
@@ -139,7 +138,7 @@ class WSClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
       this.pendingMessages.push({ type, payload })
       addPendingMessage({
-        id: payload.id as string || crypto.randomUUID(),
+        id: (payload.id as string) || crypto.randomUUID(),
         conversationId: payload.conversationId as string,
         type: type as "message:send",
         payload,

@@ -82,7 +82,10 @@ describe("POST /api/conversations", () => {
 
   it("reuses existing DM", async () => {
     queryQueue.push([{ id: "existing-dm" }])
-    queryQueue.push([{ userId: "00000000-0000-0000-0000-000000000001" }, { userId: "00000000-0000-0000-0000-000000000002" }])
+    queryQueue.push([
+      { userId: "00000000-0000-0000-0000-000000000001" },
+      { userId: "00000000-0000-0000-0000-000000000002" },
+    ])
     mockData.current = [{ id: "existing-dm", type: "dm", name: null, createdAt: new Date().toISOString() }]
     const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody)
     expect(res.status).toBe(200)

@@ -29,9 +29,7 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
       wsClient.on("voice:joined", (data: any) => {
         if (data.channelId === channelId) {
           setJoined(true)
-          setParticipants(
-            (data.participants as string[]).map((id: string) => ({ userId: id }))
-          )
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
         }
       }),
     )
@@ -39,9 +37,7 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
     unsubs.push(
       wsClient.on("voice:user-joined", (data: any) => {
         if (data.channelId === channelId) {
-          setParticipants(
-            (data.participants as string[]).map((id: string) => ({ userId: id }))
-          )
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
         }
       }),
     )
@@ -49,9 +45,7 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
     unsubs.push(
       wsClient.on("voice:user-left", (data: any) => {
         if (data.channelId === channelId) {
-          setParticipants(
-            (data.participants as string[]).map((id: string) => ({ userId: id }))
-          )
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
         }
       }),
     )
@@ -197,9 +191,7 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
                 {p.userId.slice(0, 2).toUpperCase()}
               </div>
             ))}
-          {participants.length > 6 && (
-            <span className="text-xs text-text-muted">+{participants.length - 5}</span>
-          )}
+          {participants.length > 6 && <span className="text-xs text-text-muted">+{participants.length - 5}</span>}
         </div>
         <button
           onClick={toggleMute}

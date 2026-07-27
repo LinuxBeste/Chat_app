@@ -15,8 +15,8 @@ const RN = {
 
 const flattenStyle = (style: unknown): Record<string, unknown> => {
   if (style == null) return {}
-  if (Array.isArray(style)) return Object.assign({}, ...style.map(s => flattenStyle(s)))
-  if (typeof style === "object") return { ...style as Record<string, unknown> }
+  if (Array.isArray(style)) return Object.assign({}, ...style.map((s) => flattenStyle(s)))
+  if (typeof style === "object") return { ...(style as Record<string, unknown>) }
   return {}
 }
 
@@ -35,20 +35,23 @@ const View = render("div")
 const Text = render("span")
 const TextInput = render("input")
 const ScrollView = render("div")
-const FlatList = React.forwardRef<any, any>(({ data, renderItem, ListEmptyComponent, keyExtractor, style, ...props }, ref) => {
-  const children = data && data.length > 0
-    ? data.map((item: any, index: number) => {
-        const key = keyExtractor?.(item, index) ?? index
-        return React.createElement(React.Fragment, { key }, renderItem?.({ item, index, separators: {} }))
-      })
-    : ListEmptyComponent
-      ? (ListEmptyComponent as any).type
-        ? (ListEmptyComponent as React.ReactElement)
-        : React.createElement(ListEmptyComponent as React.ComponentType, {})
-      : null
-  const mergedStyle = flattenStyle(style)
-  return React.createElement("div", { ...props, ref, style: mergedStyle, "data-testid": undefined }, children)
-})
+const FlatList = React.forwardRef<any, any>(
+  ({ data, renderItem, ListEmptyComponent, keyExtractor, style, ...props }, ref) => {
+    const children =
+      data && data.length > 0
+        ? data.map((item: any, index: number) => {
+            const key = keyExtractor?.(item, index) ?? index
+            return React.createElement(React.Fragment, { key }, renderItem?.({ item, index, separators: {} }))
+          })
+        : ListEmptyComponent
+          ? (ListEmptyComponent as any).type
+            ? (ListEmptyComponent as React.ReactElement)
+            : React.createElement(ListEmptyComponent as React.ComponentType, {})
+          : null
+    const mergedStyle = flattenStyle(style)
+    return React.createElement("div", { ...props, ref, style: mergedStyle, "data-testid": undefined }, children)
+  },
+)
 FlatList.displayName = "FlatList"
 const Image = render("img")
 const ActivityIndicator = render("div", { "aria-label": "Loading" })
@@ -56,7 +59,13 @@ const KeyboardAvoidingView = render("div")
 const TouchableOpacity = React.forwardRef<any, any>(({ children, onPress, disabled, style, testID, ...props }, ref) => {
   return React.createElement(
     "button",
-    { ...props, "data-testid": testID, onClick: disabled ? undefined : onPress, ref, style: style ? flattenStyle(style) : undefined },
+    {
+      ...props,
+      "data-testid": testID,
+      onClick: disabled ? undefined : onPress,
+      ref,
+      style: style ? flattenStyle(style) : undefined,
+    },
     children,
   )
 })
@@ -82,9 +91,15 @@ const Animated = {
   View: render("div"),
   Value: class {
     _value: number
-    constructor(value: number) { this._value = value }
-    setValue(val: number) { this._value = val }
-    interpolate() { return { _value: this._value } }
+    constructor(value: number) {
+      this._value = value
+    }
+    setValue(val: number) {
+      this._value = val
+    }
+    interpolate() {
+      return { _value: this._value }
+    }
   },
   timing: () => ({ start: (cb?: () => void) => cb?.() }),
   spring: () => ({ start: (cb?: () => void) => cb?.() }),

@@ -1,12 +1,30 @@
 import { useState, useRef, useEffect } from "react"
 import {
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform,
-  Animated, ScrollView, Modal, Dimensions
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  Animated,
+  ScrollView,
+  Modal,
+  Dimensions,
 } from "react-native"
 import {
-  MessageSquare, Users, Globe, Folder, Bell, Phone,
-  User, Settings, Calendar, Search, Shield,
-  ChevronRight, LogOut
+  MessageSquare,
+  Users,
+  Globe,
+  Folder,
+  Bell,
+  Phone,
+  User,
+  Settings,
+  Calendar,
+  Search,
+  Shield,
+  ChevronRight,
+  LogOut,
 } from "lucide-react-native"
 import { AuthProvider, useAuth } from "./lib/auth-context"
 import { ToastProvider } from "./lib/toast-context"
@@ -87,7 +105,10 @@ function MoreSheet({ visible, onClose }: { visible: boolean; onClose: () => void
               <TouchableOpacity
                 key={item.view}
                 style={[ms.item, view === item.view && ms.itemActive]}
-                onPress={() => { setView(item.view); onClose() }}
+                onPress={() => {
+                  setView(item.view)
+                  onClose()
+                }}
               >
                 <View style={ms.itemIconWrap}>
                   <Icon size={20} color={view === item.view ? "#6C8CFF" : "#E8E8F0"} />
@@ -111,7 +132,15 @@ function MoreSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   )
 }
 
-function TabIcon({ icon: Icon, active, badgeCount }: { icon: typeof MessageSquare; active: boolean; badgeCount?: number }) {
+function TabIcon({
+  icon: Icon,
+  active,
+  badgeCount,
+}: {
+  icon: typeof MessageSquare
+  active: boolean
+  badgeCount?: number
+}) {
   return (
     <View style={ti.container}>
       <Icon size={22} color={active ? "#6C8CFF" : "#585870"} />
@@ -141,19 +170,45 @@ function HomeContent() {
 
   if (view === "profile") return <ProfileScreen onBack={() => setView("chats")} />
   if (view === "settings") return <SettingsScreen onBack={() => setView("chats")} />
-  if (view === "events") return <EventsScreen onSelectChat={(id) => { setActiveConversationId(id); setView("chats"); setActiveTab("chats") }} />
+  if (view === "events")
+    return (
+      <EventsScreen
+        onSelectChat={(id) => {
+          setActiveConversationId(id)
+          setView("chats")
+          setActiveTab("chats")
+        }}
+      />
+    )
   if (view === "admin") return <AdminScreen onBack={() => setView("chats")} />
-  if (view === "search") return <SearchScreen onBack={() => setView("chats")} onSelect={(id) => { setActiveConversationId(id); setView("chats"); setActiveTab("chats") }} />
-  if (activeConversationId) return <ChatScreen conversationId={activeConversationId} onBack={() => setActiveConversationId(null)} />
+  if (view === "search")
+    return (
+      <SearchScreen
+        onBack={() => setView("chats")}
+        onSelect={(id) => {
+          setActiveConversationId(id)
+          setView("chats")
+          setActiveTab("chats")
+        }}
+      />
+    )
+  if (activeConversationId)
+    return <ChatScreen conversationId={activeConversationId} onBack={() => setActiveConversationId(null)} />
 
   const renderScreen = () => {
     switch (activeTab) {
-      case "chats": return <ConversationsScreen onSelect={(id) => setActiveConversationId(id)} />
-      case "groups": return <GroupsScreen onSelectChat={(id) => setActiveConversationId(id)} />
-      case "communities": return <CommunitiesScreen onSelectChat={(id) => setActiveConversationId(id)} />
-      case "files": return <FilesScreen />
-      case "notifications": return <NotificationsScreen />
-      case "calls": return <CallsScreen />
+      case "chats":
+        return <ConversationsScreen onSelect={(id) => setActiveConversationId(id)} />
+      case "groups":
+        return <GroupsScreen onSelectChat={(id) => setActiveConversationId(id)} />
+      case "communities":
+        return <CommunitiesScreen onSelectChat={(id) => setActiveConversationId(id)} />
+      case "files":
+        return <FilesScreen />
+      case "notifications":
+        return <NotificationsScreen />
+      case "calls":
+        return <CallsScreen />
     }
   }
 
@@ -177,17 +232,8 @@ function HomeContent() {
         {tabs.map((t) => {
           const isActive = activeTab === t.key
           return (
-            <TouchableOpacity
-              key={t.key}
-              style={hc.tab}
-              onPress={() => setActiveTab(t.key)}
-              activeOpacity={0.6}
-            >
-              <TabIcon
-                icon={t.icon}
-                active={isActive}
-                badgeCount={t.badge ? unreadCount : undefined}
-              />
+            <TouchableOpacity key={t.key} style={hc.tab} onPress={() => setActiveTab(t.key)} activeOpacity={0.6}>
+              <TabIcon icon={t.icon} active={isActive} badgeCount={t.badge ? unreadCount : undefined} />
               <Text style={[hc.tabLabel, isActive && hc.tabLabelActive]}>{t.label}</Text>
             </TouchableOpacity>
           )
@@ -195,7 +241,12 @@ function HomeContent() {
       </View>
       <MoreSheet visible={moreOpen} onClose={() => setMoreOpen(false)} />
       {incomingCall && (
-        <CallOverlay incoming conversationId={incomingCall.conversationId} type={incomingCall.type} onEnd={() => setIncomingCall(null)} />
+        <CallOverlay
+          incoming
+          conversationId={incomingCall.conversationId}
+          type={incomingCall.type}
+          onEnd={() => setIncomingCall(null)}
+        />
       )}
     </View>
   )
@@ -241,7 +292,18 @@ export default function App() {
 const ti = StyleSheet.create({
   container: { position: "relative", alignItems: "center", justifyContent: "center" },
   active: { opacity: 1 },
-  badge: { position: "absolute", top: -6, right: -12, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: "#EF4444", justifyContent: "center", alignItems: "center", paddingHorizontal: 4 },
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -12,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
   badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
 })
 
@@ -261,7 +323,16 @@ const hc = StyleSheet.create({
   topBarLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   appTitle: { fontSize: 28, fontWeight: "800", color: "#E8E8F0", letterSpacing: -0.5 },
   topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#181825", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#252538" },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   content: { flex: 1 },
   tabBar: {
     flexDirection: "row",
@@ -291,7 +362,15 @@ const ms = StyleSheet.create({
     maxHeight: "80%",
     paddingBottom: Platform.OS === "ios" ? 34 : 16,
   },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#252538", alignSelf: "center", marginTop: 10, marginBottom: 8 },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#252538",
+    alignSelf: "center",
+    marginTop: 10,
+    marginBottom: 8,
+  },
   userRow: { flexDirection: "row", alignItems: "center", padding: 20, gap: 14 },
   userInfo: { flex: 1 },
   userName: { color: "#E8E8F0", fontSize: 17, fontWeight: "600" },

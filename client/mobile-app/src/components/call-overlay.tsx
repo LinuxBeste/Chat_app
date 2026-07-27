@@ -25,7 +25,11 @@ export function CallOverlay({ conversationId, type, onEnd, incoming }: CallOverl
       if (data.sessionId === conversationId) onEnd()
     })
     const timer = setInterval(() => setDuration((d) => d + 1), 1000)
-    return () => { unsub1(); unsub2(); clearInterval(timer) }
+    return () => {
+      unsub1()
+      unsub2()
+      clearInterval(timer)
+    }
   }, [conversationId])
 
   const endCall = () => {
@@ -51,7 +55,10 @@ export function CallOverlay({ conversationId, type, onEnd, incoming }: CallOverl
     <View style={s.container}>
       <View style={s.titleRow}>
         {type === "video" ? <Video size={24} color="#E8E8F0" /> : <Phone size={24} color="#E8E8F0" />}
-        <Text style={s.title}> {incoming && !connected ? "Incoming call..." : connected ? formatDuration(duration) : "Ringing..."}</Text>
+        <Text style={s.title}>
+          {" "}
+          {incoming && !connected ? "Incoming call..." : connected ? formatDuration(duration) : "Ringing..."}
+        </Text>
       </View>
       <View style={s.controls}>
         {incoming && !connected ? (
@@ -84,11 +91,30 @@ export function CallOverlay({ conversationId, type, onEnd, incoming }: CallOverl
 }
 
 const s = StyleSheet.create({
-  container: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center", zIndex: 999 },
+  container: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
   titleRow: { flexDirection: "row", alignItems: "center", marginBottom: 40 },
   title: { color: "#E8E8F0", fontSize: 20, fontWeight: "600" },
   controls: { flexDirection: "row", gap: 24, alignItems: "center" },
-  btn: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#181825", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#252538" },
+  btn: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#181825",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   activeBtn: { backgroundColor: "rgba(239,68,68,0.3)", borderColor: "#EF4444" },
   endBtn: { backgroundColor: "#EF4444", borderColor: "#EF4444" },
   answerBtn: { backgroundColor: "#22C55E", borderColor: "#22C55E" },

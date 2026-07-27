@@ -26,7 +26,8 @@ const NavContext = createContext<NavContextValue | null>(null)
 
 export function useNav() {
   const ctx = useContext(NavContext)
-  if (!ctx) return { view: "chat" as View, setView: () => {}, activeConversationId: null, setActiveConversationId: () => {} }
+  if (!ctx)
+    return { view: "chat" as View, setView: () => {}, activeConversationId: null, setActiveConversationId: () => {} }
   return ctx
 }
 
@@ -44,7 +45,9 @@ export function DashboardLayout() {
           <Topbar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
           <main className="flex-1 overflow-hidden rounded-[32px] bg-bg-primary m-3">
-            {view === "chat" && <ChatWindow activeConversationId={activeConversationId} onConversationChange={setActiveConversationId} />}
+            {view === "chat" && (
+              <ChatWindow activeConversationId={activeConversationId} onConversationChange={setActiveConversationId} />
+            )}
             {view === "profile" && <ProfilePage />}
             {view === "files" && <FilesPage />}
             {view === "groups" && <GroupsPage />}

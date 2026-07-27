@@ -20,11 +20,16 @@ export function AddParticipantsModal({ visible, conversationId, onClose }: AddPa
 
   const searchUsers = async (q: string) => {
     setSearch(q)
-    if (!q.trim()) { setResults([]); return }
+    if (!q.trim()) {
+      setResults([])
+      return
+    }
     try {
       const data = await api<User[]>(`/api/users/search?q=${encodeURIComponent(q)}`)
       setResults(data)
-    } catch { setResults([]) }
+    } catch {
+      setResults([])
+    }
   }
 
   const addParticipant = async (userId: string) => {
@@ -70,10 +75,34 @@ export function AddParticipantsModal({ visible, conversationId, onClose }: AddPa
 
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
-  modal: { width: "100%", maxWidth: 360, backgroundColor: "#101016", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "#252538" },
+  modal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#101016",
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
-  input: { backgroundColor: "#0A0A0F", borderRadius: 12, padding: 14, color: "#E8E8F0", fontSize: 15, borderWidth: 1, borderColor: "#252538", marginBottom: 12 },
-  item: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  input: {
+    backgroundColor: "#0A0A0F",
+    borderRadius: 12,
+    padding: 14,
+    color: "#E8E8F0",
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#252538",
+    marginBottom: 12,
+  },
+  item: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   name: { color: "#E8E8F0", fontSize: 15 },
   addBtn: { color: "#6C8CFF", fontSize: 14, fontWeight: "600" },
   closeBtn: { marginTop: 16, alignItems: "center", padding: 8 },

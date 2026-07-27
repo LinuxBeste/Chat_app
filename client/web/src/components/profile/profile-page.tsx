@@ -68,7 +68,7 @@ export function ProfilePage() {
               {avatar ? (
                 <img src={avatar} alt="" className="h-full w-full object-cover" />
               ) : (
-                (displayName || user?.username)?.[0]?.toUpperCase() ?? "?"
+                ((displayName || user?.username)?.[0]?.toUpperCase() ?? "?")
               )}
             </div>
             <button
@@ -79,13 +79,7 @@ export function ProfilePage() {
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
             </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
           </div>
           <div>
             <p className="text-sm font-medium text-text-primary">{user?.username}</p>
@@ -99,7 +93,11 @@ export function ProfilePage() {
             <p className="text-sm text-text-primary font-mono truncate">{user?.id}</p>
           </div>
           <button
-            onClick={() => { navigator.clipboard.writeText(user?.id ?? ""); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+            onClick={() => {
+              navigator.clipboard.writeText(user?.id ?? "")
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }}
             className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer shrink-0"
           >
             <Copy className="h-3.5 w-3.5" />

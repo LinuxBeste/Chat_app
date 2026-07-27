@@ -54,9 +54,7 @@ vi.mock("expo-document-picker", () => {
 vi.mock("expo-image-picker", () => {
   return {
     default: { launchImageLibraryAsync: vi.fn(), requestMediaLibraryPermissionsAsync: vi.fn() },
-    launchImageLibraryAsync: vi.fn(() =>
-      Promise.resolve({ canceled: true, assets: [] }),
-    ),
+    launchImageLibraryAsync: vi.fn(() => Promise.resolve({ canceled: true, assets: [] })),
     requestMediaLibraryPermissionsAsync: vi.fn(() => Promise.resolve({ granted: true })),
   }
 })

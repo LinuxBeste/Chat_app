@@ -1,6 +1,18 @@
 import { useTranslation } from "react-i18next"
 import { cn } from "../../lib/utils"
-import { MessageSquare, Users, Phone, Bell, FileText, User, Settings, LogOut, Globe, Calendar, Shield } from "lucide-react"
+import {
+  MessageSquare,
+  Users,
+  Phone,
+  Bell,
+  FileText,
+  User,
+  Settings,
+  LogOut,
+  Globe,
+  Calendar,
+  Shield,
+} from "lucide-react"
 import { useNotificationCount } from "../../lib/notification-context"
 import { useNav } from "./dashboard-layout"
 import { useAuth } from "../../lib/auth-context"
@@ -34,9 +46,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const { view, setView } = useNav()
   const { user, logout } = useAuth()
 
-  const filteredNavItems = navItems.filter(
-    (item) => item.view !== "admin" || user?.isAdmin
-  )
+  const filteredNavItems = navItems.filter((item) => item.view !== "admin" || user?.isAdmin)
 
   const handleNavClick = (v: View) => setView(v)
   const handleBottomClick = (labelKey: string) => {

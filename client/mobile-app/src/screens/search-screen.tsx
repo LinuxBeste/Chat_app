@@ -19,19 +19,28 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const search = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); return }
+    if (!q.trim()) {
+      setResults([])
+      return
+    }
     setSearching(true)
     try {
       const data = await api<SearchResult[]>(`/api/productivity/search?q=${encodeURIComponent(q)}`)
       setResults(data)
-    } catch { setResults([]) }
-    finally { setSearching(false) }
+    } catch {
+      setResults([])
+    } finally {
+      setSearching(false)
+    }
   }, [])
 
   const handleChange = (v: string) => {
     setQuery(v)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!v.trim()) { setResults([]); return }
+    if (!v.trim()) {
+      setResults([])
+      return
+    }
     debounceRef.current = setTimeout(() => search(v), 300)
   }
 
@@ -39,7 +48,9 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
     <View style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>{"<"} {t("common.back")}</Text>
+          <Text style={s.back}>
+            {"<"} {t("common.back")}
+          </Text>
         </TouchableOpacity>
         <TextInput
           style={s.searchInput}
@@ -57,13 +68,13 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
         renderItem={({ item }) => (
           <TouchableOpacity style={s.item} onPress={() => onSelect(item.conversationId)}>
             <Text style={s.sender}>{item.sender.username}</Text>
-            <Text style={s.content} numberOfLines={2}>{item.content}</Text>
+            <Text style={s.content} numberOfLines={2}>
+              {item.content}
+            </Text>
             <Text style={s.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          query ? <Text style={s.empty}>{t("common.noResults")}</Text> : null
-        }
+        ListEmptyComponent={query ? <Text style={s.empty}>{t("common.noResults")}</Text> : null}
       />
     </View>
   )
@@ -71,10 +82,27 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0A0F" },
-  header: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#252538", gap: 12 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+    gap: 12,
+  },
   back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
-  searchInput: { flex: 1, backgroundColor: "#101016", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: "#E8E8F0", fontSize: 15, borderWidth: 1, borderColor: "#252538" },
+  searchInput: {
+    flex: 1,
+    backgroundColor: "#101016",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    color: "#E8E8F0",
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   status: { color: "#585870", textAlign: "center", padding: 12, fontSize: 13 },
   item: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538" },
   sender: { color: "#6C8CFF", fontSize: 13, fontWeight: "500" },

@@ -14,12 +14,14 @@ export function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([])
 
   useEffect(() => {
-    api<Notification[]>("/api/notifications").then(setNotifications).catch(() => {})
+    api<Notification[]>("/api/notifications")
+      .then(setNotifications)
+      .catch(() => {})
   }, [])
 
   const markRead = (id: string) => {
     api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: "true" } : n))
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
   }
 
   const formatTime = (iso: string) => {
@@ -65,7 +67,15 @@ export function NotificationsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0E1116" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#2A2F3A" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2A2F3A",
+  },
   title: { fontSize: 20, fontWeight: "600", color: "#F0F0F0" },
   count: { color: "#4850BB", fontSize: 13 },
   item: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#2A2F3A" },

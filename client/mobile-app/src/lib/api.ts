@@ -5,25 +5,16 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000"
 const KEYS = { accessToken: "@accessToken", refreshToken: "@refreshToken" }
 
 async function getTokens() {
-  const [at, rt] = await Promise.all([
-    AsyncStorage.getItem(KEYS.accessToken),
-    AsyncStorage.getItem(KEYS.refreshToken),
-  ])
+  const [at, rt] = await Promise.all([AsyncStorage.getItem(KEYS.accessToken), AsyncStorage.getItem(KEYS.refreshToken)])
   return { accessToken: at, refreshToken: rt }
 }
 
 async function setTokens(access: string, refresh: string) {
-  await Promise.all([
-    AsyncStorage.setItem(KEYS.accessToken, access),
-    AsyncStorage.setItem(KEYS.refreshToken, refresh),
-  ])
+  await Promise.all([AsyncStorage.setItem(KEYS.accessToken, access), AsyncStorage.setItem(KEYS.refreshToken, refresh)])
 }
 
 async function clearTokens() {
-  await Promise.all([
-    AsyncStorage.removeItem(KEYS.accessToken),
-    AsyncStorage.removeItem(KEYS.refreshToken),
-  ])
+  await Promise.all([AsyncStorage.removeItem(KEYS.accessToken), AsyncStorage.removeItem(KEYS.refreshToken)])
 }
 
 let refreshPromise: Promise<string | null> | null = null
@@ -47,7 +38,10 @@ async function doRefresh(): Promise<string | null> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     })
-    if (!res.ok) { await clearTokens(); return null }
+    if (!res.ok) {
+      await clearTokens()
+      return null
+    }
     const data = await res.json()
     await setTokens(data.accessToken, data.refreshToken)
     return data.accessToken

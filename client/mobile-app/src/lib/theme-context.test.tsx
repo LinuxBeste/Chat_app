@@ -7,7 +7,7 @@ import type { ReactNode } from "react"
 vi.mock("react-native", async () => {
   const actual = await vi.importActual("react-native")
   return {
-    ...actual as any,
+    ...(actual as any),
     useColorScheme: vi.fn(() => "dark"),
   }
 })

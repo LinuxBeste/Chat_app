@@ -1,8 +1,29 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "../../lib/api"
-import { useTheme, type CustomThemeData, type ThemeConfig, themePresets, defaultLightTheme, defaultDarkTheme } from "../../lib/theme-context"
-import { Palette, Check, Trash2, Plus, X, PaintBucket, MessageSquare, Type, Sparkles, Sun, Moon, Layout, Circle } from "lucide-react"
+import {
+  useTheme,
+  type CustomThemeData,
+  type ThemeConfig,
+  themePresets,
+  defaultLightTheme,
+  defaultDarkTheme,
+} from "../../lib/theme-context"
+import {
+  Palette,
+  Check,
+  Trash2,
+  Plus,
+  X,
+  PaintBucket,
+  MessageSquare,
+  Type,
+  Sparkles,
+  Sun,
+  Moon,
+  Layout,
+  Circle,
+} from "lucide-react"
 
 const defaultThemeConfig: ThemeConfig = {
   colors: {
@@ -63,7 +84,18 @@ const lightPresets = themePresets.filter((p) => {
 
 export function ThemeEditor(_props: ThemeEditorProps) {
   const { t } = useTranslation()
-  const { theme, customTheme, themeConfig, applyTheme, clearCustomTheme, applyPreset, lightTheme, darkTheme, setLightTheme, setDarkTheme } = useTheme()
+  const {
+    theme,
+    customTheme,
+    themeConfig,
+    applyTheme,
+    clearCustomTheme,
+    applyPreset,
+    lightTheme,
+    darkTheme,
+    setLightTheme,
+    setDarkTheme,
+  } = useTheme()
   const [themes, setThemes] = useState<CustomThemeData[]>([])
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
@@ -72,9 +104,7 @@ export function ThemeEditor(_props: ThemeEditorProps) {
   const isDefaultDark = !customTheme && !themeConfig && theme === "dark"
   const isDefaultLight = !customTheme && !themeConfig && theme === "light"
 
-  const activeConfig: ThemeConfig | null = customTheme
-    ? JSON.parse(customTheme.theme)
-    : themeConfig
+  const activeConfig: ThemeConfig | null = customTheme ? JSON.parse(customTheme.theme) : themeConfig
 
   useEffect(() => {
     api<CustomThemeData[]>("/api/themes")
@@ -133,22 +163,22 @@ export function ThemeEditor(_props: ThemeEditorProps) {
   function PresetButton({ config: cfg, name: label, active }: { config: ThemeConfig; name: string; active: boolean }) {
     return (
       <button
-        onClick={() => { clearCustomTheme(); applyPreset(cfg) }}
+        onClick={() => {
+          clearCustomTheme()
+          applyPreset(cfg)
+        }}
         className={`flex items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer text-left ${
-          active
-            ? "border-accent ring-2 ring-accent/30"
-            : "border-border hover:border-accent/50"
+          active ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/50"
         }`}
         style={{ background: cfg.colors?.["bg-primary"] || "#0F1117" }}
       >
-        <div
-          className="h-6 w-6 rounded-lg shrink-0"
-          style={{ background: cfg.colors?.accent || "#7C5CFC" }}
-        />
+        <div className="h-6 w-6 rounded-lg shrink-0" style={{ background: cfg.colors?.accent || "#7C5CFC" }} />
         <span className="text-xs font-medium truncate" style={{ color: cfg.colors?.["text-primary"] || "#fff" }}>
           {label}
         </span>
-        {active && <Check className="h-3.5 w-3.5 shrink-0 ml-auto" style={{ color: cfg.colors?.accent || "#7C5CFC" }} />}
+        {active && (
+          <Check className="h-3.5 w-3.5 shrink-0 ml-auto" style={{ color: cfg.colors?.accent || "#7C5CFC" }} />
+        )}
       </button>
     )
   }
@@ -173,8 +203,22 @@ export function ThemeEditor(_props: ThemeEditorProps) {
           {t("themeEditor.defaults")}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <PresetButton config={defaultDarkTheme} name={t("themeEditor.defaultDark")} active={isDefaultDark || (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultDarkTheme, activeConfig))} />
-          <PresetButton config={defaultLightTheme} name={t("themeEditor.defaultLight")} active={isDefaultLight || (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultLightTheme, activeConfig))} />
+          <PresetButton
+            config={defaultDarkTheme}
+            name={t("themeEditor.defaultDark")}
+            active={
+              isDefaultDark ||
+              (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultDarkTheme, activeConfig))
+            }
+          />
+          <PresetButton
+            config={defaultLightTheme}
+            name={t("themeEditor.defaultLight")}
+            active={
+              isDefaultLight ||
+              (!customTheme && !themeConfig && !!activeConfig && configsEqual(defaultLightTheme, activeConfig))
+            }
+          />
         </div>
 
         {/* Dark presets */}
@@ -223,7 +267,10 @@ export function ThemeEditor(_props: ThemeEditorProps) {
               value={lightTheme ? JSON.stringify(lightTheme) : ""}
               onChange={(e) => {
                 const val = e.target.value
-                if (!val) { setLightTheme(null); return }
+                if (!val) {
+                  setLightTheme(null)
+                  return
+                }
                 const parsed = JSON.parse(val)
                 setLightTheme(parsed)
               }}
@@ -235,18 +282,24 @@ export function ThemeEditor(_props: ThemeEditorProps) {
               </optgroup>
               <optgroup label={t("themeEditor.darkPresets")}>
                 {darkPresets.map((p, i) => (
-                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>
+                    {p.name}
+                  </option>
                 ))}
               </optgroup>
               <optgroup label={t("themeEditor.lightPresets")}>
                 {lightPresets.map((p, i) => (
-                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>
+                    {p.name}
+                  </option>
                 ))}
               </optgroup>
               {themes.length > 0 && (
                 <optgroup label={t("themeEditor.customThemes")}>
                   {themes.map((t) => (
-                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>{t.name}</option>
+                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>
+                      {t.name}
+                    </option>
                   ))}
                 </optgroup>
               )}
@@ -258,7 +311,10 @@ export function ThemeEditor(_props: ThemeEditorProps) {
               value={darkTheme ? JSON.stringify(darkTheme) : ""}
               onChange={(e) => {
                 const val = e.target.value
-                if (!val) { setDarkTheme(null); return }
+                if (!val) {
+                  setDarkTheme(null)
+                  return
+                }
                 const parsed = JSON.parse(val)
                 setDarkTheme(parsed)
               }}
@@ -270,18 +326,24 @@ export function ThemeEditor(_props: ThemeEditorProps) {
               </optgroup>
               <optgroup label={t("themeEditor.darkPresets")}>
                 {darkPresets.map((p, i) => (
-                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                  <option key={`dp-${i}`} value={JSON.stringify(p.config)}>
+                    {p.name}
+                  </option>
                 ))}
               </optgroup>
               <optgroup label={t("themeEditor.lightPresets")}>
                 {lightPresets.map((p, i) => (
-                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>{p.name}</option>
+                  <option key={`lp-${i}`} value={JSON.stringify(p.config)}>
+                    {p.name}
+                  </option>
                 ))}
               </optgroup>
               {themes.length > 0 && (
                 <optgroup label={t("themeEditor.customThemes")}>
                   {themes.map((t) => (
-                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>{t.name}</option>
+                    <option key={t.id} value={JSON.stringify(JSON.parse(t.theme))}>
+                      {t.name}
+                    </option>
                   ))}
                 </optgroup>
               )}
@@ -383,7 +445,9 @@ export function ThemeEditor(_props: ThemeEditorProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-text-primary truncate">{label}</p>
-                    <p className="text-[10px] text-text-muted font-mono">{(config.colors as Record<string, string>)?.[key] ?? ""}</p>
+                    <p className="text-[10px] text-text-muted font-mono">
+                      {(config.colors as Record<string, string>)?.[key] ?? ""}
+                    </p>
                   </div>
                 </div>
               ))}

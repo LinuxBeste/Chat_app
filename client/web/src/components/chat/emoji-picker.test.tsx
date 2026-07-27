@@ -21,9 +21,9 @@ describe("EmojiPicker", () => {
 
   it("calls onEmojiSelect and onClose when an emoji is clicked", () => {
     render(<EmojiPicker onEmojiSelect={onEmojiSelect} onClose={onClose} />)
-    const emojiButtons = screen.getAllByRole("button").filter(
-      (b) => b.textContent && b.textContent.length <= 2 && !b.getAttribute("title"),
-    )
+    const emojiButtons = screen
+      .getAllByRole("button")
+      .filter((b) => b.textContent && b.textContent.length <= 2 && !b.getAttribute("title"))
     const firstEmoji = emojiButtons[0]
     if (firstEmoji) {
       fireEvent.click(firstEmoji)

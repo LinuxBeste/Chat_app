@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { handleVoiceJoin, handleVoiceLeave, handleVoiceOffer, handleVoiceAnswer, handleVoiceIceCandidate } from "./voice.js"
+import {
+  handleVoiceJoin,
+  handleVoiceLeave,
+  handleVoiceOffer,
+  handleVoiceAnswer,
+  handleVoiceIceCandidate,
+} from "./voice.js"
 
 const mockRedisPublish = vi.fn()
 vi.mock("../lib/redis.js", () => ({
@@ -106,7 +112,10 @@ describe("handleVoiceOffer", () => {
 
   it("returns null", async () => {
     vi.mocked(getRedis).mockReturnValue(null)
-    const result = await handleVoiceOffer({ channelId: "ch1", targetUserId: "user2", sdp: { type: "offer", sdp: "sdp1" } }, "user1")
+    const result = await handleVoiceOffer(
+      { channelId: "ch1", targetUserId: "user2", sdp: { type: "offer", sdp: "sdp1" } },
+      "user1",
+    )
     expect(result).toBeNull()
   })
 })
@@ -123,7 +132,10 @@ describe("handleVoiceAnswer", () => {
 
   it("returns null", async () => {
     vi.mocked(getRedis).mockReturnValue(null)
-    const result = await handleVoiceAnswer({ channelId: "ch1", targetUserId: "user1", sdp: { type: "answer", sdp: "sdp2" } }, "user2")
+    const result = await handleVoiceAnswer(
+      { channelId: "ch1", targetUserId: "user1", sdp: { type: "answer", sdp: "sdp2" } },
+      "user2",
+    )
     expect(result).toBeNull()
   })
 })
@@ -133,14 +145,20 @@ describe("handleVoiceIceCandidate", () => {
     const mockRedis = { publish: mockRedisPublish }
     vi.mocked(getRedis).mockReturnValue(mockRedis as any)
 
-    await handleVoiceIceCandidate({ channelId: "ch1", targetUserId: "user1", candidate: { candidate: "cand1" } }, "user2")
+    await handleVoiceIceCandidate(
+      { channelId: "ch1", targetUserId: "user1", candidate: { candidate: "cand1" } },
+      "user2",
+    )
 
     expect(mockRedisPublish).toHaveBeenCalledWith("chat:user:user1", expect.stringContaining("voice:ice-candidate"))
   })
 
   it("returns null", async () => {
     vi.mocked(getRedis).mockReturnValue(null)
-    const result = await handleVoiceIceCandidate({ channelId: "ch1", targetUserId: "user1", candidate: { candidate: "cand1" } }, "user2")
+    const result = await handleVoiceIceCandidate(
+      { channelId: "ch1", targetUserId: "user1", candidate: { candidate: "cand1" } },
+      "user2",
+    )
     expect(result).toBeNull()
   })
 })

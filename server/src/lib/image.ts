@@ -41,7 +41,10 @@ export async function saveAvatar(input: Buffer): Promise<string> {
   return `/uploads/avatars/${filename}`
 }
 
-export async function saveAndScaleUpload(input: Buffer, originalName: string): Promise<{ url: string; filename: string; mimeType: string; size: number }> {
+export async function saveAndScaleUpload(
+  input: Buffer,
+  originalName: string,
+): Promise<{ url: string; filename: string; mimeType: string; size: number }> {
   const ext = extname(originalName).toLowerCase()
   const isImage = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"].includes(ext)
 
@@ -57,8 +60,12 @@ export async function saveAndScaleUpload(input: Buffer, originalName: string): P
   await writeFile(join(uploadDir, filename), buffer)
 
   const mimeMap: Record<string, string> = {
-    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-    ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".bmp": "image/bmp",
   }
 
   return {

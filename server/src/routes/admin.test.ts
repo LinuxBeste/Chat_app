@@ -87,15 +87,32 @@ describe("GET /api/admin/stats", () => {
     const res = await request(app).get("/api/admin/stats").set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
     expect(res.body).toMatchObject({
-      users: 10, conversations: 5, messages: 100, reports: 2, bans: 1,
-      registrationsToday: 3, onlineUsers: 4, messagesToday: 20,
+      users: 10,
+      conversations: 5,
+      messages: 100,
+      reports: 2,
+      bans: 1,
+      registrationsToday: 3,
+      onlineUsers: 4,
+      messagesToday: 20,
     })
   })
 })
 
 describe("GET /api/admin/users", () => {
   it("returns paginated users", async () => {
-    const userRow = { id: "u1", username: "alice", email: "alice@test.com", status: "online", role: "member", displayName: null, avatar: null, createdAt: "2024-01-01", suspendedUntil: null, suspensionReason: null }
+    const userRow = {
+      id: "u1",
+      username: "alice",
+      email: "alice@test.com",
+      status: "online",
+      role: "member",
+      displayName: null,
+      avatar: null,
+      createdAt: "2024-01-01",
+      suspendedUntil: null,
+      suspensionReason: null,
+    }
     queryQueue.push([userRow], [{ value: 1 }])
     const res = await request(app).get("/api/admin/users").set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
@@ -105,7 +122,20 @@ describe("GET /api/admin/users", () => {
 
 describe("GET /api/admin/users/:id", () => {
   it("returns user details", async () => {
-    queryQueue.push([{ id: "u1", username: "alice", email: "a@b.com", displayName: null, avatar: null, bio: null, customStatus: null, status: "online", emailVerified: "true", createdAt: "2024-01-01" }])
+    queryQueue.push([
+      {
+        id: "u1",
+        username: "alice",
+        email: "a@b.com",
+        displayName: null,
+        avatar: null,
+        bio: null,
+        customStatus: null,
+        status: "online",
+        emailVerified: "true",
+        createdAt: "2024-01-01",
+      },
+    ])
     queryQueue.push([{ value: 5 }], [{ value: 2 }], [])
 
     const res = await request(app).get("/api/admin/users/u1").set("Authorization", "Bearer token")
@@ -123,13 +153,19 @@ describe("GET /api/admin/users/:id", () => {
 
 describe("PUT /api/admin/users/:id/suspend", () => {
   it("suspends a user", async () => {
-    const res = await request(app).put("/api/admin/users/u1/suspend").set("Authorization", "Bearer token").send({ suspended: true })
+    const res = await request(app)
+      .put("/api/admin/users/u1/suspend")
+      .set("Authorization", "Bearer token")
+      .send({ suspended: true })
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("message", "User suspended")
   })
 
   it("unsuspends a user", async () => {
-    const res = await request(app).put("/api/admin/users/u1/suspend").set("Authorization", "Bearer token").send({ suspended: false })
+    const res = await request(app)
+      .put("/api/admin/users/u1/suspend")
+      .set("Authorization", "Bearer token")
+      .send({ suspended: false })
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("message", "User unsuspended")
   })
@@ -145,8 +181,22 @@ describe("DELETE /api/admin/users/:id", () => {
 
 describe("GET /api/admin/reports", () => {
   it("returns paginated reports", async () => {
-    const reportRow = { id: "r1", reportedBy: "u1", targetUserId: "u2", reason: "spam", status: "open", createdAt: "2024-01-01" }
-    queryQueue.push([reportRow], [{ value: 1 }], [{ id: "u1", username: "alice" }, { id: "u2", username: "bob" }])
+    const reportRow = {
+      id: "r1",
+      reportedBy: "u1",
+      targetUserId: "u2",
+      reason: "spam",
+      status: "open",
+      createdAt: "2024-01-01",
+    }
+    queryQueue.push(
+      [reportRow],
+      [{ value: 1 }],
+      [
+        { id: "u1", username: "alice" },
+        { id: "u2", username: "bob" },
+      ],
+    )
     const res = await request(app).get("/api/admin/reports").set("Authorization", "Bearer token")
     expect(res.status).toBe(200)
     expect(res.body.total).toBeDefined()
@@ -155,12 +205,18 @@ describe("GET /api/admin/reports", () => {
 
 describe("PUT /api/admin/reports/:id", () => {
   it("resolves a report", async () => {
-    const res = await request(app).put("/api/admin/reports/r1").set("Authorization", "Bearer token").send({ status: "resolved" })
+    const res = await request(app)
+      .put("/api/admin/reports/r1")
+      .set("Authorization", "Bearer token")
+      .send({ status: "resolved" })
     expect(res.status).toBe(200)
   })
 
   it("returns 400 for invalid status", async () => {
-    const res = await request(app).put("/api/admin/reports/r1").set("Authorization", "Bearer token").send({ status: "invalid" })
+    const res = await request(app)
+      .put("/api/admin/reports/r1")
+      .set("Authorization", "Bearer token")
+      .send({ status: "invalid" })
     expect(res.status).toBe(400)
   })
 })

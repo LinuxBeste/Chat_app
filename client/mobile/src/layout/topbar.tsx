@@ -63,7 +63,10 @@ export function Topbar({
 
         <div className="flex items-center gap-3 cursor-pointer">
           <div className="relative shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-accent text-xs font-semibold" aria-hidden="true">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-accent text-xs font-semibold"
+              aria-hidden="true"
+            >
               {initials}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-online border-2 border-bg-secondary" />

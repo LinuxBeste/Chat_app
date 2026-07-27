@@ -35,7 +35,9 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
 
   useEffect(() => {
     if (visible) {
-      api<ThemeData[]>("/api/themes").then(setThemes).catch(() => {})
+      api<ThemeData[]>("/api/themes")
+        .then(setThemes)
+        .catch(() => {})
     }
   }, [visible])
 
@@ -47,10 +49,12 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
     try {
       await api("/api/themes", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), theme: JSON.stringify(colors) })
+        body: JSON.stringify({ name: name.trim(), theme: JSON.stringify(colors) }),
       })
       setName("")
-      api<ThemeData[]>("/api/themes").then(setThemes).catch(() => {})
+      api<ThemeData[]>("/api/themes")
+        .then(setThemes)
+        .catch(() => {})
     } catch {}
     setSaving(false)
   }
@@ -74,7 +78,9 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
         <View style={s.editor}>
           <View style={s.header}>
             <Text style={s.title}>Theme Editor</Text>
-            <TouchableOpacity onPress={onClose}><Text style={s.close}>Close</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={s.close}>Close</Text>
+            </TouchableOpacity>
           </View>
           <ScrollView>
             {themes.length > 0 && (
@@ -128,20 +134,61 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
 
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  editor: { backgroundColor: "#101016", borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: "85%", borderWidth: 1, borderColor: "#252538", borderBottomWidth: 0 },
+  editor: {
+    backgroundColor: "#101016",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    maxHeight: "85%",
+    borderWidth: 1,
+    borderColor: "#252538",
+    borderBottomWidth: 0,
+  },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   close: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
-  sectionTitle: { color: "#8888A0", fontSize: 12, fontWeight: "600", textTransform: "uppercase", marginBottom: 12, marginTop: 8 },
-  themeRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  sectionTitle: {
+    color: "#8888A0",
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  themeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#252538",
+  },
   themeName: { color: "#E8E8F0", fontSize: 14, flex: 1 },
   activateBtn: { padding: 4 },
-  nameInput: { backgroundColor: "#0A0A0F", borderRadius: 10, padding: 12, color: "#E8E8F0", fontSize: 14, borderWidth: 1, borderColor: "#252538", marginBottom: 16 },
+  nameInput: {
+    backgroundColor: "#0A0A0F",
+    borderRadius: 10,
+    padding: 12,
+    color: "#E8E8F0",
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#252538",
+    marginBottom: 16,
+  },
   row: { marginBottom: 12 },
   label: { color: "#8888A0", fontSize: 11, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
   colorRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   swatch: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: "#252538" },
-  colorInput: { flex: 1, backgroundColor: "#0A0A0F", borderRadius: 10, padding: 10, color: "#E8E8F0", fontSize: 13, borderWidth: 1, borderColor: "#252538" },
+  colorInput: {
+    flex: 1,
+    backgroundColor: "#0A0A0F",
+    borderRadius: 10,
+    padding: 10,
+    color: "#E8E8F0",
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: "#252538",
+  },
   saveBtn: { backgroundColor: "#6C8CFF", borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
   saveText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 })

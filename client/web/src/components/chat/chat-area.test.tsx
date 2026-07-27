@@ -135,10 +135,13 @@ describe("ChatArea", () => {
       expect(screen.getByTestId("send-btn")).toBeInTheDocument()
     })
     await userEvent.click(screen.getByTestId("send-btn"))
-    expect(wsClient.send).toHaveBeenCalledWith("message:send", expect.objectContaining({
-      conversationId: "conv-1",
-      content: "New message",
-    }))
+    expect(wsClient.send).toHaveBeenCalledWith(
+      "message:send",
+      expect.objectContaining({
+        conversationId: "conv-1",
+        content: "New message",
+      }),
+    )
   })
 
   it("renders file messages with displayName stripping timestamp prefix", async () => {
@@ -149,7 +152,13 @@ describe("ChatArea", () => {
       senderId: "other-1",
       createdAt: "2024-01-01T12:02:00Z",
       sender: { username: "Alice", displayName: "Alice Smith", avatar: null },
-      attachment: { id: "att-1", url: "/uploads/123456789-987654321-test.txt", filename: "test.txt", mimeType: "text/plain", size: 100 },
+      attachment: {
+        id: "att-1",
+        url: "/uploads/123456789-987654321-test.txt",
+        filename: "test.txt",
+        mimeType: "text/plain",
+        size: 100,
+      },
     }
     const mockApi = (await import("../../lib/api")).api as any
     mockApi.mockReset()
@@ -227,7 +236,13 @@ describe("ChatArea", () => {
       senderId: "other-1",
       createdAt: "2024-01-01T12:02:00Z",
       sender: { username: "Alice", displayName: "Alice Smith", avatar: null },
-      attachment: { id: "att-2", url: "/uploads/123456789-987654321-doc.pdf", filename: "doc.pdf", mimeType: "application/pdf", size: 500 },
+      attachment: {
+        id: "att-2",
+        url: "/uploads/123456789-987654321-doc.pdf",
+        filename: "doc.pdf",
+        mimeType: "application/pdf",
+        size: 500,
+      },
     }
     const mockApi = (await import("../../lib/api")).api as any
     mockApi.mockReset()

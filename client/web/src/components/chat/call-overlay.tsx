@@ -135,7 +135,11 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
 
       <div className="flex items-center justify-center gap-4 p-6 bg-bg-secondary">
         <p className="text-sm text-text-muted mr-4" aria-live="polite">
-          {direction === "incoming" ? t("calls.incomingCall") : connected ? formatTime(duration) : t("calls.connecting")}
+          {direction === "incoming"
+            ? t("calls.incomingCall")
+            : connected
+              ? formatTime(duration)
+              : t("calls.connecting")}
         </p>
         <button
           onClick={() => setMuted(!muted)}

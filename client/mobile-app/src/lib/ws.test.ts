@@ -62,9 +62,7 @@ describe("WSClient", () => {
 
     wsClient.send("message:send", { content: "hello" })
 
-    expect(wsClient["ws"]?.send).toHaveBeenCalledWith(
-      JSON.stringify({ type: "message:send", content: "hello" }),
-    )
+    expect(wsClient["ws"]?.send).toHaveBeenCalledWith(JSON.stringify({ type: "message:send", content: "hello" }))
   })
 
   it("disconnects and clears state", async () => {

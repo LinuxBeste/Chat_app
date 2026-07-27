@@ -108,7 +108,7 @@ export function CommunitiesPage() {
       body: JSON.stringify({ name: newChannel.trim() }),
     }).catch(() => null)
     if (ch) {
-      setChannels((prev) => prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch])
+      setChannels((prev) => (prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch]))
       setNewChannel("")
     }
   }
@@ -120,7 +120,7 @@ export function CommunitiesPage() {
       body: JSON.stringify({ name: newVoice.trim() }),
     }).catch(() => null)
     if (ch) {
-      setVoiceChannels((prev) => prev.some((v) => v.id === ch.id) ? prev : [...prev, ch])
+      setVoiceChannels((prev) => (prev.some((v) => v.id === ch.id) ? prev : [...prev, ch]))
       setNewVoice("")
     }
   }
@@ -139,7 +139,7 @@ export function CommunitiesPage() {
       method: "POST",
     }).catch(() => null)
     if (inv) {
-      setInvites((prev) => prev.some((i) => i.id === inv.id) ? prev : [...prev, inv])
+      setInvites((prev) => (prev.some((i) => i.id === inv.id) ? prev : [...prev, inv]))
     }
   }
 
@@ -256,9 +256,11 @@ export function CommunitiesPage() {
                     )}
                     {canManage && activeVoice?.id !== vc.id && (
                       <button
-                        onClick={() => api(`/api/communities/voice/${vc.id}`, { method: "DELETE" }).then(() => {
-                          setVoiceChannels((prev) => prev.filter((v) => v.id !== vc.id))
-                        })}
+                        onClick={() =>
+                          api(`/api/communities/voice/${vc.id}`, { method: "DELETE" }).then(() => {
+                            setVoiceChannels((prev) => prev.filter((v) => v.id !== vc.id))
+                          })
+                        }
                         className="text-text-muted hover:text-danger cursor-pointer"
                         title={t("communities.delete")}
                       >
@@ -289,7 +291,9 @@ export function CommunitiesPage() {
 
             {/* Members */}
             <div>
-              <h3 className="text-sm font-medium text-text-primary mb-2">{t("communities.members")} ({members.length})</h3>
+              <h3 className="text-sm font-medium text-text-primary mb-2">
+                {t("communities.members")} ({members.length})
+              </h3>
               <div className="space-y-1.5">
                 {members.map((m) => (
                   <div
@@ -301,18 +305,18 @@ export function CommunitiesPage() {
                     </div>
                     <span className="text-sm text-text-primary truncate flex-1">
                       {m.userId.slice(0, 8)}...
-                      {m.userId === selected?.ownerId && (
-                        <Crown className="h-3 w-3 inline ml-1 text-yellow-400" />
-                      )}
+                      {m.userId === selected?.ownerId && <Crown className="h-3 w-3 inline ml-1 text-yellow-400" />}
                     </span>
                     <span className="text-xs text-text-muted capitalize bg-bg-primary rounded-xl px-2.5 py-1">
                       {m.role}
                     </span>
                     {canManage && m.userId !== user?.id && m.role !== "owner" && (
                       <button
-                        onClick={() => api(`/api/communities/${selected?.id}/members/${m.userId}`, { method: "DELETE" }).then(() => {
-                          setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId))
-                        })}
+                        onClick={() =>
+                          api(`/api/communities/${selected?.id}/members/${m.userId}`, { method: "DELETE" }).then(() => {
+                            setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId))
+                          })
+                        }
                         className="text-text-muted hover:text-danger cursor-pointer"
                         title={t("communities.removeMember")}
                       >
@@ -322,12 +326,16 @@ export function CommunitiesPage() {
                     {isOwner && m.userId !== user?.id && m.role !== "owner" && (
                       <select
                         value={m.role}
-                        onChange={(e) => api(`/api/communities/${selected?.id}/members/${m.userId}/role`, {
-                          method: "PUT",
-                          body: JSON.stringify({ role: e.target.value }),
-                        }).then(() => {
-                          setMembers((prev) => prev.map((mm) => mm.userId === m.userId ? { ...mm, role: e.target.value } : mm))
-                        })}
+                        onChange={(e) =>
+                          api(`/api/communities/${selected?.id}/members/${m.userId}/role`, {
+                            method: "PUT",
+                            body: JSON.stringify({ role: e.target.value }),
+                          }).then(() => {
+                            setMembers((prev) =>
+                              prev.map((mm) => (mm.userId === m.userId ? { ...mm, role: e.target.value } : mm)),
+                            )
+                          })
+                        }
                         className="text-xs bg-transparent border border-border rounded-xl px-1.5 py-1 text-text-muted cursor-pointer outline-none"
                       >
                         <option value="member">{t("communities.member")}</option>
@@ -421,11 +429,7 @@ export function CommunitiesPage() {
       )}
 
       {activeVoice && (
-        <VoiceChannel
-          channelId={activeVoice.id}
-          channelName={activeVoice.name}
-          onLeave={leaveVoiceChannel}
-        />
+        <VoiceChannel channelId={activeVoice.id} channelName={activeVoice.name} onLeave={leaveVoiceChannel} />
       )}
 
       {showJoin && (

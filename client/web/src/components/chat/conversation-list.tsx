@@ -92,7 +92,9 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
       <div className="px-4 py-4 border-b border-border flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-text-primary">{t("chat.conversations")}</h2>
-          <p className="text-xs text-text-muted mt-0.5">{convs.length} {t("chat.total")}</p>
+          <p className="text-xs text-text-muted mt-0.5">
+            {convs.length} {t("chat.total")}
+          </p>
         </div>
         <button
           onClick={() => setShowNewConv(true)}
@@ -114,7 +116,14 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
             className={`flex w-full items-start gap-3 px-4 py-3.5 transition-all duration-200 cursor-pointer text-left border-b border-border last:border-0 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset ${activeId === conv.id ? "bg-accent/[0.03]" : ""}`}
           >
             <div className="relative shrink-0 mt-0.5">
-              <Avatar src={conv.type === "dm" ? conv.otherUser?.avatar ?? undefined : conv.avatar ?? undefined} fallback={conv.type === "dm" ? (conv.otherUser?.displayName?.[0] ?? conv.otherUser?.username?.[0] ?? "?") : conv.name?.[0] ?? "?"} />
+              <Avatar
+                src={conv.type === "dm" ? (conv.otherUser?.avatar ?? undefined) : (conv.avatar ?? undefined)}
+                fallback={
+                  conv.type === "dm"
+                    ? (conv.otherUser?.displayName?.[0] ?? conv.otherUser?.username?.[0] ?? "?")
+                    : (conv.name?.[0] ?? "?")
+                }
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
@@ -126,7 +135,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
               </div>
               <p className="text-sm text-text-secondary truncate mt-0.5">
                 {conv.type === "dm"
-                  ? (conv.otherUser?.customStatus || t("chat.dmConversation"))
+                  ? conv.otherUser?.customStatus || t("chat.dmConversation")
                   : t(`chat.${conv.type}Conversation`)}
               </p>
             </div>
@@ -136,7 +145,10 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
 
       {/* New Conversation Modal */}
       {showNewConv && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40" onClick={() => setShowNewConv(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40"
+          onClick={() => setShowNewConv(false)}
+        >
           <div
             className="w-full max-w-sm rounded-[32px] border border-border bg-surface shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
@@ -146,7 +158,10 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
                 <UserPlus className="h-4 w-4 text-accent" />
                 {t("chat.addByUsernameOrId")}
               </h3>
-              <button onClick={() => setShowNewConv(false)} className="text-text-muted hover:text-text-primary cursor-pointer">
+              <button
+                onClick={() => setShowNewConv(false)}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -172,7 +187,13 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
                 disabled={!input.trim() || creating}
                 className="w-full h-11 rounded-2xl bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {creating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("chat.adding")}</> : t("chat.startConversation")}
+                {creating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t("chat.adding")}
+                  </>
+                ) : (
+                  t("chat.startConversation")
+                )}
               </button>
             </div>
           </div>
