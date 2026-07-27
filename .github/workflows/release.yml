@@ -107,6 +107,10 @@ jobs:
             sed -i "s/bridgePromise.reject(code, message, cause)/bridgePromise.reject(code ?: \"\", message, cause)/" "$1"
           ' _ {} \;
 
+      - name: Patch ReactStylesDiffMapBackingFieldAccessor for RN 0.79
+        run: |
+          find -L node_modules -path "*/expo-modules-core/android/src/main/java/com/facebook/react/uimanager/ReactStylesDiffMapBackingFieldAccessor.java" -exec sed -i "s/diffMap.internal_backingMap()/diffMap.mBackingMap/" {} \;
+
       - name: Generate native projects
         run: npx expo prebuild --clean
         working-directory: client/mobile-app
