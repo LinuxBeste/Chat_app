@@ -5,6 +5,12 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to checkout
+        required: false
+        default: master
+        type: string
 
 permissions:
   contents: write
@@ -16,6 +22,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -55,6 +63,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -95,6 +105,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -127,6 +139,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -159,6 +173,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -194,6 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.branch || github.ref }}
           fetch-depth: 0
 
       - name: Download all artifacts
