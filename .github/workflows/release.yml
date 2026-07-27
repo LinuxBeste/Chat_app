@@ -136,6 +136,18 @@ jobs:
           sed -i "s|getParentFile().getAbsolutePath() + \"/hermesc/|getParentFile().getAbsolutePath() + \"/sdks/hermesc/|" app/build.gradle
         working-directory: client/mobile-app/android
 
+      - name: Pin androidx.core for compileSdk 35 compatibility
+        run: |
+          python3 << 'PYEOF'
+          with open('app/build.gradle') as f:
+              c = f.read()
+          block = "configurations.all {\n    resolutionStrategy {\n        force 'androidx.core:core:1.15.0'\n        force 'androidx.core:core-ktx:1.15.0'\n    }\n}\n\n"
+          c = c.replace('dependencies {', block + 'dependencies {', 1)
+          with open('app/build.gradle', 'w') as f:
+              f.write(c)
+          PYEOF
+        working-directory: client/mobile-app/android
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
