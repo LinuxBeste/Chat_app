@@ -97,9 +97,9 @@ jobs:
             sed -i "/^internal fun Project.configurePika(shouldBeEnabled: Boolean = true) {/,/^}$/c\internal fun Project.configurePika(shouldBeEnabled: Boolean = true) = Unit" "$1"
           ' _ {} \;
 
-      - name: Patch react-native-screens codegen type resolution bug
+      - name: Patch react-native-screens codegen type resolution bugs
         run: |
-          find -L node_modules -name "FullWindowOverlayNativeComponent.ts" -exec sed -i "s/CT\.WithDefault<boolean, true>/boolean/" {} +
+          find -L node_modules -path "*/react-native-screens/src/fabric/*.ts" -exec sed -i "s/CT\.WithDefault<boolean, [^>]*>/boolean/g" {} +
 
       - name: Generate native projects
         run: npx expo prebuild --clean
