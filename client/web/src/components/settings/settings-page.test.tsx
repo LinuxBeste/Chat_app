@@ -131,7 +131,7 @@ describe("SettingsPage", () => {
       "Media",
       "Audio & Video",
       "Accessibility",
-      "Reader",
+      "Keyboard Shortcuts",
       "Language & Region",
       "Advanced",
       "About",
@@ -293,10 +293,11 @@ describe("SettingsPage", () => {
     expect(screen.getByText("Color Blind Mode")).toBeInTheDocument()
   })
 
-  it("shows reader tab with reading mode settings", async () => {
+  it("shows reading mode settings in accessibility tab", async () => {
     render(<SettingsPage />)
-    const readerBtns = screen.getAllByText("Reader")
-    await waitFor(() => fireEvent.click(readerBtns[0]))
+    const a11yBtns = screen.getAllByText("Accessibility")
+    await waitFor(() => fireEvent.click(a11yBtns[0]))
+    expect(screen.getByText("Reading Mode")).toBeInTheDocument()
     expect(screen.getByText("Reader Mode")).toBeInTheDocument()
   })
 
