@@ -7,10 +7,13 @@
     "lint": "eslint \"server/src/**/*.ts\" \"client/web/src/**/*.{ts,tsx}\""
   },
   "devDependencies": {
-    "prettier": "^3.9.5",
-    "eslint": "^10.7.0",
-    "@typescript-eslint/parser": "^8.64.0",
     "@typescript-eslint/eslint-plugin": "^8.64.0",
-    "eslint-config-prettier": "^10.1.8"
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.5"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1"
   }
 }
