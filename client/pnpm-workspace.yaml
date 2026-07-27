@@ -3,6 +3,5 @@ packages:
   - "mobile"
   - "mobile-app"
   - "shared"
-allowBuilds:
-  esbuild: set this to true or false
-onlyBuiltDependencies: '[]'
+onlyBuiltDependencies:
+  - esbuild

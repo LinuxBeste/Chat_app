@@ -3,8 +3,10 @@ packages:
   - "client/*"
 
 allowBuilds:
+  bcrypt: set this to true or false
   electron: true
   electron-winstaller: true
+  esbuild: set this to true or false
 
 onlyBuiltDependencies:
   - bcrypt
