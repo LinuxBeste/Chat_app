@@ -109,7 +109,7 @@ jobs:
 
       - name: Fix Hermes compiler path
         run: |
-          sed -i "s|require.resolve('hermes-compiler/package.json', { paths: [require.resolve('react-native/package.json')] })|require.resolve('react-native/package.json')|" app/build.gradle
+          sed -i "s|require.resolve('hermes-compiler/package.json', { paths: \[require.resolve('react-native/package.json')\] })|require.resolve('react-native/package.json')|" app/build.gradle
           sed -i "s|getParentFile().getAbsolutePath() + \"/hermesc/|getParentFile().getAbsolutePath() + \"/sdks/hermesc/|" app/build.gradle
         working-directory: client/mobile-app/android
 
