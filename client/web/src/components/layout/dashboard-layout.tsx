@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from "react"
+import { useState, createContext, useContext, useEffect } from "react"
 import { Sidebar } from "./sidebar"
 import { Topbar } from "./topbar"
 import { ChatWindow } from "../chat/chat-window"
@@ -11,6 +11,7 @@ import { NotificationsPage } from "../notifications/notifications-page"
 import { SettingsPage } from "../settings/settings-page"
 import { CallsPage } from "../calls/calls-page"
 import { AdminPage } from "../admin/admin-page"
+import { useTheme } from "../../lib/theme-context"
 
 export type View =
   "chat" | "profile" | "files" | "groups" | "calls" | "notifications" | "communities" | "events" | "settings" | "admin"
@@ -35,6 +36,42 @@ export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [view, setView] = useState<View>("chat")
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const { toggleTheme } = useTheme()
+
+  useEffect(() => {
+    const cleanup = window.electronAPI?.onMenuAction((action) => {
+      switch (action) {
+        case "go-friends":
+          setView("chat")
+          break
+        case "go-settings":
+          setView("settings")
+          break
+        case "go-communities":
+          setView("communities")
+          break
+        case "go-notifications":
+          setView("notifications")
+          break
+        case "go-files":
+          setView("files")
+          break
+        case "go-groups":
+          setView("groups")
+          break
+        case "go-events":
+          setView("events")
+          break
+        case "toggle-sidebar":
+          setCollapsed((c) => !c)
+          break
+        case "toggle-dark-mode":
+          toggleTheme()
+          break
+      }
+    })
+    return () => cleanup?.()
+  }, [toggleTheme])
 
   return (
     <NavContext.Provider value={{ view, setView, activeConversationId, setActiveConversationId }}>

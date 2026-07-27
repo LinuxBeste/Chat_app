@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, act } from "@testing-library/react"
 import { DashboardLayout } from "./dashboard-layout"
 
+vi.mock("../../lib/theme-context", () => ({
+  useTheme: () => ({ toggleTheme: vi.fn() }),
+}))
+
 vi.mock("./sidebar", () => ({
   Sidebar: vi.fn(({ collapsed, onToggle }) => (
     <div data-testid="sidebar">

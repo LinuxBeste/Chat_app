@@ -1,4 +1,13 @@
-import { app, BrowserWindow, ipcMain, Menu, MenuItemConstructorOptions, nativeImage, safeStorage, shell } from "electron"
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  MenuItemConstructorOptions,
+  nativeImage,
+  safeStorage,
+  shell,
+} from "electron"
 import { join } from "path"
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
 
@@ -33,8 +42,8 @@ function saveWindowState() {
   }
 }
 
-function sendToRenderer(channel: string, ...args: unknown[]) {
-  mainWindow?.webContents.send(channel, ...args)
+function menuAction(action: string) {
+  mainWindow?.webContents.send("menu:action", action)
 }
 
 function buildMenu() {
@@ -43,33 +52,109 @@ function buildMenu() {
     {
       label: "New Conversation",
       accelerator: "CmdOrCtrl+N",
-      click: () => sendToRenderer("menu:new-conversation"),
+      click: () => menuAction("new-conversation"),
     },
+    { type: "separator" },
     {
       label: "Mark as Read",
       accelerator: "CmdOrCtrl+Shift+R",
-      click: () => sendToRenderer("menu:mark-read"),
+      click: () => menuAction("mark-read"),
+    },
+    {
+      label: "Mark as Unread",
+      accelerator: "CmdOrCtrl+Shift+U",
+      click: () => menuAction("mark-unread"),
+    },
+    {
+      label: "Archive",
+      accelerator: "CmdOrCtrl+E",
+      click: () => menuAction("archive"),
+    },
+    {
+      label: "Mute",
+      accelerator: "CmdOrCtrl+Shift+M",
+      click: () => menuAction("mute"),
     },
     { type: "separator" },
     {
       label: "Search",
       accelerator: "CmdOrCtrl+K",
-      click: () => sendToRenderer("menu:search"),
+      click: () => menuAction("search"),
+    },
+  ]
+  const navigateSubmenu: MenuItemConstructorOptions[] = [
+    {
+      label: "Friends",
+      accelerator: "CmdOrCtrl+1",
+      click: () => menuAction("go-friends"),
+    },
+    {
+      label: "Groups",
+      accelerator: "CmdOrCtrl+2",
+      click: () => menuAction("go-groups"),
+    },
+    {
+      label: "Communities",
+      accelerator: "CmdOrCtrl+3",
+      click: () => menuAction("go-communities"),
+    },
+    {
+      label: "Events",
+      accelerator: "CmdOrCtrl+4",
+      click: () => menuAction("go-events"),
+    },
+    {
+      label: "Notifications",
+      accelerator: "CmdOrCtrl+5",
+      click: () => menuAction("go-notifications"),
+    },
+    {
+      label: "Files",
+      accelerator: "CmdOrCtrl+6",
+      click: () => menuAction("go-files"),
+    },
+    { type: "separator" },
+    {
+      label: "Settings",
+      accelerator: "CmdOrCtrl+,",
+      click: () => menuAction("go-settings"),
+    },
+  ]
+  const viewSubmenu: MenuItemConstructorOptions[] = [
+    { role: "reload" as const },
+    { role: "forceReload" as const },
+    { type: "separator" as const },
+    { role: "resetZoom" as const },
+    { role: "zoomIn" as const },
+    { role: "zoomOut" as const },
+    { type: "separator" as const },
+    { role: "togglefullscreen" as const },
+    { type: "separator" as const },
+    ...(isDev ? [{ role: "toggleDevTools" as const }, { type: "separator" as const }] : []),
+    {
+      label: "Toggle Sidebar",
+      accelerator: "CmdOrCtrl+B",
+      click: () => menuAction("toggle-sidebar"),
+    },
+    {
+      label: "Toggle Dark Mode",
+      accelerator: "CmdOrCtrl+D",
+      click: () => menuAction("toggle-dark-mode"),
     },
   ]
   const helpSubmenu: MenuItemConstructorOptions[] = [
     {
       label: "About",
-      click: () => sendToRenderer("menu:about"),
+      click: () => menuAction("about"),
     },
     { type: "separator" },
     {
       label: "Documentation",
-      click: () => shell.openExternal("https://github.com/anomalyco/opencode"),
+      click: () => shell.openExternal("https://github.com/LinuxBeste/Chat_app/"),
     },
     {
       label: "Report Issue",
-      click: () => shell.openExternal("https://github.com/anomalyco/opencode/issues"),
+      click: () => shell.openExternal("https://github.com/LinuxBeste/Chat_app/issues"),
     },
   ]
   return Menu.buildFromTemplate([
@@ -94,6 +179,10 @@ function buildMenu() {
       submenu: chatSubmenu,
     },
     {
+      label: "Navigate",
+      submenu: navigateSubmenu,
+    },
+    {
       label: "Edit",
       submenu: [
         { role: "undo" as const },
@@ -107,17 +196,7 @@ function buildMenu() {
     },
     {
       label: "View",
-      submenu: [
-        { role: "reload" as const },
-        { role: "forceReload" as const },
-        { type: "separator" as const },
-        { role: "resetZoom" as const },
-        { role: "zoomIn" as const },
-        { role: "zoomOut" as const },
-        { type: "separator" as const },
-        { role: "togglefullscreen" as const },
-        ...(isDev ? [{ type: "separator" as const }, { role: "toggleDevTools" as const }] : []),
-      ],
+      submenu: viewSubmenu,
     },
     {
       label: "Window",
