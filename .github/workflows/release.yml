@@ -102,6 +102,11 @@ jobs:
           EOF
         working-directory: client/mobile-app/android
 
+      - name: Pin Kotlin version for Expo
+        run: |
+          sed -i "s|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20')|" build.gradle
+        working-directory: client/mobile-app/android
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
