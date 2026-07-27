@@ -69,3 +69,4 @@ jobs:
           JWT_SECRET: test-secret
           JWT_REFRESH_SECRET: test-refresh-secret
       - run: pnpm --filter web run test
+      - run: pnpm --filter mobile-app run test
