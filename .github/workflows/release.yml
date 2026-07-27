@@ -101,6 +101,7 @@ jobs:
         run: |
           find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/kotlin/Promise.kt" -exec sh -c '
             sed -i "/override fun reject(code: String?/s/code: String?/code: String/g" "$1"
+            sed -i "/throwable: Throwable?, userInfo: WritableMap?)/s/code: String/code: String?/" "$1"
           ' _ {} \;
           find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/kotlin/KPromiseWrapper.kt" -exec sh -c '
             sed -i "s/bridgePromise.reject(code, message, cause)/bridgePromise.reject(code ?: \"\", message, cause)/" "$1"
@@ -129,11 +130,9 @@ jobs:
           sed -i "s|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21')|" build.gradle
         working-directory: client/mobile-app/android
 
-      - name: Patch RN DOMRect private fields for Hermes incompatibility
+      - name: Patch RN webapis private fields for Hermes incompatibility
         run: |
-          find -L node_modules -path "*/react-native/src/private/webapis/geometry/DOMRect*.js" -exec sh -c '
-            sed -i "s/#x/_x/g; s/#y/_y/g; s/#width/_width/g; s/#height/_height/g; s/#length/_length/g" "$1"
-          ' _ {} \;
+          find -L node_modules -path "*/react-native/src/private/webapis" -type d -exec find {} -name "*.js" \; | xargs sed -i 's/#\([a-zA-Z_][a-zA-Z0-9_]*\)/_\1/g'
 
       - name: Fix Hermes compiler path
         run: |
