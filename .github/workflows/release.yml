@@ -88,9 +88,10 @@ jobs:
 
       - run: pnpm install
 
-      - name: Patch pika-gradle to published version
+      - name: Patch pika-gradle to skip plugin (compiler artifacts not published for 0.3.x)
         run: |
-          find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts" -exec sed -i "s|pika-gradle:0.3.2|pika-gradle:0.0.4-2.2.21|" {} +
+          find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt" -exec sed -i "s/fun Project.applyPikaPlugin() {/fun Project.applyPikaPlugin() {\n  return\n  /" {} +
+          find -L node_modules -path "*/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts" -exec sed -i "s|implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|// implementation(\"io.github.lukmccall.pika:pika-gradle:0.3.2\")|" {} +
 
       - name: Generate native projects
         run: npx expo prebuild --clean
@@ -109,10 +110,9 @@ jobs:
           EOF
         working-directory: client/mobile-app/android
 
-      - name: Pin Kotlin and KSP versions for Expo
+      - name: Bypass Expo Kotlin version check
         run: |
-          sed -i "s/^buildscript {/buildscript {\n    ext.kotlinVersion = '2.1.20'\n    ext.kspVersion = '2.1.20-2.0.1'/" build.gradle
-          sed -i "s|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')|classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20')|" build.gradle
+          sed -i "s/^buildscript {/buildscript {\n    ext.kspVersion = '2.0.21-1.0.28'/" build.gradle
         working-directory: client/mobile-app/android
 
       - name: Fix Hermes compiler path
