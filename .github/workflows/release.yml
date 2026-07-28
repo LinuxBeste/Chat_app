@@ -462,6 +462,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+      - name: Generate checksums and create checksums.zip
+        run: |
+          mkdir -p checksums
+          for dir in apk desktop-linux desktop-mac desktop-win; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type f -exec sha256sum {} \; | sed "s|  $dir/|  |" > "checksums/$dir.sha256"
+            fi
+          done
+          (cd checksums && zip -r9 ../checksums.zip .)
+          rm -rf checksums
+
       - name: Generate release notes
         id: release_notes
         run: |
@@ -488,3 +499,4 @@ jobs:
             desktop-linux/*
             desktop-mac/*
             desktop-win/*
+            checksums.zip
