@@ -187,6 +187,12 @@ jobs:
           OLD_UNIQUE = '  override val uniqueTag: String\n    get() = "Bridgeless"'
           NEW_UNIQUE = '  override fun getUniqueTag(): String = "Bridgeless"'
 
+          OLD_SHOW_JAVA = 'override fun showNewJavaError(message: String?, e: Throwable) {\n    showNewError(message, convertJavaStackTrace(e))\n  }'
+          NEW_SHOW_JAVA = 'override fun showNewJavaError(message: String?, e: Throwable?) {\n    showNewError(message, e?.let { convertJavaStackTrace(it) } ?: emptyArray())\n  }'
+
+          OLD_ASSIGN_TITLE = '      lastErrorTitle = message\n      lastErrorStack = stack'
+          NEW_ASSIGN_TITLE = '      setLastErrorTitle(message)\n      setLastErrorStack(stack)'
+
           INSERTION = (
               '  override fun loadSplitBundleFromServer(bundlePath: String, callback: DevSplitBundleCallback) {\n'
               '    fetchSplitBundleAndCreateBundleLoader(\n'
@@ -217,6 +223,14 @@ jobs:
 
                   if 'override val uniqueTag: String' in content:
                       content = content.replace(OLD_UNIQUE, NEW_UNIQUE)
+                      changed = True
+
+                  if 'override fun showNewJavaError(message: String?, e: Throwable) {' in content:
+                      content = content.replace(OLD_SHOW_JAVA, NEW_SHOW_JAVA)
+                      changed = True
+
+                  if 'lastErrorTitle = message' in content:
+                      content = content.replace(OLD_ASSIGN_TITLE, NEW_ASSIGN_TITLE)
                       changed = True
 
                   if 'loadSplitBundleFromServer' not in content:
