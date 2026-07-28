@@ -249,6 +249,11 @@ jobs:
           find -L node_modules -type f -name "NativeArrayBuffer.cpp" \
             -exec python3 /tmp/patch_arraybuffer.py {} \;
 
+      - name: Patch NativeStatePropsGetter.cpp to remove UpdateMode arg (RN 0.79 updateState takes one arg)
+        run: |
+          find -L node_modules -type f -name "NativeStatePropsGetter.cpp" \
+            -exec sed -i 's/state->updateState(std::move(newState), react::EventQueue::UpdateMode::unstable_Immediate);/state->updateState(std::move(newState));/g' {} \;
+
       - name: Patch ExpoReactHostFactory for RN 0.79 ReactHost API compat
         run: |
           cat > /tmp/patch_hostfactory.py << 'PYEOF'
