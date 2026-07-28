@@ -222,6 +222,33 @@ jobs:
           find -L node_modules -type f -name "ExpoLogBoxDevSupportManager.kt" \
             -exec python3 /tmp/patch_logbox.py {} \;
 
+      - name: Patch NativeArrayBuffer.cpp to remove tryGetMutableBuffer (RN 0.79 JSI compat)
+        run: |
+          cat > /tmp/patch_arraybuffer.py << 'PYEOF'
+          import sys
+          fn = sys.argv[1]
+          d = open(fn).read()
+          changes = 0
+
+          old1 = '  auto mutableBuffer = arrayBuffer.tryGetMutableBuffer(runtime);\n  if (mutableBuffer) {\n    auto byteBuffer = jni::JByteBuffer::wrapBytes(mutableBuffer->data(), mutableBuffer->size());\n    byteBuffer->order(jni::JByteOrder::nativeOrder());\n    auto value = NativeArrayBuffer::newObjectCxxArgs(byteBuffer, std::move(mutableBuffer));\n    jsiContext->jniDeallocator->addReference(value);\n    return value;\n  }\n\n  size_t size = arrayBuffer.size(runtime);'
+          new1 = '  size_t size = arrayBuffer.size(runtime);'
+          if old1 in d:
+            d = d.replace(old1, new1)
+            changes += 1
+
+          old2 = '  auto backingBuffer = typedArray.getBuffer(runtime);\n  auto mutableBuffer = backingBuffer.tryGetMutableBuffer(runtime);\n  if (mutableBuffer) {\n    size_t offset = typedArray.byteOffset(runtime);\n    auto byteBuffer = jni::JByteBuffer::wrapBytes(\n      mutableBuffer->data() + offset, size);\n    byteBuffer->order(jni::JByteOrder::nativeOrder());\n    auto value = NativeArrayBuffer::newObjectCxxArgs(byteBuffer, std::move(mutableBuffer));\n    jsiContext->jniDeallocator->addReference(value);\n    return value;\n  }\n\n  auto byteBuffer = jni::JByteBuffer::allocateDirect(static_cast<jint>(size));'
+          new2 = '  auto byteBuffer = jni::JByteBuffer::allocateDirect(static_cast<jint>(size));'
+          if old2 in d:
+            d = d.replace(old2, new2)
+            changes += 1
+
+          if changes > 0:
+            open(fn, 'w').write(d)
+            print(f'Patched: {fn} ({changes} changes)')
+          PYEOF
+          find -L node_modules -type f -name "NativeArrayBuffer.cpp" \
+            -exec python3 /tmp/patch_arraybuffer.py {} \;
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
