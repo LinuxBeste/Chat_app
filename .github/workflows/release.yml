@@ -257,16 +257,18 @@ jobs:
           d = open(fn).read()
           changes = 0
 
-          # Replace named ReactHostImpl constructor args with positional (Java params lack names in AAR)
           old = '  val reactHostImpl =\n        ReactHostImpl(\n          context,\n          delegate = reactHostDelegate,\n          componentFactory = componentFactory,\n          allowPackagerServerAccess = true,\n          useDevSupport = useDevSupport\n        )'
           new = '  val reactHostImpl =\n        ReactHostImpl(\n          context,\n          reactHostDelegate,\n          componentFactory,\n          true,\n          useDevSupport\n        )'
           if old in d:
             d = d.replace(old, new)
             changes += 1
 
-          # Use getDevSupportManager() instead of synthetic property (Kotlin metadata stripped from AAR)
-          if 'reactHostImpl.devSupportManager' in d:
-            d = d.replace('reactHostImpl.devSupportManager', 'reactHostImpl.getDevSupportManager()')
+          # DevSupportManager accessor not available in the AAR's ReactHostImpl;
+          # onDidCreateDevSupportManager is a default empty method, safe to skip
+          old_call = '        handler.onDidCreateReactHost(context, reactHostImpl)\n        handler.onDidCreateDevSupportManager(reactHostImpl.devSupportManager)'
+          new_call = '        handler.onDidCreateReactHost(context, reactHostImpl)'
+          if old_call in d:
+            d = d.replace(old_call, new_call)
             changes += 1
 
           if changes > 0:
