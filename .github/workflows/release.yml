@@ -249,6 +249,33 @@ jobs:
           find -L node_modules -type f -name "NativeArrayBuffer.cpp" \
             -exec python3 /tmp/patch_arraybuffer.py {} \;
 
+      - name: Patch ExpoReactHostFactory for RN 0.79 ReactHost API compat
+        run: |
+          cat > /tmp/patch_hostfactory.py << 'PYEOF'
+          import sys
+          fn = sys.argv[1]
+          d = open(fn).read()
+          changes = 0
+
+          # Replace named ReactHostImpl constructor args with positional (Java params lack names in AAR)
+          old = '  val reactHostImpl =\n        ReactHostImpl(\n          context,\n          delegate = reactHostDelegate,\n          componentFactory = componentFactory,\n          allowPackagerServerAccess = true,\n          useDevSupport = useDevSupport\n        )'
+          new = '  val reactHostImpl =\n        ReactHostImpl(\n          context,\n          reactHostDelegate,\n          componentFactory,\n          true,\n          useDevSupport\n        )'
+          if old in d:
+            d = d.replace(old, new)
+            changes += 1
+
+          # Use getDevSupportManager() instead of synthetic property (Kotlin metadata stripped from AAR)
+          if 'reactHostImpl.devSupportManager' in d:
+            d = d.replace('reactHostImpl.devSupportManager', 'reactHostImpl.getDevSupportManager()')
+            changes += 1
+
+          if changes > 0:
+            open(fn, 'w').write(d)
+            print(f'Patched: {fn} ({changes} changes)')
+          PYEOF
+          find -L node_modules -type f -name "ExpoReactHostFactory.kt" \
+            -exec python3 /tmp/patch_hostfactory.py {} \;
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
