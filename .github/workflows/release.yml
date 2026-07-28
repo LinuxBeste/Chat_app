@@ -157,6 +157,99 @@ jobs:
           sed -i 's/|assetsPaths//g' app/src/main/AndroidManifest.xml
         working-directory: client/mobile-app/android
 
+      - name: Patch DevSupportManagerBase.java to add lastError setters for RN 0.79 compat
+        run: |
+          python3 << 'PYEOF'
+          import os
+          for root, dirs, files in os.walk('node_modules', followlinks=True):
+              for f in files:
+                  if f == 'DevSupportManagerBase.java':
+                      path = os.path.join(root, f)
+                      with open(path) as fh:
+                          content = fh.read()
+                      if 'setLastErrorTitle' in content:
+                          continue
+                      content = content.replace(
+                          'public @Nullable StackFrame[] getLastErrorStack() {\n    return mLastErrorStack;\n  }\n\n  @Override\n  public int getLastErrorCookie()',
+                          '''public @Nullable StackFrame[] getLastErrorStack() {
+    return mLastErrorStack;
+  }
+
+  public void setLastErrorTitle(@Nullable String title) {
+    mLastErrorTitle = title;
+  }
+
+  public void setLastErrorStack(@Nullable StackFrame[] stack) {
+    mLastErrorStack = stack;
+  }
+
+  @Override
+  public int getLastErrorCookie()'''
+                      )
+                      with open(path, 'w') as fh:
+                          fh.write(content)
+          PYEOF
+
+      - name: Patch Expo log-box for RN 0.79 DevSupportManagerBase compatibility
+        run: |
+          python3 << 'PYEOF'
+          import os
+          for root, dirs, files in os.walk('node_modules', followlinks=True):
+              for f in files:
+                  if f == 'ExpoLogBoxDevSupportManager.kt':
+                      path = os.path.join(root, f)
+                      with open(path) as fh:
+                          content = fh.read()
+
+                      changed = False
+
+                      # Add imports
+                      if 'import com.facebook.react.bridge.JSBundleLoader' not in content:
+                          content = content.replace(
+                              'import com.facebook.react.devsupport.interfaces.StackFrame',
+                              'import com.facebook.react.bridge.JSBundleLoader\nimport com.facebook.react.devsupport.interfaces.DevSplitBundleCallback\nimport com.facebook.react.devsupport.interfaces.StackFrame'
+                          )
+                          changed = True
+
+                      # Fix uniqueTag: property -> method
+                      if 'override val uniqueTag: String' in content:
+                          content = content.replace(
+                              '  override val uniqueTag: String\n    get() = "Bridgeless"',
+                              '  override fun getUniqueTag(): String = "Bridgeless"'
+                          )
+                          changed = True
+
+                      # showNewJavaError signature unchanged (matches Java base class DevSupportManagerBase)
+
+                      # Add loadSplitBundleFromServer after getUniqueTag
+                      if 'loadSplitBundleFromServer' not in content:
+                          insertion = '''
+  override fun loadSplitBundleFromServer(bundlePath: String, callback: DevSplitBundleCallback) {
+    fetchSplitBundleAndCreateBundleLoader(
+      bundlePath,
+      object : DevSupportManagerBase.CallbackWithBundleLoader {
+        override fun onSuccess(bundleLoader: JSBundleLoader) {
+          callback.onSuccess()
+        }
+
+        override fun onError(url: String, cause: Throwable) {
+          callback.onError(url, cause)
+        }
+      })
+  }
+
+'''
+                          content = content.replace(
+                              '  override fun getUniqueTag(): String = "Bridgeless"\n\n  override fun handleReloadJS()',
+                              '  override fun getUniqueTag(): String = "Bridgeless"\n' + insertion + '  override fun handleReloadJS()'
+                          )
+                          changed = True
+
+                      if changed:
+                          with open(path, 'w') as fh:
+                              fh.write(content)
+          PYEOF
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
