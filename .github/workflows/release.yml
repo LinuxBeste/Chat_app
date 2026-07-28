@@ -115,6 +115,49 @@ jobs:
         run: npx expo prebuild --clean
         working-directory: client/mobile-app
 
+      - name: Patch MainApplication.kt for RN 0.79 ReactApplication interface
+        run: |
+          python3 << 'PYEOF'
+          fn = 'app/src/main/java/com/chatapp/mobile/MainApplication.kt'
+          d = open(fn).read()
+          changes = 0
+
+          # Remove ReactNativeApplicationEntryPoint import (doesn't exist in RN 0.79)
+          old_import = 'import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative\n'
+          if old_import in d:
+            d = d.replace(old_import, '')
+            changes += 1
+
+          # If ReactNativeHost import is missing, add it after ReactApplication
+          if 'import com.facebook.react.ReactNativeHost' not in d:
+            d = d.replace(
+              'import com.facebook.react.ReactApplication',
+              'import com.facebook.react.ReactApplication\nimport com.facebook.react.ReactNativeHost')
+            changes += 1
+
+          # Add reactNativeHost property after the reactHost lazy block
+          if 'override val reactNativeHost:' not in d:
+            old_host = '  override val reactHost: ReactHost by lazy {'
+            new_host = (
+              '  override val reactNativeHost: ReactNativeHost = object : ReactNativeHost(this) {\n'
+              '    override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG\n'
+              '    override fun getPackages(): List<ReactPackage> = PackageList(this@MainApplication).packages\n'
+              '  }\n\n'
+              '  override val reactHost: ReactHost by lazy {')
+            d = d.replace(old_host, new_host)
+            changes += 1
+
+          # Remove loadReactNative(this) call
+          if 'loadReactNative(this)' in d:
+            d = d.replace('    loadReactNative(this)\n', '')
+            changes += 1
+
+          if changes > 0:
+            open(fn, 'w').write(d)
+            print(f'Patched: {fn} ({changes} changes)')
+          PYEOF
+        working-directory: client/mobile-app/android
+
       - name: Pin Gradle version
         run: |
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
