@@ -160,38 +160,55 @@ jobs:
       - name: Patch DevSupportManagerBase.java to add lastError setters for RN 0.79 compat
         run: |
           cat > /tmp/patch_devsupport.py << 'PYEOF'
-          import os
-          for root, dirs, files in os.walk('node_modules', followlinks=True):
-              for f in files:
-                  if f == 'DevSupportManagerBase.java':
-                      path = os.path.join(root, f)
-                      data = open(path).read()
-                      if 'setLastErrorTitle' in data:
-                          continue
-                      old = 'public @Nullable StackFrame[] getLastErrorStack() {\n    return mLastErrorStack;\n  }\n\n  @Override\n  public int getLastErrorCookie()'
-                      new = 'public @Nullable StackFrame[] getLastErrorStack() {\n    return mLastErrorStack;\n  }\n\n  public void setLastErrorTitle(@Nullable String title) {\n    mLastErrorTitle = title;\n  }\n\n  public void setLastErrorStack(@Nullable StackFrame[] stack) {\n    mLastErrorStack = stack;\n  }\n\n  @Override\n  public int getLastErrorCookie()'
-                      data = data.replace(old, new)
-                      open(path, 'w').write(data)
+          import sys
+          fn = sys.argv[1]
+          d = open(fn).read()
+          if 'setLastErrorTitle' in d:
+              sys.exit(0)
+          old = 'public @Nullable StackFrame[] getLastErrorStack() {\n    return mLastErrorStack;\n  }\n\n  @Override\n  public int getLastErrorCookie()'
+          new = 'public @Nullable StackFrame[] getLastErrorStack() {\n    return mLastErrorStack;\n  }\n\n  public void setLastErrorTitle(@Nullable String title) {\n    mLastErrorTitle = title;\n  }\n\n  public void setLastErrorStack(@Nullable StackFrame[] stack) {\n    mLastErrorStack = stack;\n  }\n\n  @Override\n  public int getLastErrorCookie()'
+          d = d.replace(old, new)
+          open(fn, 'w').write(d)
+          print('Patched:', fn)
           PYEOF
-          python3 /tmp/patch_devsupport.py
+          find -L node_modules -type f -name "DevSupportManagerBase.java" \
+            -exec python3 /tmp/patch_devsupport.py {} \;
 
       - name: Patch Expo log-box for RN 0.79 DevSupportManagerBase compatibility
         run: |
           cat > /tmp/patch_logbox.py << 'PYEOF'
-          import os
-          SRC_FILE = 'ExpoLogBoxDevSupportManager.kt'
+          import sys
+          fn = sys.argv[1]
+          content = open(fn).read()
+          changed = False
 
           OLD_IMPORT = 'import com.facebook.react.devsupport.interfaces.StackFrame'
           NEW_IMPORT = 'import com.facebook.react.bridge.JSBundleLoader\nimport com.facebook.react.devsupport.interfaces.DevSplitBundleCallback\nimport com.facebook.react.devsupport.interfaces.StackFrame'
 
+          if 'import com.facebook.react.bridge.JSBundleLoader' not in content:
+              content = content.replace(OLD_IMPORT, NEW_IMPORT)
+              changed = True
+
           OLD_UNIQUE = '  override val uniqueTag: String\n    get() = "Bridgeless"'
           NEW_UNIQUE = '  override fun getUniqueTag(): String = "Bridgeless"'
+
+          if 'override val uniqueTag: String' in content:
+              content = content.replace(OLD_UNIQUE, NEW_UNIQUE)
+              changed = True
 
           OLD_SHOW_JAVA = 'override fun showNewJavaError(message: String?, e: Throwable) {\n    showNewError(message, convertJavaStackTrace(e))\n  }'
           NEW_SHOW_JAVA = 'override fun showNewJavaError(message: String?, e: Throwable?) {\n    showNewError(message, e?.let { convertJavaStackTrace(it) } ?: emptyArray())\n  }'
 
-          OLD_ASSIGN_TITLE = '      lastErrorTitle = message\n      lastErrorStack = stack'
-          NEW_ASSIGN_TITLE = '      setLastErrorTitle(message)\n      setLastErrorStack(stack)'
+          if 'override fun showNewJavaError(message: String?, e: Throwable) {' in content:
+              content = content.replace(OLD_SHOW_JAVA, NEW_SHOW_JAVA)
+              changed = True
+
+          OLD_ASSIGN = '      lastErrorTitle = message\n      lastErrorStack = stack'
+          NEW_ASSIGN = '      setLastErrorTitle(message)\n      setLastErrorStack(stack)'
+
+          if 'lastErrorTitle = message' in content:
+              content = content.replace(OLD_ASSIGN, NEW_ASSIGN)
+              changed = True
 
           INSERTION = (
               '  override fun loadSplitBundleFromServer(bundlePath: String, callback: DevSplitBundleCallback) {\n'
@@ -209,40 +226,18 @@ jobs:
               '\n'
           )
 
-          for root, dirs, files in os.walk('node_modules', followlinks=True):
-              for f in files:
-                  if f != SRC_FILE:
-                      continue
-                  path = os.path.join(root, f)
-                  content = open(path).read()
-                  changed = False
+          if 'loadSplitBundleFromServer' not in content:
+              old_marker = '  override fun getUniqueTag(): String = "Bridgeless"\n\n  override fun handleReloadJS()'
+              new_marker = '  override fun getUniqueTag(): String = "Bridgeless"\n' + INSERTION + '  override fun handleReloadJS()'
+              content = content.replace(old_marker, new_marker)
+              changed = True
 
-                  if 'import com.facebook.react.bridge.JSBundleLoader' not in content:
-                      content = content.replace(OLD_IMPORT, NEW_IMPORT)
-                      changed = True
-
-                  if 'override val uniqueTag: String' in content:
-                      content = content.replace(OLD_UNIQUE, NEW_UNIQUE)
-                      changed = True
-
-                  if 'override fun showNewJavaError(message: String?, e: Throwable) {' in content:
-                      content = content.replace(OLD_SHOW_JAVA, NEW_SHOW_JAVA)
-                      changed = True
-
-                  if 'lastErrorTitle = message' in content:
-                      content = content.replace(OLD_ASSIGN_TITLE, NEW_ASSIGN_TITLE)
-                      changed = True
-
-                  if 'loadSplitBundleFromServer' not in content:
-                      old_marker = '  override fun getUniqueTag(): String = "Bridgeless"\n\n  override fun handleReloadJS()'
-                      new_marker = '  override fun getUniqueTag(): String = "Bridgeless"\n' + INSERTION + '  override fun handleReloadJS()'
-                      content = content.replace(old_marker, new_marker)
-                      changed = True
-
-                  if changed:
-                      open(path, 'w').write(content)
+          if changed:
+              open(fn, 'w').write(content)
+              print('Patched:', fn)
           PYEOF
-          python3 /tmp/patch_logbox.py
+          find -L node_modules -type f -name "ExpoLogBoxDevSupportManager.kt" \
+            -exec python3 /tmp/patch_logbox.py {} \;
 
       - name: Build Android APK
         run: ./gradlew assembleRelease
