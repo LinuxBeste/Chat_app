@@ -366,9 +366,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-linux
-          path: |
-            client/desktop/release/dist/*
-            client/desktop/release/ChatApp-*.zip
+          path: client/desktop/release/dist/*
 
   desktop-mac:
     needs: server
@@ -400,9 +398,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-mac
-          path: |
-            client/desktop/release/dist/*
-            client/desktop/release/ChatApp-*.zip
+          path: client/desktop/release/dist/*
 
   desktop-win:
     needs: server
@@ -434,9 +430,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-win
-          path: |
-            client/desktop/release/dist/*
-            client/desktop/release/ChatApp-*.zip
+          path: client/desktop/release/dist/*
 
   create-release:
     needs: [android, desktop-linux, desktop-mac, desktop-win]
