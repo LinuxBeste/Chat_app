@@ -450,8 +450,17 @@ jobs:
           ref: ${{ inputs.branch || github.ref }}
           fetch-depth: 0
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Download release artifacts (skip Docker build artifact)
+        run: |
+          gh run download "${{ github.run_id }}" \
+            --repo "${{ github.repository }}" \
+            --name apk \
+            --name desktop-linux \
+            --name desktop-mac \
+            --name desktop-win \
+            --dir .
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Generate release notes
         id: release_notes
