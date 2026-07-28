@@ -152,6 +152,15 @@ jobs:
             d = d.replace('    loadReactNative(this)\n', '')
             changes += 1
 
+          # Add DefaultNewArchitectureEntryPoint.load() call (required for new architecture native init)
+          if 'DefaultNewArchitectureEntryPoint.load()' not in d:
+            old_oncreate = '    ApplicationLifecycleDispatcher.onApplicationCreate(this)'
+            new_oncreate = (
+              '    DefaultNewArchitectureEntryPoint.load()\n'
+              '    ApplicationLifecycleDispatcher.onApplicationCreate(this)')
+            d = d.replace(old_oncreate, new_oncreate)
+            changes += 1
+
           if changes > 0:
             open(fn, 'w').write(d)
             print(f'Patched: {fn} ({changes} changes)')
