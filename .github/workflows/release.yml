@@ -456,16 +456,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Generate checksums and create checksums.zip
+      # - name: Generate checksums and create checksums.zip
+      #   run: |
+      #     mkdir -p checksums
+      #     for dir in apk desktop-linux desktop-mac desktop-win; do
+      #       if [ -d "$dir" ]; then
+      #         find "$dir" -type f -exec sha256sum {} \; | sed "s|  $dir/|  |" > "checksums/$dir.sha256"
+      #       fi
+      #     done
+      #     (cd checksums && zip -r9 ../checksums.zip .)
+      #     rm -rf checksums
+
+      - name: Collect blockmap files and create blockmaps.zip
         run: |
-          mkdir -p checksums
-          for dir in apk desktop-linux desktop-mac desktop-win; do
+          mkdir -p blockmaps
+          for dir in desktop-linux desktop-mac desktop-win; do
             if [ -d "$dir" ]; then
-              find "$dir" -type f -exec sha256sum {} \; | sed "s|  $dir/|  |" > "checksums/$dir.sha256"
+              find "$dir" -name "*.blockmap" -type f -exec mv {} blockmaps/ \;
             fi
           done
-          (cd checksums && zip -r9 ../checksums.zip .)
-          rm -rf checksums
+          (cd blockmaps && zip -r9 ../blockmaps.zip .)
+          rm -rf blockmaps
+          # Remove individual blockmap + SHA256SUMS from desktop dirs so they don't upload separately
+          for dir in desktop-linux desktop-mac desktop-win; do
+            [ -d "$dir" ] && rm -f "$dir"/*.blockmap "$dir"/SHA256SUMS
+          done
 
       - name: Generate release notes
         id: release_notes
@@ -493,4 +508,4 @@ jobs:
             desktop-linux/*
             desktop-mac/*
             desktop-win/*
-            checksums.zip
+            blockmaps.zip
