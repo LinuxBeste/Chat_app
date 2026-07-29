@@ -24,12 +24,19 @@ class WSClient {
     let token = refreshed ?? (await getTokens()).accessToken
     if (!token) return
 
-    this.ws = new WebSocket(BASE_URL)
+    try {
+      this.ws = new WebSocket(BASE_URL)
+    } catch {
+      this.scheduleReconnect()
+      return
+    }
 
     this.ws.onopen = () => {
       this.connected = true
       if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: "auth", token }))
+        try {
+          this.ws.send(JSON.stringify({ type: "auth", token }))
+        } catch {}
       }
     }
 
@@ -69,7 +76,7 @@ class WSClient {
     this.stopHeartbeat()
     this.heartbeatTimer = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: "ping" }))
+        try { this.ws.send(JSON.stringify({ type: "ping" })) } catch {}
         this.heartbeatTimeoutTimer = setTimeout(() => {
           this.ws?.close()
         }, HEARTBEAT_TIMEOUT)
@@ -108,7 +115,7 @@ class WSClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
       return
     }
-    this.ws.send(JSON.stringify({ type, ...payload }))
+    try { this.ws.send(JSON.stringify({ type, ...payload })) } catch {}
   }
 
   on(type: string, handler: MessageHandler) {

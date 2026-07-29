@@ -37,11 +37,13 @@ for (const lang of supportedLanguages) {
   if (!resources[lang.code]) resources[lang.code] = { translation: en }
 }
 
-i18n.use(initReactI18next).init({
-  resources,
-  lng: "en",
-  fallbackLng: "en",
-  interpolation: { escapeValue: false },
-})
+try {
+  i18n.use(initReactI18next).init({
+    resources,
+    lng: "en",
+    fallbackLng: "en",
+    interpolation: { escapeValue: false },
+  })
+} catch {}
 
 export default i18n
