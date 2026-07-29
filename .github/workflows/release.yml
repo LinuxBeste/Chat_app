@@ -111,6 +111,54 @@ jobs:
         run: |
           find -L node_modules -path "*/expo-modules-core/android/src/main/java/com/facebook/react/uimanager/ReactStylesDiffMapBackingFieldAccessor.java" -exec sed -i "s/diffMap.internal_backingMap()/diffMap.mBackingMap/" {} \;
 
+      - name: Fix @react-native/codegen componentsUtils.js corrupted TSStringKeyword case
+        run: |
+          find -L node_modules -name "componentsUtils.js" -path "*/typescript/components/*" -exec python3 -c "
+import sys, re
+fn = sys.argv[1]
+with open(fn) as f:
+    c = f.read()
+
+old = '''        return {
+          type: \"StringTypeAnnotation\",
+        };
+    case 'TSNumberKeyword':
+      throw new Error(
+        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific numeric type like Int32, Double, or Float\`,
+        return {
+          type: \"StringTypeAnnotation\",
+        };
+      );
+    case 'TSFunctionType':
+      throw new Error(
+        return {
+          type: \"StringTypeAnnotation\",
+        };
+        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific function type like BubblingEventHandler, or DirectEventHandler\`,
+      );'''
+
+new = '''    case 'TSStringKeyword':
+      return {
+        type: \"StringTypeAnnotation\",
+      };
+    case 'TSNumberKeyword':
+      throw new Error(
+        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific numeric type like Int32, Double, or Float\`,
+      );
+    case 'TSFunctionType':
+      throw new Error(
+        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific function type like BubblingEventHandler, or DirectEventHandler\`,
+      );'''
+
+if old in c:
+    c = c.replace(old, new)
+    with open(fn, 'w') as f:
+        f.write(c)
+    print(f'Patched: {fn}')
+else:
+    print(f'Skipped (already patched or different): {fn}')
+' {} \;
+
       - name: Generate native projects
         run: npx expo prebuild --clean
         working-directory: client/mobile-app
