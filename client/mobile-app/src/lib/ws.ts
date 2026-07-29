@@ -76,7 +76,9 @@ class WSClient {
     this.stopHeartbeat()
     this.heartbeatTimer = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        try { this.ws.send(JSON.stringify({ type: "ping" })) } catch {}
+        try {
+          this.ws.send(JSON.stringify({ type: "ping" }))
+        } catch {}
         this.heartbeatTimeoutTimer = setTimeout(() => {
           this.ws?.close()
         }, HEARTBEAT_TIMEOUT)
@@ -115,7 +117,9 @@ class WSClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
       return
     }
-    try { this.ws.send(JSON.stringify({ type, ...payload })) } catch {}
+    try {
+      this.ws.send(JSON.stringify({ type, ...payload }))
+    } catch {}
   }
 
   on(type: string, handler: MessageHandler) {
