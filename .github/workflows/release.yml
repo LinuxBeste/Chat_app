@@ -251,41 +251,6 @@ jobs:
           fi
           TOOLCHAIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
-          cat > /tmp/stub.c << 'CEOF'
-          #include <jni.h>
-          #include <dlfcn.h>
-
-          static void* ensure_libreactnative() {
-            void* h = dlopen("libreactnative.so", RTLD_NOW | RTLD_GLOBAL);
-            return h;
-          }
-
-          static void register_featureflags(void* h) {
-            typedef void (*reg_t)();
-            reg_t r = (reg_t)dlsym(h,
-              "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv");
-            if (r) r();
-          }
-
-          static void register_fabric(void* h) {
-            typedef void (*reg_t)();
-            reg_t r = (reg_t)dlsym(h,
-              "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv");
-            if (r) r();
-          }
-
-          static void register_turbomodule(void* h) {
-            typedef void (*reg_t)();
-            reg_t r = (reg_t)dlsym(h,
-              "_ZN8facebook5react18TurboModuleManager15registerNativesEv");
-            if (r) r();
-          }
-
-          JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-            return JNI_VERSION_1_6;
-          }
-          CEOF
-
           mkdir -p app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86,x86_64}
 
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
@@ -299,23 +264,20 @@ jobs:
               TMP="/tmp/stub_${lib}.c"
               # Generate a dedicated stub that calls the right registerNatives
               case "$lib" in
-                react_featureflagsjni) REGCALL="register_featureflags(h);" ;;
-                fabricjni)             REGCALL="register_fabric(h);"       ;;
-                turbomodulejsijni)     REGCALL="register_turbomodule(h);"  ;;
-                *)                     REGCALL=""                          ;;
+                react_featureflagsjni) REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv"); if (r) r();' ;;
+                fabricjni)             REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r();' ;;
+                turbomodulejsijni)     REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r();' ;;
+                *)                     REGCALL='/* no registerNatives needed */' ;;
               esac
               cat > "$TMP" << SCEOF
           #include <jni.h>
           #include <dlfcn.h>
-          static void* h = 0;
           static void do_reg(void) {
-            if (h) return;
-            h = dlopen("libreactnative.so", RTLD_NOW | RTLD_GLOBAL);
+            void* h = dlopen("libreactnative.so", RTLD_NOW | RTLD_GLOBAL);
             if (!h) return;
             typedef void (*reg_t)();
-            reg_t r = (reg_t)dlsym(h, "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv"); if (r) r();
-            r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r();
-            r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r();
+            reg_t r;
+            $REGCALL
           }
           JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
             do_reg();
