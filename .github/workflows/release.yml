@@ -242,7 +242,7 @@ jobs:
           PYEOF
         working-directory: client/mobile-app/android
 
-      - name: Compile stub libreact_featureflagsjni.so for all architectures
+      - name: Compile stub libreact_featureflagsjni.so (calls registerNatives from libreactnative)
         run: |
           NDK_DIR="$ANDROID_HOME/ndk/27.1.12297006"
           if [ ! -d "$NDK_DIR" ]; then
@@ -252,9 +252,19 @@ jobs:
           fi
           TOOLCHAIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
-          # Minimal C stub – SoLoader just needs the library to exist on disk
           cat > /tmp/stub.c << 'CEOF'
-          // intentionally empty – JNI_OnLoad_Weak from libreactnative.so handles registration
+          #include <jni.h>
+          #include <dlfcn.h>
+
+          JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+            void* handle = dlopen("libreactnative.so", RTLD_NOW | RTLD_GLOBAL);
+            if (!handle) return JNI_ERR;
+            typedef void (*reg_t)();
+            reg_t reg = (reg_t)dlsym(handle,
+              "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv");
+            if (reg) reg();
+            return JNI_VERSION_1_6;
+          }
           CEOF
 
           mkdir -p app/src/main/jniLibs/arm64-v8a \
