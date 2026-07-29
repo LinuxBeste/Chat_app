@@ -113,51 +113,67 @@ jobs:
 
       - name: Fix @react-native/codegen componentsUtils.js corrupted TSStringKeyword case
         run: |
-          find -L node_modules -name "componentsUtils.js" -path "*/typescript/components/*" -exec python3 -c "
-import sys, re
-fn = sys.argv[1]
-with open(fn) as f:
-    c = f.read()
+          python3 << 'PYEOF'
+          import sys, os
 
-old = '''        return {
-          type: \"StringTypeAnnotation\",
-        };
-    case 'TSNumberKeyword':
-      throw new Error(
-        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific numeric type like Int32, Double, or Float\`,
-        return {
-          type: \"StringTypeAnnotation\",
-        };
-      );
-    case 'TSFunctionType':
-      throw new Error(
-        return {
-          type: \"StringTypeAnnotation\",
-        };
-        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific function type like BubblingEventHandler, or DirectEventHandler\`,
-      );'''
+          def patch_file(fn):
+              with open(fn) as f:
+                  c = f.read()
 
-new = '''    case 'TSStringKeyword':
-      return {
-        type: \"StringTypeAnnotation\",
-      };
-    case 'TSNumberKeyword':
-      throw new Error(
-        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific numeric type like Int32, Double, or Float\`,
-      );
-    case 'TSFunctionType':
-      throw new Error(
-        \`Cannot use \"\${type}\" type annotation for \"\${name}\": must use a specific function type like BubblingEventHandler, or DirectEventHandler\`,
-      );'''
+              old = (
+                  '        return {\n'
+                  '          type: "StringTypeAnnotation",\n'
+                  '        };\n'
+                  "    case 'TSNumberKeyword':\n"
+                  '      throw new Error(\n'
+                  '        `Cannot use "${type}" type annotation for "${name}": must use a specific numeric type like Int32, Double, or Float`,\n'
+                  '        return {\n'
+                  '          type: "StringTypeAnnotation",\n'
+                  '        };\n'
+                  '      );\n'
+                  "    case 'TSFunctionType':\n"
+                  '      throw new Error(\n'
+                  '        return {\n'
+                  '          type: "StringTypeAnnotation",\n'
+                  '        };\n'
+                  '        `Cannot use "${type}" type annotation for "${name}": must use a specific function type like BubblingEventHandler, or DirectEventHandler`,\n'
+                  '      );'
+              )
 
-if old in c:
-    c = c.replace(old, new)
-    with open(fn, 'w') as f:
-        f.write(c)
-    print(f'Patched: {fn}')
-else:
-    print(f'Skipped (already patched or different): {fn}')
-' {} \;
+              new = (
+                  "    case 'TSStringKeyword':\n"
+                  '      return {\n'
+                  '        type: "StringTypeAnnotation",\n'
+                  '      };\n'
+                  "    case 'TSNumberKeyword':\n"
+                  '      throw new Error(\n'
+                  '        `Cannot use "${type}" type annotation for "${name}": must use a specific numeric type like Int32, Double, or Float`,\n'
+                  '      );\n'
+                  "    case 'TSFunctionType':\n"
+                  '      throw new Error(\n'
+                  '        `Cannot use "${type}" type annotation for "${name}": must use a specific function type like BubblingEventHandler, or DirectEventHandler`,\n'
+                  '      );'
+              )
+
+              if old in c:
+                  c = c.replace(old, new)
+                  with open(fn, 'w') as f:
+                      f.write(c)
+                  return True
+              return False
+
+          patched = 0
+          for root, dirs, files in os.walk('node_modules'):
+              for fn in files:
+                  if fn == 'componentsUtils.js' and '/typescript/components/' in root:
+                      if patch_file(os.path.join(root, fn)):
+                          patched += 1
+
+          if patched == 0:
+              print('No files needed patching')
+          else:
+              print(f'Patched {patched} file(s)')
+          PYEOF
 
       - name: Generate native projects
         run: npx expo prebuild --clean
