@@ -181,7 +181,7 @@ jobs:
         run: npx expo prebuild --clean
         working-directory: client/mobile-app
 
-      - name: Patch MainApplication.kt for RN 0.79 ReactApplication interface
+      - name: Patch MainApplication.kt for RN 0.79 ReactApplication interface + SoLoader mapping
         run: |
           python3 << 'PYEOF'
           fn = 'app/src/main/java/com/chatapp/mobile/MainApplication.kt'
@@ -218,19 +218,24 @@ jobs:
             d = d.replace('    loadReactNative(this)\n', '')
             changes += 1
 
-          # Add SoLoader import (required for DefaultNewArchitectureEntryPoint.load())
+          # Add SoLoader + OpenSourceMergedSoMapping imports
           if 'import com.facebook.soloader.SoLoader' not in d:
             d = d.replace(
               'import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint',
               'import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint\nimport com.facebook.soloader.SoLoader')
             changes += 1
+          if 'import com.facebook.react.soloader.OpenSourceMergedSoMapping' not in d:
+            d = d.replace(
+              'import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint',
+              'import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint\nimport com.facebook.react.soloader.OpenSourceMergedSoMapping')
+            changes += 1
 
-          # Add SoLoader.init() + pre-load libreactnative.so + DefaultNewArchitectureEntryPoint.load() calls
+          # Add SoLoader.init() + register mapping + load() calls
           if 'SoLoader.init(this, false)' not in d:
             old_oncreate = '    ApplicationLifecycleDispatcher.onApplicationCreate(this)'
             new_oncreate = (
               '    SoLoader.init(this, false)\n'
-              '    SoLoader.loadLibrary("reactnative")\n'
+              '    SoLoader.addExternalSoMapping(OpenSourceMergedSoMapping)\n'
               '    DefaultNewArchitectureEntryPoint.load()\n'
               '    ApplicationLifecycleDispatcher.onApplicationCreate(this)')
             d = d.replace(old_oncreate, new_oncreate)
