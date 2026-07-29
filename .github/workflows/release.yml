@@ -83,8 +83,9 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0" 2>&1 || \
-          echo "y" | $ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0" 2>&1 || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -f "$SDKMANAGER" ] || SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          echo "y" | "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006" 2>&1 || true
         shell: bash
 
       - run: pnpm install
@@ -243,9 +244,13 @@ jobs:
 
       - name: Compile stub libreact_featureflagsjni.so for all architectures
         run: |
-          # Install NDK (same version Gradle will use)
-          sdkmanager --install "ndk;27.1.12297006" 2>&1 || true
-          TOOLCHAIN="$ANDROID_HOME/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          NDK_DIR="$ANDROID_HOME/ndk/27.1.12297006"
+          if [ ! -d "$NDK_DIR" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            [ -f "$SDKMANAGER" ] || SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+            echo "y" | "$SDKMANAGER" --install "ndk;27.1.12297006" 2>&1 || true
+          fi
+          TOOLCHAIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
           # Minimal C stub – SoLoader just needs the library to exist on disk
           cat > /tmp/stub.c << 'CEOF'
