@@ -239,32 +239,22 @@ jobs:
           PYEOF
         working-directory: client/mobile-app/android
 
-      - name: Strip ReactNativeFeatureFlagsCxxInterop from react-android AAR + create shadow
+      - name: Patch react-android AAR (strip CxxInterop) + shadow class + replace dependency
         run: |
-          # Download the official react-android AAR from Maven Central
+          # Download, strip class, and save patched AAR to libs/
           curl -sL "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2-release.aar" \
             -o /tmp/react-android.aar
-
-          # Extract, remove the offending class from classes.jar, repack
-          rm -rf /tmp/aar_work
-          mkdir -p /tmp/aar_work
+          rm -rf /tmp/aar_work && mkdir -p /tmp/aar_work
           unzip -q /tmp/react-android.aar -d /tmp/aar_work
-          # Only strip CxxInterop (CxxAccessor is still needed by ReactNativeFeatureFlags)
           zip -d /tmp/aar_work/classes.jar \
             'com/facebook/react/internal/featureflags/ReactNativeFeatureFlagsCxxInterop*' 2>/dev/null || true
           rm -f /tmp/react-android-patched.aar
           (cd /tmp/aar_work && zip -qr /tmp/react-android-patched.aar .)
+          mkdir -p app/libs
+          cp /tmp/react-android-patched.aar app/libs/react-android-patched.aar
 
-          # Put it in the local Maven repo so Gradle picks it up before Maven Central
-          mkdir -p ~/.m2/repository/com/facebook/react/react-android/0.79.2
-          cp /tmp/react-android-patched.aar ~/.m2/repository/com/facebook/react/react-android/0.79.2/react-android-0.79.2.aar
-
-          # Also copy POM (needed for transitive deps) – download from Maven Central
-          curl -sL "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2.pom" \
-            -o ~/.m2/repository/com/facebook/react/react-android/0.79.2/react-android-0.79.2.pom
-
-          # Add local Maven repo to the root build.gradle's allprojects block so it's checked first
-          sed -i '/^allprojects {/,/^}/s/    mavenCentral()/    mavenLocal()\n    mavenCentral()/' build.gradle
+          # Replace the Maven dependency in app/build.gradle with a file dependency
+          sed -i 's|implementation("com.facebook.react:react-android")|implementation(files("libs/react-android-patched.aar"))|' app/build.gradle
 
           # Create the shadow class in the app source (now it's the only copy)
           mkdir -p app/src/main/java/com/facebook/react/internal/featureflags
