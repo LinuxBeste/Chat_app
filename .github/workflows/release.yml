@@ -519,7 +519,7 @@ jobs:
 
       - name: Patch FileSystemPackage to remove missing FilePermissionModule
         run: |
-          find -L node_modules -path "*/expo-file-system/android/src/main/java/expo/modules/filesystem/FileSystemPackage.kt" \
+          find -L client/mobile-app/node_modules -path "*/expo-file-system/android/src/main/java/expo/modules/filesystem/FileSystemPackage.kt" \
             -exec sed -i 's/listOf(FilePermissionModule(), AppDirectoriesModule(context))/listOf(AppDirectoriesModule(context))/' {} \;
 
       - name: Build Android APK
