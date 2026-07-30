@@ -311,7 +311,8 @@ jobs:
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react17WritableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19WritableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17ReadableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19ReadableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react9NativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react11NativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react20CatalystInstanceImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17CallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react29NativeMethodCallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react12JReactMarker15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16JJSTimerExecutor15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react14JDynamicNative15registerNativesEv"); if (r) r();' ;;
                 rninstance)
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react14JReactInstance15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react35ReactInstanceManagerInspectorTarget15registerNativesEv"); if (r) r();' ;;
-                *)                     REGCALL='/* no registerNatives needed */' ;;
+                react_devsupportjni)
+                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18jsinspector_modern15JInspectorFlags15registerNativesEv"); if (r) r();' ;;
               esac
               cat > "$TMP" << SCEOF
           #include <jni.h>
