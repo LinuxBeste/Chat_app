@@ -297,7 +297,7 @@ jobs:
               x86)        CC="i686-linux-android21-clang"        ;;
               x86_64)     CC="x86_64-linux-android21-clang"      ;;
             esac
-            for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni reactnativejni rninstance react_devsupportjni hermesinstancejni; do
+            for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni reactnativejni rninstance react_devsupportjni hermesinstancejni reactnativeblob uimanagerjni; do
               TMP="/tmp/stub_${lib}.c"
                # Generate a dedicated stub that calls the right registerNatives
               case "$lib" in
