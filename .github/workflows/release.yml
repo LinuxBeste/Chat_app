@@ -297,7 +297,7 @@ jobs:
               x86)        CC="i686-linux-android21-clang"        ;;
               x86_64)     CC="x86_64-linux-android21-clang"      ;;
             esac
-            for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni; do
+            for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni reactnativejni; do
               TMP="/tmp/stub_${lib}.c"
               # Generate a dedicated stub that calls the right registerNatives
               case "$lib" in
@@ -307,6 +307,8 @@ jobs:
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16ComponentFactory15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react25DefaultComponentsRegistry15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react21SurfaceHandlerBinding15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16StateWrapperImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19EventEmitterWrapper15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16EventBeatManager15registerNativesEv"); if (r) r();' ;;
                 turbomodulejsijni)
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react33DefaultTurboModuleManagerDelegate15registerNativesEv"); if (r) r();' ;;
+                reactnativejni)
+                  REGCALL='/* just dlopen, no registerNatives needed */' ;;
                 *)                     REGCALL='/* no registerNatives needed */' ;;
               esac
               cat > "$TMP" << SCEOF
