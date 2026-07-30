@@ -268,11 +268,9 @@ jobs:
                 react_featureflagsjni)
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv"); if (r) r();' ;;
                 fabricjni)
-                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r();'\
-' r = (reg_t)dlsym(h, "_ZN8facebook5react16ComponentFactory15registerNativesEv"); if (r) r();' ;;
+                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16ComponentFactory15registerNativesEv"); if (r) r();' ;;
                 turbomodulejsijni)
-                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r();'\
-' r = (reg_t)dlsym(h, "_ZN8facebook5react33DefaultTurboModuleManagerDelegate15registerNativesEv"); if (r) r();' ;;
+                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react33DefaultTurboModuleManagerDelegate15registerNativesEv"); if (r) r();' ;;
                 *)                     REGCALL='/* no registerNatives needed */' ;;
               esac
               cat > "$TMP" << SCEOF
