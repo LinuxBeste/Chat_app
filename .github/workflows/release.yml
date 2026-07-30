@@ -517,6 +517,11 @@ jobs:
           find -L node_modules -type f -name "ExpoReactHostFactory.kt" \
             -exec python3 /tmp/patch_hostfactory.py {} \;
 
+      - name: Patch FileSystemPackage to remove missing FilePermissionModule
+        run: |
+          find -L node_modules -path "*/expo-file-system/android/src/main/java/expo/modules/filesystem/FileSystemPackage.kt" \
+            -exec sed -i 's/listOf(FilePermissionModule(), AppDirectoriesModule(context))/listOf(AppDirectoriesModule(context))/' {} \;
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
