@@ -299,26 +299,36 @@ jobs:
             esac
             for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni reactnativejni rninstance react_devsupportjni hermesinstancejni; do
               TMP="/tmp/stub_${lib}.c"
-              # Generate a dedicated stub that calls the right registerNatives
+               # Generate a dedicated stub that calls the right registerNatives
               case "$lib" in
                 react_featureflagsjni)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react34JReactNativeFeatureFlagsCxxInterop15registerNativesEv"); if (r) r();' ;;
                 fabricjni)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react22FabricUIManagerBinding15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16ComponentFactory15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react25DefaultComponentsRegistry15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react21SurfaceHandlerBinding15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16StateWrapperImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19EventEmitterWrapper15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16EventBeatManager15registerNativesEv"); if (r) r();' ;;
                 turbomodulejsijni)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react33DefaultTurboModuleManagerDelegate15registerNativesEv"); if (r) r();' ;;
                 reactnativejni)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react17WritableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19WritableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17ReadableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19ReadableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react9NativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react11NativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react20CatalystInstanceImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17CallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react29NativeMethodCallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react12JReactMarker15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16JJSTimerExecutor15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react14JDynamicNative15registerNativesEv"); if (r) r();' ;;
                 rninstance)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react14JReactInstance15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react35ReactInstanceManagerInspectorTarget15registerNativesEv"); if (r) r();' ;;
                 react_devsupportjni)
+                  DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18jsinspector_modern15JInspectorFlags15registerNativesEv"); if (r) r();' ;;
+                hermesinstancejni)
+                  DLLIB="libhermestooling.so"
+                  REGCALL='/* JNI_OnLoad in libhermestooling.so handles registration */' ;;
+                *)                     DLLIB="libreactnative.so"; REGCALL='/* no registerNatives needed */' ;;
               esac
               cat > "$TMP" << SCEOF
           #include <jni.h>
           #include <dlfcn.h>
           static void do_reg(void) {
-            void* h = dlopen("libreactnative.so", RTLD_NOW | RTLD_GLOBAL);
+            void* h = dlopen("$DLLIB", RTLD_NOW | RTLD_GLOBAL);
             if (!h) return;
             typedef void (*reg_t)();
             reg_t r;
