@@ -321,7 +321,7 @@ jobs:
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18jsinspector_modern15JInspectorFlags15registerNativesEv"); if (r) r();' ;;
                 hermesinstancejni)
                   DLLIB="libhermestooling.so"
-                  REGCALL='/* JNI_OnLoad in libhermestooling.so handles registration */' ;;
+                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react15JHermesInstance15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook3jsi3jni22HermesSamplingProfiler15registerNativesEv"); if (r) r();' ;;
                 *)                     DLLIB="libreactnative.so"; REGCALL='/* no registerNatives needed */' ;;
               esac
               cat > "$TMP" << SCEOF
