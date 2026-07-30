@@ -59,7 +59,6 @@ jobs:
             ghcr.io/${{ env.REPO_LOWER }}/server:latest
 
   android:
-    needs: server
     runs-on: ubuntu-latest
 
     steps:
@@ -477,22 +476,12 @@ jobs:
           path: client/mobile-app/android/app/build/outputs/apk/release/*.apk
 
   desktop-linux:
-    needs: server
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref }}
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
 
       - run: pnpm install
 
@@ -509,22 +498,12 @@ jobs:
           path: client/desktop/release/dist/*
 
   desktop-mac:
-    needs: server
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref }}
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
 
       - run: pnpm install
 
@@ -541,7 +520,6 @@ jobs:
           path: client/desktop/release/dist/*
 
   desktop-win:
-    needs: server
     runs-on: windows-latest
 
     steps:
@@ -573,7 +551,7 @@ jobs:
           path: client/desktop/release/dist/*
 
   create-release:
-    needs: [android, desktop-linux, desktop-mac, desktop-win]
+    needs: [server, android, desktop-linux, desktop-mac, desktop-win]
     runs-on: ubuntu-latest
     permissions:
       contents: write
