@@ -377,6 +377,8 @@ jobs:
             esac
             for lib in react_featureflagsjni react_newarchdefaults fabricjni turbomodulejsijni reactnativejni rninstance react_devsupportjni hermesinstancejni reactnativeblob uimanagerjni; do
               TMP="/tmp/stub_${lib}.c"
+              CXXCALLBACK_CODE=''
+              CXXCALLBACK_REG=''
                # Generate a dedicated stub that calls the right registerNatives
               case "$lib" in
                 react_featureflagsjni)
@@ -390,7 +392,56 @@ jobs:
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react18TurboModuleManager15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react33DefaultTurboModuleManagerDelegate15registerNativesEv"); if (r) r();' ;;
                 reactnativejni)
                   DLLIB="libreactnative.so"
-                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react17WritableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19WritableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17ReadableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19ReadableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react9NativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react11NativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react20CatalystInstanceImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17CallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react29NativeMethodCallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react12JReactMarker15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16JJSTimerExecutor15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react14JDynamicNative15registerNativesEv"); if (r) r();' ;;
+                  REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react17WritableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19WritableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17ReadableNativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react19ReadableNativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react9NativeMap15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react11NativeArray15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react20CatalystInstanceImpl15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react17CallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react29NativeMethodCallInvokerHolder15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react12JReactMarker15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react16JJSTimerExecutor15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react14JDynamicNative15registerNativesEv"); if (r) r();'
+                  # JCxxCallbackImpl::registerNatives is header-inline (no exported symbol) so it
+                  # cannot be dlsym'd. Register its JNI method directly with a thunk that invokes
+                  # the stored std::function<void(folly::dynamic)> callback.
+                  # Java layout: CxxCallbackImpl (extends HybridClassBase extends HybridData)
+                  #   HybridData.mDestructor : HybridData$Destructor
+                  #   HybridData$Destructor.mNativePointer : J  -> C++ JCxxCallbackImpl*
+                  # C++ layout (vptr at 0): std::function callback_ at offset 8.
+                  # std::function (libc++): *(void**)&fn = functor object; vtable[2] = __invoke,
+                  #   called as __invoke(functor, folly::dynamic&&).
+                  # Array argument: ReadableNativeArray* C++ object; folly::dynamic array_ at +16.
+                  CXXCALLBACK_CODE='
+                  static void cxxcallback_nativeinvoke(JNIEnv* env, jobject thiz, jobject array) {
+                    jclass hd = (*env)->GetObjectClass(env, thiz);
+                    jfieldID dtorField = (*env)->GetFieldID(env, hd, "mDestructor", "Lcom/facebook/jni/HybridData$Destructor;");
+                    if (!dtorField) return;
+                    jobject dtor = (*env)->GetObjectField(env, thiz, dtorField);
+                    if (!dtor) return;
+                    jclass dtCls = (*env)->GetObjectClass(env, dtor);
+                    jfieldID ptrField = (*env)->GetFieldID(env, dtCls, "mNativePointer", "J");
+                    if (!ptrField) return;
+                    void* cxx = (void*)(*env)->GetLongField(env, dtor, ptrField);
+                    if (!cxx) return;
+                    void* fn = *(void**)((char*)cxx + 8);
+                    if (!fn) return;
+                    void** vt = *(void***)fn;
+                    if (!vt) return;
+                    void* invoke = vt[2];
+                    if (!invoke) return;
+                    jobject adtor = (*env)->GetObjectField(env, array, dtorField);
+                    if (!adtor) return;
+                    void* acxx = (void*)(*env)->GetLongField(env, adtor, ptrField);
+                    if (!acxx) return;
+                    ((void (*)(void*, void*))invoke)(fn, (char*)acxx + 16);
+                  }
+                  '
+                  CXXCALLBACK_REG='
+                  {
+                    JNIEnv* env = 0;
+                    if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_6) != JNI_OK || !env) return JNI_VERSION_1_6;
+                    jclass cxx = (*env)->FindClass(env, "com/facebook/react/bridge/CxxCallbackImpl");
+                    if (cxx) {
+                      JNINativeMethod m[1];
+                      m[0].name = (char*)"nativeInvoke";
+                      m[0].signature = (char*)"(Lcom/facebook/react/bridge/NativeArray;)V";
+                      m[0].fnPtr = (void*)cxxcallback_nativeinvoke;
+                      (*env)->RegisterNatives(env, cxx, m, 1);
+                    }
+                  }
+                  ' ;;
                 rninstance)
                   DLLIB="libreactnative.so"
                   REGCALL='r = (reg_t)dlsym(h, "_ZN8facebook5react14JReactInstance15registerNativesEv"); if (r) r(); r = (reg_t)dlsym(h, "_ZN8facebook5react35ReactInstanceManagerInspectorTarget15registerNativesEv"); if (r) r();' ;;
@@ -415,8 +466,14 @@ jobs:
             reg_t r;
             $REGCALL
           }
+          SCEOF
+              if [ -n "$CXXCALLBACK_CODE" ]; then printf '%s' "$CXXCALLBACK_CODE" >> "$TMP"; fi
+              cat >> "$TMP" << SCEOF
           JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
             do_reg();
+          SCEOF
+              if [ -n "$CXXCALLBACK_REG" ]; then printf '%s' "$CXXCALLBACK_REG" >> "$TMP"; fi
+              cat >> "$TMP" << SCEOF
             return JNI_VERSION_1_6;
           }
           SCEOF
