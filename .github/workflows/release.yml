@@ -401,7 +401,9 @@ jobs:
                   #   HybridData$Destructor.mNativePointer : J  -> C++ JCxxCallbackImpl*
                   # C++ layout verified from merged libreactnative.so disassembly:
                   #   dtor 0x46f19c: std::function stored ptr at offset 0x30, inline buffer at 0x10
-                  #   call 0x342ac4: __call = functor vtable[3]; args (x0=functor, x1=folly::dynamic*)
+                  #   __func vtable (at 0x62a708, vptr = +0x10): [2]=__clone, [3]=__clone(into dst),
+                  #     [4]=__destroy, [6]=__call (0x43684c -> Instance::callJSCallback(callbackId, dynamic&&))
+                  #   __call ABI: (x0=functor, x1=folly::dynamic*); moves the dynamic out of the array.
                   # Array argument: ReadableNativeArray*; folly::dynamic array_ at +16 (consume 0x523b1c).
                   CXXCALLBACK_CODE='
                   static void cxxcallback_nativeinvoke(JNIEnv* env, jobject thiz, jobject array) {
@@ -419,7 +421,7 @@ jobs:
                     if (!fn) return;
                     void** vt = *(void***)fn;
                     if (!vt) return;
-                    void* call = vt[3];
+                    void* call = vt[6];
                     if (!call) return;
                     jobject adtor = (*env)->GetObjectField(env, array, dtorField);
                     if (!adtor) return;
