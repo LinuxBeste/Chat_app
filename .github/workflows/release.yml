@@ -532,6 +532,266 @@ jobs:
           IFACE
           echo "Created: $(ls $IFACE_DIR)"
 
+      - name: Patch expo-modules-core types API for prebuilt AARs (AnyTypeProvider, LazyKType, KType ctors)
+        run: |
+          # expo-document-picker 13.1.6 / expo-file-system 18.1.11 / expo-image-picker 16.1.4
+          # prebuilt AARs are compiled against a newer expo-modules-core that references
+          # AnyTypeProvider, LazyKType, AnyType(KType, ...), AnyType.getKType(),
+          # ReturnType(KClass), PropertyComponentBuilderWithThis(KType, String),
+          # SyncFunctionComponent.setOwnerType(KType) and the IsNotEmpty annotation.
+          # Add them to the source-compiled core (57.0.6) so the AAR classes resolve at runtime.
+          python3 << 'PYEOF'
+          import os
+          import sys
+
+          def find_core_dir():
+              for root, dirs, files in os.walk('node_modules'):
+                  if 'expo-modules-core' in root and 'android/src/main/java/expo/modules/kotlin' in root:
+                      return root
+              return None
+
+          def write_file(path, content):
+              with open(path, 'w') as f:
+                  f.write(content)
+              print('WROTE:', path)
+
+          def patch_file(path, old, new):
+              with open(path) as f:
+                  c = f.read()
+              if new in c:
+                  print('SKIP (already patched):', path)
+                  return
+              if old not in c:
+                  print('FAIL (pattern not found):', path)
+                  sys.exit(1)
+              c = c.replace(old, new, 1)
+              with open(path, 'w') as f:
+                  f.write(c)
+              print('PATCHED:', path)
+
+          core = find_core_dir()
+          if not core:
+              print('FAIL: expo-modules-core kotlin dir not found')
+              sys.exit(1)
+          print('Core dir:', core)
+
+          write_file(os.path.join(core, 'types', 'AnyTypeProvider.kt'), '''package expo.modules.kotlin.types
+
+          import kotlin.reflect.KClass
+
+          object AnyTypeProvider {
+            val typesMap: Map<Pair<KClass<*>, Boolean>, AnyType> = emptyMap()
+          }
+          ''')
+
+          write_file(os.path.join(core, 'types', 'LazyKType.kt'), '''package expo.modules.kotlin.types
+
+          import kotlin.reflect.KClass
+          import kotlin.reflect.KType
+          import kotlin.reflect.KTypeProjection
+
+          class LazyKType(
+            override val classifier: KClass<*>,
+            override val isMarkedNullable: Boolean,
+            private val kTypeProvider: () -> KType
+          ) : KType {
+            override val annotations: List<Annotation>
+              get() = kTypeProvider().annotations
+
+            override val arguments: List<KTypeProjection>
+              get() = kTypeProvider().arguments
+          }
+          ''')
+
+          write_file(os.path.join(core, 'records', 'IsNotEmpty.kt'), '''package expo.modules.kotlin.records
+
+          @Target(AnnotationTarget.PROPERTY, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
+          @Retention(AnnotationRetention.RUNTIME)
+          annotation class IsNotEmpty
+          ''')
+
+          any_type = os.path.join(core, 'types', 'AnyType.kt')
+          patch_file(
+              any_type,
+              '''import expo.modules.kotlin.types.descriptors.TypeDescriptor
+          import expo.modules.kotlin.types.descriptors.typeDescriptorOf
+          ''',
+              '''import expo.modules.kotlin.types.descriptors.TypeDescriptor
+          import expo.modules.kotlin.types.descriptors.toTypeDescriptor
+          import expo.modules.kotlin.types.descriptors.typeDescriptorOf
+          import kotlin.reflect.KType
+          '''
+          )
+          patch_file(
+              any_type,
+              '''class AnyType(
+            val typeDescriptor: TypeDescriptor,
+            val converterProvider: TypeConverterProvider? = null
+          ) {
+          ''',
+              '''class AnyType(
+            val typeDescriptor: TypeDescriptor,
+            val converterProvider: TypeConverterProvider? = null
+          ) {
+            val kType: KType
+              get() = typeDescriptor.kType
+
+            constructor(kType: KType, converterProvider: TypeConverterProvider? = null) : this(
+              typeDescriptor = kType.toTypeDescriptor(),
+              converterProvider = converterProvider
+            )
+          '''
+          )
+
+          return_type = os.path.join(core, 'types', 'ReturnType.kt')
+          patch_file(
+              return_type,
+              '''import io.github.lukmccall.pika.isIntrospectable
+          import kotlin.time.Duration
+          ''',
+              '''import io.github.lukmccall.pika.isIntrospectable
+          import kotlin.reflect.KClass
+          import kotlin.time.Duration
+          '''
+          )
+          patch_file(
+              return_type,
+              '''class ReturnType(
+            private val converter: JSTypeConverter<*>
+          ) {
+          ''',
+              '''class ReturnType(
+            private val converter: JSTypeConverter<*>
+          ) {
+            constructor(klass: KClass<*>) : this(
+              getDirectConverter(klass.java) ?: getIndirectConverter(klass.java, null)
+            )
+          '''
+          )
+
+          any_function = os.path.join(core, 'functions', 'AnyFunction.kt')
+          patch_file(
+              any_function,
+              '''import expo.modules.kotlin.types.AnyType
+          import expo.modules.kotlin.types.descriptors.TypeDescriptor
+          ''',
+              '''import expo.modules.kotlin.types.AnyType
+          import expo.modules.kotlin.types.descriptors.TypeDescriptor
+          import expo.modules.kotlin.types.descriptors.toTypeDescriptor
+          import kotlin.reflect.KType
+          '''
+          )
+          patch_file(
+              any_function,
+              '''  @PublishedApi
+            internal var ownerType: TypeDescriptor? = null
+          ''',
+              '''  @PublishedApi
+            internal var ownerType: TypeDescriptor? = null
+
+            fun setOwnerType(type: KType) {
+              ownerType = type.toTypeDescriptor()
+            }
+          '''
+          )
+
+          prop_builder = os.path.join(core, 'objects', 'PropertyComponentBuilder.kt')
+          with open(prop_builder) as f:
+              content = f.read()
+
+          if 'val thisType: KType' in content:
+              print('SKIP (already patched):', prop_builder)
+          else:
+              old_class = '''class PropertyComponentBuilderWithThis<ThisType>(
+            val thisType: TypeDescriptor,
+            name: String
+          ) : PropertyComponentBuilder(name) {
+
+            /**
+             * Modifier that sets property getter that has caller.
+             */
+            inline fun <reified R> get(crossinline body: (ThisType) -> R) = apply {
+              getter = SyncFunctionComponent("get", arrayOf(AnyType(thisType)), toReturnType<R>()) {
+                @Suppress("UNCHECKED_CAST")
+                body(it[0] as ThisType)
+              }.also {
+                it.ownerType = thisType
+                it.canTakeOwner = true
+              }
+            }
+
+            /**
+             * Modifier that sets property setter that receives only the new value as an argument.
+             */
+            inline fun <reified T> set(crossinline body: (self: ThisType, newValue: T) -> Unit) = apply {
+              setter = SyncFunctionComponent("set", arrayOf(AnyType(thisType), toAnyType<T>()), toReturnType<Unit>()) {
+                @Suppress("UNCHECKED_CAST")
+                body(it[0] as ThisType, it[1] as T)
+              }.also {
+                it.ownerType = thisType
+                it.canTakeOwner = true
+              }
+            }
+          }'''
+              new_class = '''class PropertyComponentBuilderWithThis<ThisType>(
+            val thisType: KType,
+            name: String
+          ) : PropertyComponentBuilder(name) {
+
+            /**
+             * Modifier that sets property getter that has caller.
+             */
+            inline fun <reified R> get(crossinline body: (ThisType) -> R) = apply {
+              getter = SyncFunctionComponent("get", arrayOf(AnyType(thisType)), toReturnType<R>()) {
+                @Suppress("UNCHECKED_CAST")
+                body(it[0] as ThisType)
+              }.also {
+                it.setOwnerType(thisType)
+                it.canTakeOwner = true
+              }
+            }
+
+            /**
+             * Modifier that sets property setter that receives only the new value as an argument.
+             */
+            inline fun <reified T> set(crossinline body: (self: ThisType, newValue: T) -> Unit) = apply {
+              setter = SyncFunctionComponent("set", arrayOf(AnyType(thisType), toAnyType<T>()), toReturnType<Unit>()) {
+                @Suppress("UNCHECKED_CAST")
+                body(it[0] as ThisType, it[1] as T)
+              }.also {
+                it.setOwnerType(thisType)
+                it.canTakeOwner = true
+              }
+            }
+          }'''
+              if old_class not in content:
+                  print('FAIL (class body not found):', prop_builder)
+                  sys.exit(1)
+              content = content.replace(old_class, new_class, 1)
+              old_import = 'import expo.modules.kotlin.types.descriptors.TypeDescriptor\n'
+              new_import = 'import expo.modules.kotlin.types.descriptors.toTypeDescriptor\nimport kotlin.reflect.KType\n'
+              if old_import in content:
+                  content = content.replace(old_import, new_import, 1)
+              else:
+                  content = content.replace(
+                      'import expo.modules.kotlin.types.AnyType\n',
+                      'import expo.modules.kotlin.types.AnyType\nimport expo.modules.kotlin.types.descriptors.toTypeDescriptor\nimport kotlin.reflect.KType\n',
+                      1
+                  )
+              with open(prop_builder, 'w') as f:
+                  f.write(content)
+              print('PATCHED:', prop_builder)
+
+          class_builder = os.path.join(core, 'classcomponent', 'ClassComponentBuilder.kt')
+          patch_file(
+              class_builder,
+              'PropertyComponentBuilderWithThis<SharedObjectType>(ownerType.typeDescriptor, name)',
+              'PropertyComponentBuilderWithThis<SharedObjectType>(ownerType.kType, name)'
+          )
+
+          print('ALL PATCHES APPLIED')
+          PYEOF
+
       - name: Build Android APK
         run: ./gradlew assembleRelease
         working-directory: client/mobile-app/android
