@@ -269,6 +269,33 @@ jobs:
           PYEOF
         working-directory: client/mobile-app/android
 
+      - name: Shadow BlobCollector with no-op (prebuilt AAR's native install not registered)
+        run: |
+          # BlobModule.initialize() calls BlobCollector.install() which invokes the
+          # native BlobCollector.nativeInstall(). That native method lives in
+          # libreactnative.so with -fvisibility=hidden (reactnativeblob lib), so the
+          # stub .so cannot dlsym its registerNatives and the JNI call crashes with
+          # UnsatisfiedLinkError. The app classes take classloader priority over the
+          # prebuilt react-android AAR, so shadowing the class with a no-op install()
+          # (same JVM signature install:(ReactContext, BlobModule)V) skips the native
+          # call entirely. JS side already guards `global.__blobCollectorProvider == null`.
+          mkdir -p app/src/main/java/com/facebook/react/modules/blob
+          cat > app/src/main/java/com/facebook/react/modules/blob/BlobCollector.java << 'SHADOW'
+          package com.facebook.react.modules.blob;
+
+          import com.facebook.react.bridge.ReactContext;
+
+          public final class BlobCollector {
+            private BlobCollector() {}
+
+            public static void install(ReactContext reactContext, BlobModule blobModule) {
+              // No-op: native blob collector GC tracking not available in this build.
+            }
+          }
+          SHADOW
+          cat app/src/main/java/com/facebook/react/modules/blob/BlobCollector.java
+        working-directory: client/mobile-app/android
+
       - name: Compile stub .so for all 4 merged RN libraries
         run: |
           NDK_DIR="$ANDROID_HOME/ndk/27.1.12297006"
