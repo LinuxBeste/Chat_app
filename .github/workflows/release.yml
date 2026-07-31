@@ -555,7 +555,7 @@ jobs:
                   f.write(content)
               print('WROTE:', path)
 
-          def patch_file(path, old, new):
+          def patch_file(path, old, new, replace_all=False):
               with open(path) as f:
                   c = f.read()
               if new in c:
@@ -564,7 +564,10 @@ jobs:
               if old not in c:
                   print('FAIL (pattern not found):', path)
                   sys.exit(1)
-              c = c.replace(old, new, 1)
+              if replace_all:
+                  c = c.replace(old, new)
+              else:
+                  c = c.replace(old, new, 1)
               with open(path, 'w') as f:
                   f.write(c)
               print('PATCHED:', path)
@@ -786,7 +789,8 @@ jobs:
           patch_file(
               class_builder,
               'PropertyComponentBuilderWithThis<SharedObjectType>(ownerType.typeDescriptor, name)',
-              'PropertyComponentBuilderWithThis<SharedObjectType>(ownerType.kType, name)'
+              'PropertyComponentBuilderWithThis<SharedObjectType>(ownerType.kType, name)',
+              replace_all=True
           )
 
           print('ALL PATCHES APPLIED')
