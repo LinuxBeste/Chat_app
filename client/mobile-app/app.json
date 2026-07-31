@@ -24,11 +24,6 @@
       "package": "com.chatapp.mobile",
       "blockedPermissions": ["android.permission.READ_MEDIA_VIDEO"]
     },
-    "autolinking": {
-      "android": {
-        "buildFromSource": ["expo-file-system"]
-      }
-    },
     "plugins": [
       "expo-dev-client",
       "expo-secure-store",
