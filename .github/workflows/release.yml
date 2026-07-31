@@ -284,6 +284,7 @@ jobs:
           cd /tmp
           curl -sL -o react-android.aar "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2-release.aar"
           curl -sL -o react-android.pom "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2.pom"
+          curl -sL -o react-android.module "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2.module"
           python3 << 'PYEOF'
           import zipfile, shutil, os
           with zipfile.ZipFile('react-android.aar') as z:
@@ -324,15 +325,18 @@ jobs:
           PYEOF
           LOCALMVN="$GITHUB_WORKSPACE/client/mobile-app/android/app/localMaven/com/facebook/react/react-android/0.79.2-local"
           mkdir -p "$LOCALMVN"
-          cp react-android-patched.aar "$LOCALMVN/react-android-0.79.2-local.aar"
+          cp react-android-patched.aar "$LOCALMVN/react-android-0.79.2-local-release.aar"
+          sed 's|<version>0.79.2</version>|<version>0.79.2-local</version>|' react-android.pom > "$LOCALMVN/react-android-0.79.2-local.pom"
           python3 << PYEOF
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('react-android.pom')
-          root = tree.getroot()
-          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
-          root.find('m:version', ns).text = '0.79.2-local'
-          tree.write('$LOCALMVN/react-android-0.79.2-local.pom', xml_declaration=True, encoding='UTF-8')
-          print('pom written for 0.79.2-local')
+          import json
+          d = json.load(open('react-android.module'))
+          d['component']['version'] = '0.79.2-local'
+          for v in d['variants']:
+              for f in v.get('files', []):
+                  f['name'] = f['name'].replace('react-android-0.79.2', 'react-android-0.79.2-local')
+                  f['url'] = f['url'].replace('react-android-0.79.2', 'react-android-0.79.2-local')
+          json.dump(d, open('$LOCALMVN/react-android-0.79.2-local.module', 'w'))
+          print('module metadata written for 0.79.2-local')
           PYEOF
           python3 << PYEOF
           with open('$GITHUB_WORKSPACE/client/mobile-app/android/build.gradle') as f:
