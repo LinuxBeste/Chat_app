@@ -517,14 +517,29 @@ jobs:
           find -L node_modules -type f -name "ExpoReactHostFactory.kt" \
             -exec python3 /tmp/patch_hostfactory.py {} \;
 
-      - name: Patch FileSystemPackage to remove missing FilePermissionModule
+      - name: Add missing expo-modules-core filesystem interfaces
         run: |
-          # Remove FilePermissionModule.kt (implements non-existent FilePermissionModuleInterface)
-          find -L client/mobile-app/node_modules -path "*/expo-file-system/android/src/main/java/expo/modules/filesystem/FilePermissionModule.kt" \
-            -exec rm {} \;
-          # Remove FilePermissionModule() reference from FileSystemPackage.kt
-          find -L client/mobile-app/node_modules -path "*/expo-file-system/android/src/main/java/expo/modules/filesystem/FileSystemPackage.kt" \
-            -exec sed -i 's/listOf(FilePermissionModule(), AppDirectoriesModule(context))/listOf(AppDirectoriesModule(context))/' {} \;
+          # expo-file-system 18.1.11 AAR references interfaces removed in expo-modules-core 57
+          # Create stubs so prebuilt AAR classes resolve at runtime
+          IFACE_DIR=$(find node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/interfaces/filesystem" -type d | head -1)
+          echo "Creating interface stubs in: $IFACE_DIR"
+          cat > "$IFACE_DIR/FilePermissionModuleInterface.kt" << 'IFACE'
+          package expo.modules.interfaces.filesystem
+          import android.content.Context
+          import java.util.EnumSet
+          interface FilePermissionModuleInterface {
+            fun getPathPermissions(context: Context, path: String): EnumSet<Permission>
+          }
+          IFACE
+          cat > "$IFACE_DIR/AppDirectoriesModuleInterface.kt" << 'IFACE'
+          package expo.modules.interfaces.filesystem
+          import java.io.File
+          interface AppDirectoriesModuleInterface {
+            val cacheDirectory: File
+            val persistentFilesDirectory: File
+          }
+          IFACE
+          echo "Created: $(ls $IFACE_DIR)"
 
       - name: Build Android APK
         run: ./gradlew assembleRelease

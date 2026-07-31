@@ -53,12 +53,5 @@
     "typescript": "~5.8.0",
     "vitest": "^4.1.10"
   },
-  "private": true,
-  "expo": {
-    "autolinking": {
-      "android": {
-        "buildFromSource": ["expo-file-system"]
-      }
-    }
-  }
+  "private": true
 }
