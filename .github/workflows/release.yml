@@ -277,10 +277,13 @@ jobs:
           # stub .so cannot dlsym its registerNatives and the JNI call crashes with
           # UnsatisfiedLinkError. Replace BlobCollector.class inside the prebuilt
           # react-android AAR with a no-op (same JVM signature
-          # install:(ReactContext, BlobModule)V) and substitute the patched AAR in
-          # app/build.gradle. JS side already guards `global.__blobCollectorProvider == null`.
+          # install:(ReactContext, BlobModule)V), publish it to a local Maven repo
+          # as version 0.79.2-local, and force that version via settings.gradle
+          # resolutionStrategy. JS side already guards
+          # `global.__blobCollectorProvider == null`.
           cd /tmp
           curl -sL -o react-android.aar "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2-release.aar"
+          curl -sL -o react-android.pom "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2.pom"
           python3 << 'PYEOF'
           import zipfile, shutil, os
           with zipfile.ZipFile('react-android.aar') as z:
@@ -319,18 +322,39 @@ jobs:
                       zout.writestr(item, zin.read(item.filename))
           print('patched AAR ready')
           PYEOF
-          cp react-android-patched.aar $GITHUB_WORKSPACE/client/mobile-app/android/app/react-android-patched.aar
+          LOCALMVN="$GITHUB_WORKSPACE/client/mobile-app/android/app/localMaven/com/facebook/react/react-android/0.79.2-local"
+          mkdir -p "$LOCALMVN"
+          cp react-android-patched.aar "$LOCALMVN/react-android-0.79.2-local.aar"
           python3 << PYEOF
-          with open('$GITHUB_WORKSPACE/client/mobile-app/android/app/build.gradle') as f:
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('react-android.pom')
+          root = tree.getroot()
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          root.find('m:version', ns).text = '0.79.2-local'
+          tree.write('$LOCALMVN/react-android-0.79.2-local.pom', xml_declaration=True, encoding='UTF-8')
+          print('pom written for 0.79.2-local')
+          PYEOF
+          python3 << PYEOF
+          with open('$GITHUB_WORKSPACE/client/mobile-app/android/settings.gradle') as f:
               c = f.read()
-          block = "configurations.all {\n    resolutionStrategy.dependencySubstitution {\n        substitute module('com.facebook.react:react-android') using files('react-android-patched.aar')\n    }\n}\n\n"
-          if "substitute module('com.facebook.react:react-android')" not in c:
-              c = c.replace('dependencies {', block + 'dependencies {', 1)
-              with open('$GITHUB_WORKSPACE/client/mobile-app/android/app/build.gradle', 'w') as f:
+          block = """
+          dependencyResolutionManagement {
+              resolutionStrategy {
+                  eachDependency { details ->
+                      if (details.requested.group == 'com.facebook.react' && details.requested.name == 'react-android') {
+                          details.useVersion('0.79.2-local')
+                      }
+                  }
+              }
+          }
+          """
+          if 'react-android\' )' not in c and "react-android')" not in c:
+              c = c + block
+              with open('$GITHUB_WORKSPACE/client/mobile-app/android/settings.gradle', 'w') as f:
                   f.write(c)
-              print('app/build.gradle patched')
+              print('settings.gradle patched')
           else:
-              print('app/build.gradle already patched')
+              print('settings.gradle already patched')
           PYEOF
         working-directory: client/mobile-app/android
 
