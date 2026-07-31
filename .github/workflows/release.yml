@@ -278,8 +278,8 @@ jobs:
           # UnsatisfiedLinkError. Replace BlobCollector.class inside the prebuilt
           # react-android AAR with a no-op (same JVM signature
           # install:(ReactContext, BlobModule)V), publish it to a local Maven repo
-          # as version 0.79.2-local, and force that version via settings.gradle
-          # resolutionStrategy. JS side already guards
+          # as version 0.79.2-local, and force that version via the root
+          # build.gradle resolutionStrategy. JS side already guards
           # `global.__blobCollectorProvider == null`.
           cd /tmp
           curl -sL -o react-android.aar "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2-release.aar"
@@ -335,26 +335,20 @@ jobs:
           print('pom written for 0.79.2-local')
           PYEOF
           python3 << PYEOF
-          with open('$GITHUB_WORKSPACE/client/mobile-app/android/settings.gradle') as f:
+          with open('$GITHUB_WORKSPACE/client/mobile-app/android/build.gradle') as f:
               c = f.read()
-          block = """
-          dependencyResolutionManagement {
-              resolutionStrategy {
-                  eachDependency { details ->
-                      if (details.requested.group == 'com.facebook.react' && details.requested.name == 'react-android') {
-                          details.useVersion('0.79.2-local')
-                      }
-                  }
-              }
-          }
-          """
-          if 'react-android\' )' not in c and "react-android')" not in c:
-              c = c + block
-              with open('$GITHUB_WORKSPACE/client/mobile-app/android/settings.gradle', 'w') as f:
-                  f.write(c)
-              print('settings.gradle patched')
+          if '0.79.2-local' not in c:
+              old = "allprojects {\n  repositories {\n    google()\n    mavenCentral()\n    maven { url 'https://www.jitpack.io' }\n  }\n}"
+              new = "allprojects {\n  repositories {\n    maven { url \"\$rootDir/app/localMaven\" }\n    google()\n    mavenCentral()\n    maven { url 'https://www.jitpack.io' }\n  }\n  configurations.configureEach {\n    resolutionStrategy.eachDependency { details ->\n      if (details.requested.group == 'com.facebook.react' && details.requested.name == 'react-android') {\n        details.useVersion('0.79.2-local')\n      }\n    }\n  }\n}"
+              if old in c:
+                  c = c.replace(old, new, 1)
+                  with open('$GITHUB_WORKSPACE/client/mobile-app/android/build.gradle', 'w') as f:
+                      f.write(c)
+                  print('build.gradle patched')
+              else:
+                  print('WARNING: allprojects block not found, build.gradle NOT patched')
           else:
-              print('settings.gradle already patched')
+              print('build.gradle already patched')
           PYEOF
         working-directory: client/mobile-app/android
 
