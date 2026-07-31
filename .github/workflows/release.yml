@@ -269,19 +269,24 @@ jobs:
           PYEOF
         working-directory: client/mobile-app/android
 
-      - name: Shadow BlobCollector with no-op (prebuilt AAR's native install not registered)
+      - name: Patch react-android AAR (replace BlobCollector with no-op)
         run: |
           # BlobModule.initialize() calls BlobCollector.install() which invokes the
           # native BlobCollector.nativeInstall(). That native method lives in
           # libreactnative.so with -fvisibility=hidden (reactnativeblob lib), so the
           # stub .so cannot dlsym its registerNatives and the JNI call crashes with
-          # UnsatisfiedLinkError. The app classes take classloader priority over the
-          # prebuilt react-android AAR, so shadowing the class with a no-op install()
-          # (same JVM signature install:(ReactContext, BlobModule)V) skips the native
-          # call entirely. JS side already guards `global.__blobCollectorProvider == null`.
-          mkdir -p app/src/main/java/com/facebook/react/modules/blob
-          cat > app/src/main/java/com/facebook/react/modules/blob/BlobCollector.java << 'SHADOW'
-          package com.facebook.react.modules.blob;
+          # UnsatisfiedLinkError. Replace BlobCollector.class inside the prebuilt
+          # react-android AAR with a no-op (same JVM signature
+          # install:(ReactContext, BlobModule)V) and substitute the patched AAR in
+          # app/build.gradle. JS side already guards `global.__blobCollectorProvider == null`.
+          cd /tmp
+          curl -sL -o react-android.aar "https://repo1.maven.org/maven2/com/facebook/react/react-android/0.79.2/react-android-0.79.2-release.aar"
+          python3 << 'PYEOF'
+          import zipfile, shutil, os
+          with zipfile.ZipFile('react-android.aar') as z:
+              z.extract('classes.jar')
+          with open('BlobCollector.java', 'w') as f:
+              f.write('''package com.facebook.react.modules.blob;
 
           import com.facebook.react.bridge.ReactContext;
 
@@ -292,8 +297,41 @@ jobs:
               // No-op: native blob collector GC tracking not available in this build.
             }
           }
-          SHADOW
-          cat app/src/main/java/com/facebook/react/modules/blob/BlobCollector.java
+          ''')
+          PYEOF
+          mkdir -p out
+          "$JAVA_HOME/bin/javac" -proc:none -cp classes.jar -d out BlobCollector.java
+          python3 << 'PYEOF'
+          import zipfile, shutil
+          new_cls = 'out/com/facebook/react/modules/blob/BlobCollector.class'
+          with zipfile.ZipFile('classes.jar') as zin, zipfile.ZipFile('classes_patched.jar', 'w', zipfile.ZIP_DEFLATED) as zout:
+              for item in zin.infolist():
+                  if item.filename == 'com/facebook/react/modules/blob/BlobCollector.class':
+                      zout.write(new_cls, item.filename)
+                  else:
+                      zout.writestr(item, zin.read(item.filename))
+          shutil.move('classes_patched.jar', 'classes.jar')
+          with zipfile.ZipFile('react-android.aar') as zin, zipfile.ZipFile('react-android-patched.aar', 'w', zipfile.ZIP_DEFLATED) as zout:
+              for item in zin.infolist():
+                  if item.filename == 'classes.jar':
+                      zout.write('classes.jar', item.filename)
+                  else:
+                      zout.writestr(item, zin.read(item.filename))
+          print('patched AAR ready')
+          PYEOF
+          cp react-android-patched.aar $GITHUB_WORKSPACE/client/mobile-app/android/app/react-android-patched.aar
+          python3 << PYEOF
+          with open('$GITHUB_WORKSPACE/client/mobile-app/android/app/build.gradle') as f:
+              c = f.read()
+          block = "configurations.all {\n    resolutionStrategy.dependencySubstitution {\n        substitute module('com.facebook.react:react-android') using files('react-android-patched.aar')\n    }\n}\n\n"
+          if "substitute module('com.facebook.react:react-android')" not in c:
+              c = c.replace('dependencies {', block + 'dependencies {', 1)
+              with open('$GITHUB_WORKSPACE/client/mobile-app/android/app/build.gradle', 'w') as f:
+                  f.write(c)
+              print('app/build.gradle patched')
+          else:
+              print('app/build.gradle already patched')
+          PYEOF
         working-directory: client/mobile-app/android
 
       - name: Compile stub .so for all 4 merged RN libraries
