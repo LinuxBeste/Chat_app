@@ -43,6 +43,7 @@
     "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
+    "@expo/config-plugins": "^57.0.6",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/react-native": "^14.0.1",
