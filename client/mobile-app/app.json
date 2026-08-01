@@ -29,6 +29,8 @@
       "expo-dev-client",
       "expo-secure-store",
       "expo-system-ui",
+      "./plugins/cleartext",
+      "./plugins/fullscreen-root",
       [
         "expo-image-picker",
         {
