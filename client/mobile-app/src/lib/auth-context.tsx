@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { api, setTokens, clearTokens, getTokens } from "./api"
 import { wsClient } from "./ws"
 import { getOrCreateKeyPair, deleteKeyPair } from "./crypto"
+import { cacheGet, cacheSet, cacheRemove, offlineKeys } from "./offline-cache"
 
 interface User {
   id: string
@@ -51,18 +52,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api<User>("/api/users/me")
       setUser(me)
+      cacheSet(offlineKeys.user, me)
       wsClient.connect()
       await syncKey()
     } catch {
-      clearTokens()
-      setUser(null)
+      const cached = await cacheGet<User>(offlineKeys.user)
+      if (cached) {
+        setUser(cached)
+        wsClient.connect()
+      } else {
+        clearTokens()
+        setUser(null)
+      }
     }
   }, [syncKey])
 
   useEffect(() => {
-    getTokens().then((t) => {
-      if (t.accessToken) fetchMe().finally(() => setLoading(false))
-      else setLoading(false)
+    getTokens().then(async (t) => {
+      if (t.accessToken) {
+        const cached = await cacheGet<User>(offlineKeys.user)
+        if (cached) {
+          setUser(cached)
+          setLoading(false)
+        }
+        fetchMe().finally(() => setLoading(false))
+      } else {
+        setLoading(false)
+      }
     })
   }, [fetchMe])
 
@@ -74,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       await setTokens(data.accessToken, data.refreshToken)
       setUser(data.user)
+      cacheSet(offlineKeys.user, data.user)
       wsClient.connect()
       await syncKey()
     },
@@ -102,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await clearTokens()
+    await cacheRemove(offlineKeys.user)
     wsClient.disconnect()
     setUser(null)
     try {

@@ -47,6 +47,7 @@ import {
 } from "lucide-react-native"
 import { api, apiFormData } from "../lib/api"
 import { wsClient } from "../lib/ws"
+import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useAuth } from "../lib/auth-context"
 import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix } from "../lib/crypto"
 import { useTranslation } from "react-i18next"
@@ -187,9 +188,19 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   }, [conversationId])
 
   useEffect(() => {
+    const cachedMsgs = cacheGet<Msg[]>(offlineKeys.messages(conversationId))
+    const cachedInfo = cacheGet<ConvInfo>(offlineKeys.convInfo(conversationId))
+    Promise.all([cachedMsgs, cachedInfo]).then(([msgs, info]) => {
+      if (msgs) {
+        setMessages(msgs)
+        decryptMessages(msgs)
+      }
+      if (info) setConvInfo(info)
+    })
     api<ConvInfo>(`/api/conversations/${conversationId}`)
       .then((info) => {
         setConvInfo(info)
+        cacheSet(offlineKeys.convInfo(conversationId), info)
         if (info.type === "dm") {
           const other = info.members.find((m) => m.id !== user!.id)
           if (other) getTheirKey(other.id)
@@ -199,6 +210,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     api<Msg[]>(`/api/conversations/${conversationId}/messages`)
       .then((msgs) => {
         setMessages(msgs)
+        cacheSet(offlineKeys.messages(conversationId), msgs)
         decryptMessages(msgs)
       })
       .catch(() => {})
@@ -206,6 +218,12 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     checkBlocked()
     loadPinnedMessages()
   }, [conversationId])
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      cacheSet(offlineKeys.messages(conversationId), messages)
+    }
+  }, [messages, conversationId])
 
   const checkFriendStatus = async () => {
     if (!otherMember?.id) return

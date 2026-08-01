@@ -18,6 +18,8 @@ class WSClient {
   private authenticated = false
   private reconnectAttempts = 0
   private intentionalClose = false
+  private pending: { type: string; payload: Record<string, unknown> }[] = []
+  private static readonly MAX_PENDING = 100
 
   async connect() {
     const refreshed = await refreshAccess()
@@ -46,6 +48,7 @@ class WSClient {
         if (data.type === "connected") {
           this.authenticated = true
           this.reconnectAttempts = 0
+          this.flushPending()
           this.emit("_connected", data)
           this.startHeartbeat()
         } else if (data.type === "error" && data.error === "Authentication required") {
@@ -115,11 +118,27 @@ class WSClient {
 
   send(type: string, payload: Record<string, unknown> = {}) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
+      if (type !== "typing:indicator" && this.pending.length < WSClient.MAX_PENDING) {
+        this.pending.push({ type, payload })
+      }
       return
     }
     try {
       this.ws.send(JSON.stringify({ type, ...payload }))
     } catch {}
+  }
+
+  private flushPending() {
+    while (this.pending.length > 0) {
+      const msg = this.pending[0]
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) break
+      try {
+        this.ws.send(JSON.stringify({ type: msg.type, ...msg.payload }))
+        this.pending.shift()
+      } catch {
+        break
+      }
+    }
   }
 
   on(type: string, handler: MessageHandler) {
@@ -136,6 +155,7 @@ class WSClient {
 
   disconnect() {
     this.intentionalClose = true
+    this.pending = []
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null

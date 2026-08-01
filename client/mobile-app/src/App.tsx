@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, lazy, Suspense } from "react"
 import {
   View,
   Text,
@@ -35,19 +35,24 @@ import { ThemeProvider, useTheme } from "./lib/theme-context"
 import { wsClient } from "./lib/ws"
 import { LoginScreen } from "./screens/login-screen"
 import { ConversationsScreen } from "./screens/conversations-screen"
-import { ChatScreen } from "./screens/chat-screen"
-import { GroupsScreen } from "./screens/groups-screen"
-import { CommunitiesScreen } from "./screens/communities-screen"
-import { FilesScreen } from "./screens/files-screen"
-import { NotificationsScreen } from "./screens/notifications-screen"
-import { CallsScreen } from "./screens/calls-screen"
-import { ProfileScreen } from "./screens/profile-screen"
-import { SettingsScreen } from "./screens/settings-screen"
-import { EventsScreen } from "./screens/events-screen"
-import { AdminScreen } from "./screens/admin-screen"
-import { SearchScreen } from "./screens/search-screen"
 import { SetupDialog } from "./components/setup-dialog"
 import { StatusSelector } from "./components/status-selector"
+
+const ChatScreen = lazy(() => import("./screens/chat-screen").then((m) => ({ default: m.ChatScreen })))
+const GroupsScreen = lazy(() => import("./screens/groups-screen").then((m) => ({ default: m.GroupsScreen })))
+const CommunitiesScreen = lazy(() =>
+  import("./screens/communities-screen").then((m) => ({ default: m.CommunitiesScreen })),
+)
+const FilesScreen = lazy(() => import("./screens/files-screen").then((m) => ({ default: m.FilesScreen })))
+const NotificationsScreen = lazy(() =>
+  import("./screens/notifications-screen").then((m) => ({ default: m.NotificationsScreen })),
+)
+const CallsScreen = lazy(() => import("./screens/calls-screen").then((m) => ({ default: m.CallsScreen })))
+const ProfileScreen = lazy(() => import("./screens/profile-screen").then((m) => ({ default: m.ProfileScreen })))
+const SettingsScreen = lazy(() => import("./screens/settings-screen").then((m) => ({ default: m.SettingsScreen })))
+const EventsScreen = lazy(() => import("./screens/events-screen").then((m) => ({ default: m.EventsScreen })))
+const AdminScreen = lazy(() => import("./screens/admin-screen").then((m) => ({ default: m.AdminScreen })))
+const SearchScreen = lazy(() => import("./screens/search-screen").then((m) => ({ default: m.SearchScreen })))
 import { CallOverlay } from "./components/call-overlay"
 import { Badge } from "./components/ui/badge"
 import { Avatar } from "./components/ui/avatar"
@@ -162,6 +167,20 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<Tab>("chats")
   const [moreOpen, setMoreOpen] = useState(false)
   const [incomingCall, setIncomingCall] = useState<{ conversationId: string; type: "voice" | "video" } | null>(null)
+  const [online, setOnline] = useState(true)
+
+  useEffect(() => {
+    const unsubs = [
+      wsClient.on("_connected", () => setOnline(true)),
+      wsClient.on("_disconnected", () => setOnline(false)),
+    ]
+    setOnline(wsClient.isConnected())
+    const check = setInterval(() => setOnline(wsClient.isConnected()), 3000)
+    return () => {
+      unsubs.forEach((u) => u())
+      clearInterval(check)
+    }
+  }, [])
 
   useEffect(() => {
     const unsub = wsClient.on("call:offer", (data: any) => {
@@ -219,6 +238,7 @@ function HomeContent() {
       <View style={[hc.topBar, { paddingTop: insets.top + 12 }]}>
         <View style={hc.topBarLeft}>
           <Text style={hc.appTitle}>Chats</Text>
+          {!online && <Text style={hc.offlineTag}>Offline</Text>}
         </View>
         <View style={hc.topBarRight}>
           <TouchableOpacity style={hc.iconBtn} onPress={() => setView("search")}>
@@ -268,10 +288,16 @@ function AppContent() {
   if (!user) return <LoginScreen />
 
   return (
-    <>
+    <Suspense
+      fallback={
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0A0A0F" }}>
+          <ActivityIndicator color="#6C8CFF" size="large" />
+        </View>
+      }
+    >
       <HomeContent />
       {needsSetup && <SetupDialog />}
-    </>
+    </Suspense>
   )
 }
 
@@ -324,6 +350,7 @@ const hc = StyleSheet.create({
     borderBottomColor: "#181825",
   },
   topBarLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  offlineTag: { fontSize: 11, fontWeight: "600", color: "#8888A0", textTransform: "uppercase", letterSpacing: 0.5 },
   appTitle: { fontSize: 28, fontWeight: "800", color: "#E8E8F0", letterSpacing: -0.5 },
   topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: {

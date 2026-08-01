@@ -14,6 +14,7 @@ import {
 import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { wsClient } from "../lib/ws"
+import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Search, Plus, X } from "lucide-react-native"
@@ -56,15 +57,29 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
   const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [searchingUsers, setSearchingUsers] = useState(false)
 
-  const load = useCallback(() => {
-    api<Conv[]>("/api/conversations")
-      .then(setConvs)
-      .catch(() => {})
+  const load = useCallback(async () => {
+    try {
+      const convs = await api<Conv[]>("/api/conversations")
+      setConvs(convs)
+      cacheSet(offlineKeys.conversations, convs)
+    } catch {
+      const cached = await cacheGet<Conv[]>(offlineKeys.conversations)
+      if (cached) setConvs(cached)
+    }
   }, [])
 
   useEffect(() => {
+    cacheGet<Conv[]>(offlineKeys.conversations).then((cached) => {
+      if (cached) setConvs(cached)
+    })
     load()
   }, [load])
+
+  useEffect(() => {
+    if (convs.length > 0) {
+      cacheSet(offlineKeys.conversations, convs)
+    }
+  }, [convs])
 
   useEffect(() => {
     if (userSearchQuery.length < 2) {
