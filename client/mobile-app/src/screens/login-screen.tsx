@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
   Modal,
 } from "react-native"
-import { MessageSquare, Eye, EyeOff, Globe, Sun, Moon } from "lucide-react-native"
+import { MessageSquare, Eye, EyeOff, Globe, Server, Sun, Moon } from "lucide-react-native"
 import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
+import { defaultServerUrl, getServerUrl, resetServerUrl, setServerUrl } from "../lib/server-config"
 import { useTranslation } from "react-i18next"
 import { supportedLanguages } from "../lib/i18n/index"
 
@@ -29,6 +30,23 @@ export function LoginScreen() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showLangPicker, setShowLangPicker] = useState(false)
+  const [showServerPopup, setShowServerPopup] = useState(false)
+  const [serverUrlInput, setServerUrlInput] = useState("")
+
+  const openServerPopup = async () => {
+    setServerUrlInput(await getServerUrl())
+    setShowServerPopup(true)
+  }
+
+  const saveServerUrl = async () => {
+    await setServerUrl(serverUrlInput)
+    setShowServerPopup(false)
+  }
+
+  const resetServerUrlInput = async () => {
+    await resetServerUrl()
+    setServerUrlInput(await getServerUrl())
+  }
 
   const handleSubmit = async () => {
     setError("")
@@ -77,6 +95,13 @@ export function LoginScreen() {
     >
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
         <View style={st.topActions}>
+          <TouchableOpacity
+            style={[st.iconBtn, { borderColor: c.border }]}
+            onPress={openServerPopup}
+            aria-label="Server URL"
+          >
+            <Server size={16} color={c.textSecondary} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[st.iconBtn, { borderColor: c.border }]}
             onPress={toggleTheme}
@@ -205,6 +230,42 @@ export function LoginScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <Modal
+        visible={showServerPopup}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowServerPopup(false)}
+      >
+        <View style={[st.serverOverlay, { backgroundColor: c.overlay }]}>
+          <View style={[st.serverCard, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+            <Text style={[st.serverTitle, { color: c.text }]}>Server URL</Text>
+            <TextInput
+              style={[st.input, { backgroundColor: c.inputBg, borderColor: c.border, color: c.text }]}
+              placeholder={defaultServerUrl()}
+              placeholderTextColor={c.textMuted}
+              value={serverUrlInput}
+              onChangeText={setServerUrlInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            <Text style={[st.serverHint, { color: c.textMuted }]}>
+              IP or hostname of your server, e.g. 192.168.1.5:3000. Used for API and websocket connections.
+            </Text>
+            <View style={st.serverRow}>
+              <TouchableOpacity
+                style={[st.serverBtnSecondary, { borderColor: c.border }]}
+                onPress={resetServerUrlInput}
+              >
+                <Text style={{ color: c.textSecondary }}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={st.serverBtn} onPress={saveServerUrl}>
+                <Text style={st.serverBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   )
 }
@@ -283,4 +344,18 @@ const st = StyleSheet.create({
   switchBtn: { marginTop: 20, padding: 8 },
   switch: { fontSize: 13, textAlign: "center" },
   switchAccent: { color: "#6C8CFF", fontWeight: "600" },
+  serverOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
+  serverCard: { width: "100%", maxWidth: 400, borderRadius: 24, borderWidth: 1, padding: 20 },
+  serverTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12, textAlign: "center" },
+  serverHint: { fontSize: 12, marginTop: 4, marginBottom: 16, textAlign: "center" },
+  serverRow: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+  serverBtnSecondary: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+  },
+  serverBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, backgroundColor: "#6C8CFF" },
+  serverBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
 })

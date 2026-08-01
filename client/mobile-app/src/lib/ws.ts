@@ -1,6 +1,6 @@
 import { getTokens, refreshAccess } from "./api"
+import { getServerWsUrl } from "./server-config"
 
-const BASE_URL = process.env.EXPO_PUBLIC_WS_URL ?? "ws://localhost:3000"
 const HEARTBEAT_INTERVAL = 25000
 const HEARTBEAT_TIMEOUT = 10000
 const MAX_RECONNECT_DELAY = 30000
@@ -25,7 +25,7 @@ class WSClient {
     if (!token) return
 
     try {
-      this.ws = new WebSocket(BASE_URL)
+      this.ws = new WebSocket(await getServerWsUrl())
     } catch {
       this.scheduleReconnect()
       return

@@ -349,47 +349,52 @@ jobs:
               }
             }
           
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-              DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
-              widthMeasureSpec = MeasureSpec.makeMeasureSpec(dm.widthPixels, MeasureSpec.EXACTLY);
-              heightMeasureSpec = MeasureSpec.makeMeasureSpec(dm.heightPixels, MeasureSpec.EXACTLY);
-              int width = 0;
-              int height = 0;
-              int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-              if (widthMode == MeasureSpec.AT_MOST || widthMode == MeasureSpec.UNSPECIFIED) {
-                for (int i = 0; i < getChildCount(); i++) {
-                  View child = getChildAt(i);
-                  width = Math.max(width, child.getLeft() + child.getMeasuredWidth() + child.getPaddingLeft() + child.getPaddingRight());
-                }
-              } else {
-                width = MeasureSpec.getSize(widthMeasureSpec);
-              }
-              int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-              if (heightMode == MeasureSpec.AT_MOST || heightMode == MeasureSpec.UNSPECIFIED) {
-                for (int i = 0; i < getChildCount(); i++) {
-                  View child = getChildAt(i);
-                  height = Math.max(height, child.getTop() + child.getMeasuredHeight() + child.getPaddingTop() + child.getPaddingBottom());
-                }
-              } else {
-                height = MeasureSpec.getSize(heightMeasureSpec);
-              }
-              setMeasuredDimension(width, height);
-              wasMeasured = true;
-              this.widthMeasureSpec = widthMeasureSpec;
-              this.heightMeasureSpec = heightMeasureSpec;
+          @Override
+          protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
+            Log.i(
+                "RSVPatch",
+                "onMeasure in=" + MeasureSpec.toString(widthMeasureSpec) + "x" + MeasureSpec.toString(heightMeasureSpec)
+                    + " dm=" + dm.widthPixels + "x" + dm.heightPixels);
+            widthMeasureSpec = MeasureSpec.makeMeasureSpec(dm.widthPixels, MeasureSpec.EXACTLY);
+            heightMeasureSpec = MeasureSpec.makeMeasureSpec(dm.heightPixels, MeasureSpec.EXACTLY);
+                      int width = 0;
+                      int height = 0;
+                      int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+                      if (widthMode == MeasureSpec.AT_MOST || widthMode == MeasureSpec.UNSPECIFIED) {
+                        for (int i = 0; i < getChildCount(); i++) {
+                          View child = getChildAt(i);
+                          width = Math.max(width, child.getLeft() + child.getMeasuredWidth() + child.getPaddingLeft() + child.getPaddingRight());
+                        }
+                      } else {
+                        width = MeasureSpec.getSize(widthMeasureSpec);
+                      }
+                      int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+                      if (heightMode == MeasureSpec.AT_MOST || heightMode == MeasureSpec.UNSPECIFIED) {
+                        for (int i = 0; i < getChildCount(); i++) {
+                          View child = getChildAt(i);
+                          height = Math.max(height, child.getTop() + child.getMeasuredHeight() + child.getPaddingTop() + child.getPaddingBottom());
+                        }
+                      } else {
+                        height = MeasureSpec.getSize(heightMeasureSpec);
+                      }
+                      setMeasuredDimension(width, height);
+                      wasMeasured = true;
+                      this.widthMeasureSpec = widthMeasureSpec;
+                      this.heightMeasureSpec = heightMeasureSpec;
+                      Point viewportOffset = computeViewportOffset();
+                      surface.updateLayoutSpecs(widthMeasureSpec, heightMeasureSpec, viewportOffset.x, viewportOffset.y);
+                    }
+                  
+          @Override
+          protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            Log.i("RSVPatch", "onLayout changed=" + changed + " frame=" + left + "," + top + "-" + right + "," + bottom);
+            if (wasMeasured && changed) {
               Point viewportOffset = computeViewportOffset();
               surface.updateLayoutSpecs(widthMeasureSpec, heightMeasureSpec, viewportOffset.x, viewportOffset.y);
             }
-          
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-              if (wasMeasured && changed) {
-                Point viewportOffset = computeViewportOffset();
-                surface.updateLayoutSpecs(widthMeasureSpec, heightMeasureSpec, viewportOffset.x, viewportOffset.y);
-              }
-            }
-          
+          }
+                  
             private Point computeViewportOffset() {
               int[] locationOnScreen = new int[2];
               getLocationOnScreen(locationOnScreen);

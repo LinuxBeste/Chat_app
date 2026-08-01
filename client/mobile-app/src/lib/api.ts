@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000"
+import { getServerUrl } from "./server-config"
 
 const KEYS = { accessToken: "@accessToken", refreshToken: "@refreshToken" }
 
@@ -33,7 +32,7 @@ async function doRefresh(): Promise<string | null> {
   const { refreshToken } = await getTokens()
   if (!refreshToken) return null
   try {
-    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+    const res = await fetch(`${await getServerUrl()}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -59,12 +58,13 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
   }
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
 
-  let res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+  const baseUrl = await getServerUrl()
+  let res = await fetch(`${baseUrl}${path}`, { ...options, headers })
   if (res.status === 401 && accessToken) {
     const newToken = await refreshAccess()
     if (newToken) {
       headers["Authorization"] = `Bearer ${newToken}`
-      res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+      res = await fetch(`${baseUrl}${path}`, { ...options, headers })
     }
   }
   if (!res.ok) {
@@ -79,9 +79,9 @@ export async function apiFormData<T = unknown>(path: string, formData: FormData)
   const { accessToken } = await getTokens()
   const headers: Record<string, string> = {}
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
-  const res = await fetch(`${BASE_URL}${path}`, { method: "POST", headers, body: formData })
+  const res = await fetch(`${await getServerUrl()}${path}`, { method: "POST", headers, body: formData })
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
   return res.json()
 }
 
-export { setTokens, clearTokens, getTokens, BASE_URL }
+export { setTokens, clearTokens, getTokens }
