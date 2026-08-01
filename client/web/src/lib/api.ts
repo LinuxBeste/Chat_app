@@ -2,6 +2,13 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
 let refreshPromise: Promise<string | null> | null = null
 
+export class NetworkError extends Error {
+  constructor(message = "Network request failed") {
+    super(message)
+    this.name = "NetworkError"
+  }
+}
+
 function getTokens() {
   const at = localStorage.getItem("accessToken")
   const rt = localStorage.getItem("refreshToken")
@@ -47,7 +54,6 @@ async function doRefresh(): Promise<string | null> {
     setTokens(data.accessToken, data.refreshToken)
     return data.accessToken
   } catch {
-    clearTokens()
     return null
   }
 }
@@ -60,13 +66,24 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
   }
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
 
-  let res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+  } catch {
+    throw new NetworkError()
+  }
 
   if (res.status === 401 && accessToken) {
     const newToken = await refreshAccess()
     if (newToken) {
       headers["Authorization"] = `Bearer ${newToken}`
-      res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+      try {
+        res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+      } catch {
+        throw new NetworkError()
+      }
+    } else if (getTokens().accessToken) {
+      throw new NetworkError()
     }
   }
 

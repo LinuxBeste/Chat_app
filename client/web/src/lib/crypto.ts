@@ -1,5 +1,6 @@
 import nacl from "tweetnacl"
 import { encodeBase64, decodeBase64, encodeUTF8, decodeUTF8 } from "tweetnacl-util"
+import { isDesktop } from "./utils"
 
 export interface KeyPair {
   publicKey: string
@@ -10,10 +11,6 @@ let cachedKeyPair: KeyPair | null = null
 
 const KEY_STORE_KEY = "e2ee:keypair"
 const CONVERSATION_KEYS_KEY = "e2ee:conv-keys"
-
-function isDesktop(): boolean {
-  return typeof window !== "undefined" && !!window.electronAPI?.e2ee
-}
 
 async function storeKeypair(keypair: KeyPair): Promise<void> {
   const json = JSON.stringify(keypair)

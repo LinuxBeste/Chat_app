@@ -80,6 +80,8 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
       } catch {
         throw new NetworkError()
       }
+    } else if ((await getTokens()).accessToken) {
+      throw new NetworkError()
     }
   }
   if (!res.ok) {

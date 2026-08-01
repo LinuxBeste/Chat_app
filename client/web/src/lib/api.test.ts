@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { api, setTokens } from "./api"
+import { api, setTokens, NetworkError, refreshAccess } from "./api"
 
 describe("api", () => {
   beforeEach(() => {
@@ -104,5 +104,58 @@ describe("api", () => {
     const result = await api("/api/data")
     expect(result).toEqual({ id: "data" })
     expect(localStorage.getItem("accessToken")).toBe("new-token")
+  })
+
+  it("throws NetworkError when fetch rejects", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")))
+
+    await expect(api("/api/data")).rejects.toThrow(NetworkError)
+  })
+
+  it("does not clear tokens when refresh fails due to network error", async () => {
+    setTokens("old-token", "refresh-token")
+
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("auth/refresh")) {
+        return Promise.reject(new TypeError("Failed to fetch"))
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({}),
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(api("/api/data")).rejects.toThrow(NetworkError)
+    expect(localStorage.getItem("accessToken")).toBe("old-token")
+    expect(localStorage.getItem("refreshToken")).toBe("refresh-token")
+  })
+
+  it("refreshAccess returns null on network failure without clearing tokens", async () => {
+    setTokens("old-token", "refresh-token")
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")))
+
+    const result = await refreshAccess()
+    expect(result).toBeNull()
+    expect(localStorage.getItem("accessToken")).toBe("old-token")
+    expect(localStorage.getItem("refreshToken")).toBe("refresh-token")
+  })
+
+  it("refreshAccess clears tokens when server rejects the refresh token", async () => {
+    setTokens("old-token", "refresh-token")
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({}),
+      }),
+    )
+
+    const result = await refreshAccess()
+    expect(result).toBeNull()
+    expect(localStorage.getItem("accessToken")).toBeNull()
+    expect(localStorage.getItem("refreshToken")).toBeNull()
   })
 })

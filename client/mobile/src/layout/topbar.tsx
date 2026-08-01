@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ChevronDown, PanelLeftClose, PanelLeft, Menu, Moon, Sun } from "lucide-react"
 import { SearchPanel } from "../../../web/src/components/search/search-panel"
+import { isOnline, subscribeToOnlineStatus } from "../../../web/src/lib/offline"
+import { isDesktop } from "../../../web/src/lib/utils"
 
 interface TopbarProps {
   collapsed: boolean
@@ -24,6 +26,18 @@ export function Topbar({
   searchPlaceholder,
 }: TopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
+  const [online, setOnline] = useState(true)
+
+  useEffect(() => {
+    if (!isDesktop()) return
+    setOnline(isOnline())
+    return subscribeToOnlineStatus(
+      () => setOnline(true),
+      () => setOnline(false),
+    )
+  }, [])
+
+  const showOffline = isDesktop() && !online
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-bg-secondary px-4 lg:px-6">
@@ -69,11 +83,15 @@ export function Topbar({
             >
               {initials}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-online border-2 border-bg-secondary" />
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-bg-secondary ${
+                showOffline ? "bg-text-muted" : "bg-online"
+              }`}
+            />
           </div>
           <div className="hidden sm:block min-w-0">
             <p className="text-sm font-medium text-text-primary truncate max-w-[120px]">{displayName}</p>
-            <p className="text-xs text-text-muted">Online</p>
+            <p className="text-xs text-text-muted">{showOffline ? "Offline" : "Online"}</p>
           </div>
           <ChevronDown className="h-4 w-4 text-text-muted shrink-0" />
         </div>

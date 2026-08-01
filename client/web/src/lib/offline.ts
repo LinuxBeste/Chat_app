@@ -1,5 +1,6 @@
 const PENDING_KEY = "offline:pending"
 const CACHE_PREFIX = "offline:messages:"
+const CURRENT_USER_KEY = "offline:current-user"
 
 export interface QueuedMessage {
   id: string
@@ -65,6 +66,31 @@ export function cacheMessages(conversationId: string, messages: any[]) {
 export function clearConversationCache(conversationId: string) {
   try {
     localStorage.removeItem(CACHE_PREFIX + conversationId)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function cacheCurrentUser(user: unknown) {
+  try {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
+  } catch {
+    /* storage full */
+  }
+}
+
+export function getCachedCurrentUser(): unknown | null {
+  try {
+    const raw = localStorage.getItem(CURRENT_USER_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function clearCachedCurrentUser() {
+  try {
+    localStorage.removeItem(CURRENT_USER_KEY)
   } catch {
     /* ignore */
   }
