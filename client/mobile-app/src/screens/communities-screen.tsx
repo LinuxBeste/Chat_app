@@ -15,6 +15,7 @@ import { api } from "../lib/api"
 import { wsClient } from "../lib/ws"
 import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Clipboard from "expo-clipboard"
 import { Plus, X, Volume2, VolumeX, ChevronDown, ChevronRight, Hash, Mic, Users, Link2 } from "lucide-react-native"
 import { useAuth } from "../lib/auth-context"
@@ -59,6 +60,8 @@ interface Community {
 
 export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const { c } = useTheme()
   const { user } = useAuth()
   const [communities, setCommunities] = useState<Community[]>([])
@@ -225,7 +228,7 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
-      <View style={[st.header, { borderBottomColor: c.borderLight }]}>
+      <View style={[st.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
         <Text style={[st.title, { color: c.text }]}>{t("communities.title")}</Text>
         <View style={st.headerActions}>
           <TouchableOpacity style={[st.actionBtn, { backgroundColor: c.accent }]} onPress={() => setJoinModal(true)}>

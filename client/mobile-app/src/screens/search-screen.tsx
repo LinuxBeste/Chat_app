@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react"
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from "react-native"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 interface SearchResult {
   id: string
@@ -13,6 +14,8 @@ interface SearchResult {
 
 export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelect: (convId: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -46,7 +49,7 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <Text style={s.back}>
             {"<"} {t("common.back")}

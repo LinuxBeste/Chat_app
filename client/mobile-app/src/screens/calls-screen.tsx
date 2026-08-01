@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native"
 import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Phone, PhoneIncoming, PhoneMissed } from "lucide-react-native"
 
 interface Call {
@@ -16,6 +17,8 @@ interface Call {
 
 export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const { user } = useAuth()
   const [calls, setCalls] = useState<Call[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -53,7 +56,7 @@ export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) =>
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("calls.title")}</Text>
       </View>
       <FlatList

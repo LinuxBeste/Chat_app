@@ -13,6 +13,7 @@ import {
 } from "react-native"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Search, Plus, X, Users, MessageSquare } from "lucide-react-native"
 
 interface Group {
@@ -30,6 +31,8 @@ interface UserResult {
 
 export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [groups, setGroups] = useState<Group[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -122,7 +125,7 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("groups.title")}</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity style={s.createBtn} onPress={() => setModalVisible(true)}>

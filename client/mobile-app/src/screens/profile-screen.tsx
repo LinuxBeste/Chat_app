@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { api, apiFormData } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as ImagePicker from "expo-image-picker"
 import * as Clipboard from "expo-clipboard"
 import { wsClient } from "../lib/ws"
@@ -16,6 +17,8 @@ const STATUS_OPTIONS = [
 
 export function ProfileScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const { user, logout } = useAuth()
   const [displayName, setDisplayName] = useState(user?.displayName || "")
   const [bio, setBio] = useState("")
@@ -69,7 +72,7 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <Text style={s.back}>
             {"<"} {t("common.back")}

@@ -15,6 +15,7 @@ import {
 import { api, apiFormData } from "../lib/api"
 import * as DocumentPicker from "expo-document-picker"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Clipboard from "expo-clipboard"
 import {
   FileText,
@@ -47,6 +48,8 @@ interface Folder {
 
 export function FilesScreen() {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [files, setFiles] = useState<FileEntry[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -215,7 +218,7 @@ export function FilesScreen() {
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("files.title")}</Text>
         <View style={s.headerActions}>
           <TouchableOpacity style={s.actionBtn} onPress={uploadFile}>

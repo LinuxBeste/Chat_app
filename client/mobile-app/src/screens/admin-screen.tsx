@@ -13,6 +13,7 @@ import {
 } from "react-native"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Search, X } from "lucide-react-native"
 
 interface Stats {
@@ -37,6 +38,8 @@ type AdminTab = "stats" | "users" | "reports" | "bans" | "activity" | "admins"
 
 export function AdminScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [tab, setTab] = useState<AdminTab>("stats")
   const [stats, setStats] = useState<Stats | null>(null)
 
@@ -58,7 +61,7 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <Text style={s.back}>
             {"<"} {t("common.back")}

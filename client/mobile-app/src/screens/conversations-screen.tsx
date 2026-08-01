@@ -15,6 +15,7 @@ import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { wsClient } from "../lib/ws"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Search, Plus, X } from "lucide-react-native"
 
 interface Conv {
@@ -44,6 +45,8 @@ interface SearchUser {
 
 export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [convs, setConvs] = useState<Conv[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -148,7 +151,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("chat.chats")}</Text>
         <View style={{ flexDirection: "row", gap: 4 }}>
           <TouchableOpacity onPress={() => setShowNewDM(true)} style={s.addBtn}>

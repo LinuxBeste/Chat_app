@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from "react-native"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { MessageSquare, Users, Globe, Calendar, Phone } from "lucide-react-native"
 
 interface Notification {
@@ -28,6 +29,8 @@ export function NotificationsScreen({
   onNavigateToConversation?: (convId: string) => void
 }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [tab, setTab] = useState<"all" | "unread">("all")
@@ -73,7 +76,7 @@ export function NotificationsScreen({
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("notifications.title")}</Text>
         <View style={s.headerRight}>
           <Text style={s.count}>

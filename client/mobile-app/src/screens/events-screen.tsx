@@ -16,6 +16,7 @@ import { Calendar, Plus, X, ChevronRight, MessageSquare, Clock } from "lucide-re
 import { api } from "../lib/api"
 import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { wsClient } from "../lib/ws"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
@@ -40,6 +41,8 @@ interface Conv {
 
 export function EventsScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
+
   const { c } = useTheme()
   const [events, setEvents] = useState<Event[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -165,7 +168,7 @@ export function EventsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
-      <View style={[st.header, { borderBottomColor: c.borderLight }]}>
+      <View style={[st.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
         <Text style={[st.title, { color: c.text }]}>Events</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity style={[st.createBtn, { backgroundColor: c.accent }]} onPress={() => setModalVisible(true)}>
