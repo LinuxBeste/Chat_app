@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Chat App" },
+  "app": {
+    "name": "Chat App"
+  },
   "nav": {
     "messages": "Messages",
     "communities": "Communities",
@@ -96,47 +98,6 @@
     "status": "Status",
     "save": "Save",
     "avatar": "Avatar"
-  },
-  "settings": {
-    "title": "Settings",
-    "account": "Account",
-    "security": "Security",
-    "appearance": "Appearance",
-    "notifications": "Notifications",
-    "privacy": "Privacy",
-    "language": "Language",
-    "about": "About",
-    "theme": "Theme",
-    "light": "Light",
-    "dark": "Dark",
-    "customThemes": "Custom Themes"
-  },
-  "events": {
-    "title": "Events",
-    "create": "Create Event",
-    "upcoming": "Upcoming",
-    "past": "Past",
-    "noEvents": "No events",
-    "rsvp": "RSVP",
-    "going": "Going",
-    "maybe": "Maybe",
-    "declined": "Declined"
-  },
-  "admin": {
-    "title": "Admin Panel",
-    "stats": "Statistics",
-    "users": "Users",
-    "reports": "Reports",
-    "bans": "Bans",
-    "activity": "Activity",
-    "manageAdmins": "Manage Admins"
-  },
-  "status": {
-    "online": "Online",
-    "away": "Away",
-    "busy": "Busy",
-    "offline": "Offline",
-    "setCustom": "Set custom status"
   },
   "settings": {
     "appearance": {
@@ -286,6 +247,33 @@
       "statusEmojiPlaceholder": "😀"
     }
   },
+  "events": {
+    "title": "Events",
+    "create": "Create Event",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "noEvents": "No events",
+    "rsvp": "RSVP",
+    "going": "Going",
+    "maybe": "Maybe",
+    "declined": "Declined"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "stats": "Statistics",
+    "users": "Users",
+    "reports": "Reports",
+    "bans": "Bans",
+    "activity": "Activity",
+    "manageAdmins": "Manage Admins"
+  },
+  "status": {
+    "online": "Online",
+    "away": "Away",
+    "busy": "Busy",
+    "offline": "Offline",
+    "setCustom": "Set custom status"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -298,6 +286,7 @@
     "close": "Close",
     "search": "Search",
     "noResults": "No results",
-    "required": "is required"
+    "required": "is required",
+    "back": "Back"
   }
 }

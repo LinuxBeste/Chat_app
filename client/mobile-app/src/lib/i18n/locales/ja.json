@@ -1,5 +1,7 @@
 {
-  "app": { "name": "チャットアプリ" },
+  "app": {
+    "name": "チャットアプリ"
+  },
   "nav": {
     "messages": "メッセージ",
     "communities": "コミュニティ",
@@ -150,6 +152,7 @@
     "close": "閉じる",
     "search": "検索",
     "noResults": "結果なし",
-    "required": "が必要です"
+    "required": "が必要です",
+    "back": "戻る"
   }
 }

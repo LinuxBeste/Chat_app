@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Chat App" },
+  "app": {
+    "name": "Chat App"
+  },
   "nav": {
     "messages": "Mensajes",
     "communities": "Comunidades",
@@ -150,6 +152,7 @@
     "close": "Cerrar",
     "search": "Buscar",
     "noResults": "Sin resultados",
-    "required": "es requerido"
+    "required": "es requerido",
+    "back": "Atrás"
   }
 }

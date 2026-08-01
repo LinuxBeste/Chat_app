@@ -8,7 +8,7 @@ interface SearchResult {
   id: string
   content: string
   conversationId: string
-  sender: { username: string }
+  senderUsername: string
   createdAt: string
 }
 
@@ -70,7 +70,7 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
         keyExtractor={(r) => r.id}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.item} onPress={() => onSelect(item.conversationId)}>
-            <Text style={s.sender}>{item.sender.username}</Text>
+            <Text style={s.sender}>{item.senderUsername}</Text>
             <Text style={s.content} numberOfLines={2}>
               {item.content}
             </Text>
