@@ -238,7 +238,7 @@ function HomeContent() {
     <View style={hc.container}>
       <View style={[hc.topBar, { paddingTop: insets.top + 12 }]}>
         <View style={hc.topBarLeft}>
-          <Text style={hc.appTitle}>Chats</Text>
+          <Text style={hc.appTitle}>Chat App</Text>
           {!online && <Text style={hc.offlineTag}>Offline</Text>}
         </View>
         <View style={hc.topBarRight}>

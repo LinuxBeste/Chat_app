@@ -44,6 +44,7 @@ import {
   Send,
   Eye,
   Search,
+  LogOut,
 } from "lucide-react-native"
 import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
@@ -534,6 +535,7 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
 
 function AccountSettings({ user }: { user: any }) {
   const { c } = useTheme()
+  const { logout } = useAuth()
   const [verifyMsg, setVerifyMsg] = useState("")
   const [sendingVerification, setSendingVerification] = useState(false)
   const [sessions, setSessions] = useState<any[]>([])
@@ -635,6 +637,15 @@ function AccountSettings({ user }: { user: any }) {
             </SettingRow>
           ))
         )}
+      </Section>
+
+      <Section title="Session" icon={LogOut}>
+        <Text style={{ color: c.textSecondary, fontSize: 13, marginBottom: 12, marginTop: 4 }}>
+          Sign out of this device.
+        </Text>
+        <TouchableOpacity style={[ss.btnInline, { backgroundColor: "rgba(239,68,68,0.12)" }]} onPress={logout}>
+          <Text style={{ color: c.danger, fontSize: 14, fontWeight: "600" }}>Log Out</Text>
+        </TouchableOpacity>
       </Section>
 
       <Section title="Danger Zone" icon={Trash2}>

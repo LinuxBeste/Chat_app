@@ -51,7 +51,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
   const [convs, setConvs] = useState<Conv[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const { logout, user } = useAuth()
+  const { user } = useAuth()
   const [showNewDM, setShowNewDM] = useState(false)
   const [userSearchQuery, setUserSearchQuery] = useState("")
   const [userResults, setUserResults] = useState<SearchUser[]>([])
@@ -157,25 +157,21 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
     return d.toLocaleDateString()
   }
 
+  const dms = convs.filter((c) => c.type === "dm")
   const filtered = searchQuery
-    ? convs.filter((c) => {
+    ? dms.filter((c) => {
         const searchable = c.type === "dm" ? (c.otherUser?.displayName ?? c.otherUser?.username ?? "") : c.name || ""
         return searchable.toLowerCase().includes(searchQuery.toLowerCase())
       })
-    : convs
+    : dms
 
   return (
     <View style={s.container}>
       <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Text style={s.title}>{t("chat.chats")}</Text>
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          <TouchableOpacity onPress={() => setShowNewDM(true)} style={s.addBtn}>
-            <Plus size={20} color="#E8E8F0" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={logout} style={s.logoutBtn}>
-            <Text style={s.logout}>{t("nav.logout")}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => setShowNewDM(true)} style={s.addBtn}>
+          <Plus size={20} color="#E8E8F0" />
+        </TouchableOpacity>
       </View>
       <View style={s.searchRow}>
         <Search size={16} color="#585870" />
@@ -318,8 +314,6 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#252538",
   },
-  logoutBtn: { padding: 4 },
-  logout: { color: "#EF4444", fontSize: 14, fontWeight: "500" },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
