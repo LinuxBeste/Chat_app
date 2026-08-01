@@ -22,7 +22,8 @@
         "backgroundColor": "#0A0A0F"
       },
       "package": "com.chatapp.mobile",
-      "blockedPermissions": ["android.permission.READ_MEDIA_VIDEO"]
+      "blockedPermissions": ["android.permission.READ_MEDIA_VIDEO"],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "plugins": [
       "expo-dev-client",
