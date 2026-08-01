@@ -1,12 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {
-  defaultServerUrl,
-  getServerUrl,
-  getServerWsUrl,
-  setServerUrl,
-  resetServerUrl,
-} from "./server-config"
+import { defaultServerUrl, getServerUrl, getServerWsUrl, setServerUrl, resetServerUrl } from "./server-config"
 
 describe("server-config", () => {
   beforeEach(async () => {
