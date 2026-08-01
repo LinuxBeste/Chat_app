@@ -54,6 +54,7 @@ import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
 import type { ImagePickerAsset } from "expo-image-picker"
 import { EmojiPicker } from "../components/emoji-picker"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { CallOverlay } from "../components/call-overlay"
 import { AddParticipantsModal } from "../components/add-participants-modal"
 import * as Clipboard from "expo-clipboard"
@@ -95,6 +96,7 @@ interface ConvInfo {
 export function ChatScreen({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const insets = useSafeAreaInsets()
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [convInfo, setConvInfo] = useState<ConvInfo | null>(null)
@@ -834,7 +836,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <ChevronLeft size={24} color="#6C8CFF" />
         </TouchableOpacity>
@@ -902,7 +904,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       {previewFile && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setPreviewFile(null)}>
           <View style={s.previewOverlay}>
-            <TouchableOpacity style={s.previewClose} onPress={() => setPreviewFile(null)}>
+            <TouchableOpacity style={[s.previewClose, { top: insets.top + 20 }]} onPress={() => setPreviewFile(null)}>
               <X size={20} color="#FFFFFF" />
             </TouchableOpacity>
             <ScrollView contentContainerStyle={s.previewScrollContent}>
@@ -946,7 +948,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
       {showMedia && mediaItems.length > 0 && (
         <Modal visible transparent animationType="slide" onRequestClose={() => setShowMedia(false)}>
-          <View style={s.mediaOverlay}>
+          <View style={[s.mediaOverlay, { paddingTop: insets.top + 20 }]}>
             <View style={s.mediaHeader}>
               <Text style={s.mediaTitle}>Shared Media</Text>
               <TouchableOpacity onPress={() => setShowMedia(false)}>
@@ -969,7 +971,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
       {showSearch && (
         <Modal visible transparent animationType="slide" onRequestClose={() => setShowSearch(false)}>
-          <View style={s.mediaOverlay}>
+          <View style={[s.mediaOverlay, { paddingTop: insets.top + 20 }]}>
             <View style={s.mediaHeader}>
               <Text style={s.mediaTitle}>Search in Conversation</Text>
               <TouchableOpacity onPress={() => setShowSearch(false)}>
@@ -1045,7 +1047,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
       {showPinned && (
         <Modal visible transparent animationType="slide" onRequestClose={() => setShowPinned(false)}>
-          <View style={s.mediaOverlay}>
+          <View style={[s.mediaOverlay, { paddingTop: insets.top + 20 }]}>
             <View style={s.mediaHeader}>
               <Text style={s.mediaTitle}>Pinned Messages ({pinnedMessages.length})</Text>
               <TouchableOpacity onPress={() => setShowPinned(false)}>
@@ -1221,7 +1223,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 10,
-    paddingTop: Platform.OS === "ios" ? 56 : 10,
     backgroundColor: "#0A0A0F",
     borderBottomWidth: 1,
     borderBottomColor: "#181825",
@@ -1280,7 +1281,6 @@ const s = StyleSheet.create({
   previewOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
   previewClose: {
     position: "absolute",
-    top: Platform.OS === "ios" ? 56 : 20,
     right: 20,
     zIndex: 10,
     width: 36,
@@ -1294,7 +1294,7 @@ const s = StyleSheet.create({
   previewScrollContent: { alignItems: "center", paddingVertical: 40 },
   previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20, alignItems: "center" },
   previewFileText: { color: "#E8E8F0", fontSize: 16 },
-  mediaOverlay: { flex: 1, backgroundColor: "#0A0A0F", paddingTop: Platform.OS === "ios" ? 56 : 20 },
+  mediaOverlay: { flex: 1, backgroundColor: "#0A0A0F" },
   mediaHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

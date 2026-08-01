@@ -26,6 +26,7 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react-native"
+import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context"
 import { AuthProvider, useAuth } from "./lib/auth-context"
 import { ToastProvider } from "./lib/toast-context"
 import { NotificationProvider, useNotificationCount } from "./lib/notification-context"
@@ -214,7 +215,7 @@ function HomeContent() {
 
   return (
     <View style={hc.container}>
-      <View style={hc.topBar}>
+      <View style={[hc.topBar, { paddingTop: insets.top + 12 }]}>
         <View style={hc.topBarLeft}>
           <Text style={hc.appTitle}>Chats</Text>
         </View>
@@ -254,6 +255,7 @@ function HomeContent() {
 
 function AppContent() {
   const { user, loading, needsSetup } = useAuth()
+  const insets = useSafeAreaInsets()
 
   if (loading) {
     return (
@@ -275,17 +277,19 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <NavProvider>
-              <AppContent />
-            </NavProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <NavProvider>
+                <AppContent />
+              </NavProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   )
 }
 
@@ -314,7 +318,6 @@ const hc = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 56 : 12,
     paddingBottom: 10,
     backgroundColor: "#0A0A0F",
     borderBottomWidth: 1,

@@ -49,6 +49,7 @@ import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { supportedLanguages } from "../lib/i18n/index"
 import i18n from "../lib/i18n"
 
@@ -115,6 +116,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { c } = useTheme()
+  const insets = useSafeAreaInsets()
   const [tab, setTab] = useState<SettingsTab>("account")
   const [prefs, setPrefs] = useState<Record<string, any>>({})
   const [searchQuery, setSearchQuery] = useState("")
@@ -142,7 +144,9 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
-      <View style={[st.header, { backgroundColor: c.bg, borderBottomColor: c.borderLight }]}>
+      <View
+        style={[st.header, { backgroundColor: c.bg, borderBottomColor: c.borderLight, paddingTop: insets.top + 10 }]}
+      >
         <TouchableOpacity onPress={onBack} style={st.backBtn}>
           <ChevronLeft size={24} color={c.accent} />
         </TouchableOpacity>
@@ -2292,7 +2296,6 @@ const st = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 10,
-    paddingTop: Platform.OS === "ios" ? 56 : 10,
     borderBottomWidth: 1,
   },
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },

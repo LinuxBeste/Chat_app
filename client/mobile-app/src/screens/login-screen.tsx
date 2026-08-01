@@ -12,6 +12,7 @@ import {
   Modal,
 } from "react-native"
 import { MessageSquare, Eye, EyeOff, Globe, Server, Sun, Moon } from "lucide-react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
 import { defaultServerUrl, getServerUrl, resetServerUrl, setServerUrl } from "../lib/server-config"
@@ -22,6 +23,7 @@ export function LoginScreen() {
   const { t, i18n } = useTranslation()
   const { login, register } = useAuth()
   const { mode: theme, toggle: toggleTheme, c } = useTheme()
+  const insets = useSafeAreaInsets()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [username, setUsername] = useState("")
   const [credential, setCredential] = useState("")
@@ -90,11 +92,11 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[st.container, { backgroundColor: c.bg }]}
+      style={[st.container, { backgroundColor: c.bg, paddingTop: insets.top }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
-        <View style={st.topActions}>
+        <View style={[st.topActions, { top: insets.top + 20 }]}>
           <TouchableOpacity
             style={[st.iconBtn, { borderColor: c.border }]}
             onPress={openServerPopup}
@@ -271,8 +273,14 @@ export function LoginScreen() {
 }
 
 const st = StyleSheet.create({
+  container: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 24 },
-  topActions: { position: "absolute", top: Platform.OS === "ios" ? 56 : 20, right: 20, flexDirection: "row", gap: 8 },
+  topActions: {
+    position: "absolute",
+    right: 20,
+    flexDirection: "row",
+    gap: 8,
+  },
   iconBtn: {
     width: 36,
     height: 36,
