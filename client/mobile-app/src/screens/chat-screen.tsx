@@ -851,8 +851,8 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   return (
     <KeyboardAvoidingView
       style={s.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>

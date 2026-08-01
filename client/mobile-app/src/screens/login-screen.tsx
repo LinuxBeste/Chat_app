@@ -93,7 +93,7 @@ export function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={[st.container, { backgroundColor: c.bg, paddingTop: insets.top }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
         <View style={[st.topActions, { top: insets.top + 20 }]}>
