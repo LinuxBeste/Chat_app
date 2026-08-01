@@ -305,16 +305,222 @@ jobs:
           PYEOF
           mkdir -p out
           "$JAVA_HOME/bin/javac" -proc:none -cp classes.jar -d out BlobCollector.java
+          # Compile a Java replacement for ReactSurfaceView that always measures
+          # against the full window size. A stuck IME insets animation on some
+          # devices measures the surface with the window's visible-frame height
+          # (full window minus phantom keyboard insets), permanently shrinking
+          # the React root view and showing only the top half of the UI.
+          cat > ReactSurfaceView.java << 'JAVA'
+          package com.facebook.react.runtime;
+          
+          import android.content.Context;
+          import android.graphics.Point;
+          import android.graphics.Rect;
+          import android.util.DisplayMetrics;
+          import android.util.Log;
+          import android.view.MotionEvent;
+          import android.view.View;
+          import android.view.View.MeasureSpec;
+          import com.facebook.react.ReactRootView;
+          import com.facebook.react.bridge.ReactContext;
+          import com.facebook.react.config.ReactFeatureFlags;
+          import com.facebook.react.uimanager.IllegalViewOperationException;
+          import com.facebook.react.uimanager.JSPointerDispatcher;
+          import com.facebook.react.uimanager.JSTouchDispatcher;
+          import com.facebook.react.uimanager.common.UIManagerType;
+          import com.facebook.react.uimanager.events.EventDispatcher;
+          
+          /** Java replacement for the Kotlin ReactSurfaceView shipped in react-android. */
+          public class ReactSurfaceView extends ReactRootView {
+            private static final String TAG = "ReactSurfaceView";
+          
+            private final ReactSurfaceImpl surface;
+            private final JSTouchDispatcher jsTouchDispatcher = new JSTouchDispatcher(this);
+            private JSPointerDispatcher jsPointerDispatcher;
+            private boolean wasMeasured;
+            private int widthMeasureSpec;
+            private int heightMeasureSpec;
+          
+            public ReactSurfaceView(Context context, ReactSurfaceImpl surface) {
+              super(context);
+              this.surface = surface;
+              if (ReactFeatureFlags.dispatchPointerEvents) {
+                jsPointerDispatcher = new JSPointerDispatcher(this);
+              }
+            }
+          
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+              DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
+              widthMeasureSpec = MeasureSpec.makeMeasureSpec(dm.widthPixels, MeasureSpec.EXACTLY);
+              heightMeasureSpec = MeasureSpec.makeMeasureSpec(dm.heightPixels, MeasureSpec.EXACTLY);
+              int width = 0;
+              int height = 0;
+              int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+              if (widthMode == MeasureSpec.AT_MOST || widthMode == MeasureSpec.UNSPECIFIED) {
+                for (int i = 0; i < getChildCount(); i++) {
+                  View child = getChildAt(i);
+                  width = Math.max(width, child.getLeft() + child.getMeasuredWidth() + child.getPaddingLeft() + child.getPaddingRight());
+                }
+              } else {
+                width = MeasureSpec.getSize(widthMeasureSpec);
+              }
+              int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+              if (heightMode == MeasureSpec.AT_MOST || heightMode == MeasureSpec.UNSPECIFIED) {
+                for (int i = 0; i < getChildCount(); i++) {
+                  View child = getChildAt(i);
+                  height = Math.max(height, child.getTop() + child.getMeasuredHeight() + child.getPaddingTop() + child.getPaddingBottom());
+                }
+              } else {
+                height = MeasureSpec.getSize(heightMeasureSpec);
+              }
+              setMeasuredDimension(width, height);
+              wasMeasured = true;
+              this.widthMeasureSpec = widthMeasureSpec;
+              this.heightMeasureSpec = heightMeasureSpec;
+              Point viewportOffset = computeViewportOffset();
+              surface.updateLayoutSpecs(widthMeasureSpec, heightMeasureSpec, viewportOffset.x, viewportOffset.y);
+            }
+          
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+              if (wasMeasured && changed) {
+                Point viewportOffset = computeViewportOffset();
+                surface.updateLayoutSpecs(widthMeasureSpec, heightMeasureSpec, viewportOffset.x, viewportOffset.y);
+              }
+            }
+          
+            private Point computeViewportOffset() {
+              int[] locationOnScreen = new int[2];
+              getLocationOnScreen(locationOnScreen);
+              Rect visibleWindowFrame = new Rect();
+              getWindowVisibleDisplayFrame(visibleWindowFrame);
+              return new Point(locationOnScreen[0] - visibleWindowFrame.left, locationOnScreen[1] - visibleWindowFrame.top);
+            }
+          
+            @Override
+            public boolean isViewAttachedToReactInstance() {
+              return surface.isAttached();
+            }
+          
+            @Override
+            public boolean hasActiveReactContext() {
+              return surface.isAttached() && getCurrentReactContext() != null;
+            }
+          
+            @Override
+            public boolean hasActiveReactInstance() {
+              return surface.isAttached() && surface.getReactHost() != null && surface.getReactHost().isInstanceInitialized();
+            }
+          
+            @Override
+            public ReactContext getCurrentReactContext() {
+              ReactHostImpl host = surface.getReactHost();
+              return host != null ? host.getCurrentReactContext() : null;
+            }
+          
+            @Override
+            public String getJSModuleName() {
+              return surface.getModuleName();
+            }
+          
+            @Override
+            public void setIsFabric(boolean isFabric) {
+              super.setIsFabric(true);
+            }
+          
+            @Override
+            public int getUIManagerType() {
+              return UIManagerType.FABRIC;
+            }
+          
+            @Override
+            public void handleException(Throwable t) {
+              IllegalViewOperationException e = new IllegalViewOperationException(String.valueOf(t.getMessage()), this, t);
+              ReactHostImpl host = surface.getReactHost();
+              if (host != null) {
+                host.handleHostException(e);
+              } else {
+                throw new RuntimeException(e);
+              }
+            }
+          
+            @Override
+            protected void dispatchJSTouchEvent(MotionEvent event) {
+              EventDispatcher eventDispatcher = surface.getEventDispatcher();
+              ReactHostImpl host = surface.getReactHost();
+              if (eventDispatcher != null && host != null) {
+                jsTouchDispatcher.handleTouchEvent(event, eventDispatcher, host.getCurrentReactContext());
+              } else {
+                Log.w(TAG, "Unable to dispatch touch events to JS as the React instance has not been attached");
+              }
+            }
+          
+            @Override
+            protected void dispatchJSPointerEvent(MotionEvent event, boolean isCapture) {
+              if (jsPointerDispatcher == null) {
+                if (!ReactFeatureFlags.dispatchPointerEvents) {
+                  return;
+                }
+                Log.w(TAG, "Unable to dispatch pointer events to JS before the dispatcher is available");
+                return;
+              }
+              EventDispatcher eventDispatcher = surface.getEventDispatcher();
+              if (eventDispatcher != null) {
+                jsPointerDispatcher.handleMotionEvent(event, eventDispatcher, isCapture);
+              }
+            }
+          
+            @Override
+            public void onChildStartedNativeGesture(View childView, MotionEvent ev) {
+              EventDispatcher eventDispatcher = surface.getEventDispatcher();
+              if (eventDispatcher == null) {
+                return;
+              }
+              jsTouchDispatcher.onChildStartedNativeGesture(ev, eventDispatcher);
+              if (jsPointerDispatcher != null) {
+                jsPointerDispatcher.onChildStartedNativeGesture(childView, ev, eventDispatcher);
+              }
+            }
+          
+            @Override
+            public void onChildEndedNativeGesture(View childView, MotionEvent ev) {
+              EventDispatcher eventDispatcher = surface.getEventDispatcher();
+              if (eventDispatcher == null) {
+                return;
+              }
+              jsTouchDispatcher.onChildEndedNativeGesture(ev, eventDispatcher);
+              if (jsPointerDispatcher != null) {
+                jsPointerDispatcher.onChildEndedNativeGesture();
+              }
+            }
+          }
+          JAVA
+          ANDROID_JAR="$(ls -d "$ANDROID_HOME"/platforms/android-*/ 2>/dev/null | sort -V | tail -1)"
+          if [ -z "$ANDROID_JAR" ]; then
+            echo "no android platform found under $ANDROID_HOME/platforms" >&2
+            ls "$ANDROID_HOME" >&2 || true
+            exit 1
+          fi
+          ANDROID_JAR="$ANDROID_JAR/android.jar"
+          if [ ! -f "$ANDROID_JAR" ]; then
+            echo "android.jar not found in $ANDROID_JAR" >&2
+            exit 1
+          fi
+          mkdir -p out2
+          "$JAVA_HOME/bin/javac" -proc:none -cp "classes.jar:$ANDROID_JAR" -d out2 ReactSurfaceView.java
           python3 << 'PYEOF'
           import zipfile, shutil
-          new_cls = 'out/com/facebook/react/modules/blob/BlobCollector.class'
-          with zipfile.ZipFile('classes.jar') as zin, zipfile.ZipFile('classes_patched.jar', 'w', zipfile.ZIP_DEFLATED) as zout:
-              for item in zin.infolist():
-                  if item.filename == 'com/facebook/react/modules/blob/BlobCollector.class':
-                      zout.write(new_cls, item.filename)
-                  else:
-                      zout.writestr(item, zin.read(item.filename))
-          shutil.move('classes_patched.jar', 'classes.jar')
+          for new_cls in ['out/com/facebook/react/modules/blob/BlobCollector.class',
+                          'out2/com/facebook/react/runtime/ReactSurfaceView.class']:
+              name = new_cls.split('/', 1)[1]
+              with zipfile.ZipFile('classes.jar') as zin, zipfile.ZipFile('classes_patched.jar', 'w', zipfile.ZIP_DEFLATED) as zout:
+                  for item in zin.infolist():
+                      if item.filename == name:
+                          zout.write(new_cls, item.filename)
+                      else:
+                          zout.writestr(item, zin.read(item.filename))
+              shutil.move('classes_patched.jar', 'classes.jar')
           with zipfile.ZipFile('react-android.aar') as zin, zipfile.ZipFile('react-android-patched.aar', 'w', zipfile.ZIP_DEFLATED) as zout:
               for item in zin.infolist():
                   if item.filename == 'classes.jar':
