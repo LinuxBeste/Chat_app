@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Platform,
@@ -275,12 +276,30 @@ function HomeContent() {
 }
 
 function AppContent() {
-  const { user, loading, needsSetup } = useAuth()
+  const { user, loading, offline, retry, needsSetup } = useAuth()
+
+  useEffect(() => {
+    if (!offline || user) return
+    const timer = setInterval(retry, 10000)
+    return () => clearInterval(timer)
+  }, [offline, user, retry])
 
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0A0A0F" }}>
         <ActivityIndicator color="#6C8CFF" size="large" />
+      </View>
+    )
+  }
+
+  if (offline && !user) {
+    return (
+      <View style={oc.container}>
+        <Text style={oc.title}>You're offline</Text>
+        <Text style={oc.subtitle}>Reconnect to continue. Your session is safe.</Text>
+        <Pressable style={oc.button} onPress={retry}>
+          <Text style={oc.buttonText}>Try again</Text>
+        </Pressable>
       </View>
     )
   }
@@ -335,6 +354,19 @@ const ti = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
+})
+
+const oc = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#0A0A0F", justifyContent: "center", alignItems: "center", padding: 32 },
+  title: { color: "#E8E8F0", fontSize: 22, fontWeight: "800", marginBottom: 8 },
+  subtitle: { color: "#8888A0", fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 24 },
+  button: {
+    backgroundColor: "#6C8CFF",
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  buttonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
 })
 
 const hc = StyleSheet.create({

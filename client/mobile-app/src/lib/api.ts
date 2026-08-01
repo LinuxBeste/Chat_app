@@ -18,6 +18,13 @@ async function clearTokens() {
 
 let refreshPromise: Promise<string | null> | null = null
 
+export class NetworkError extends Error {
+  constructor(message = "Network request failed") {
+    super(message)
+    this.name = "NetworkError"
+  }
+}
+
 export async function refreshAccess(): Promise<string | null> {
   if (refreshPromise) return refreshPromise
   refreshPromise = doRefresh()
@@ -45,7 +52,6 @@ async function doRefresh(): Promise<string | null> {
     await setTokens(data.accessToken, data.refreshToken)
     return data.accessToken
   } catch {
-    await clearTokens()
     return null
   }
 }
@@ -59,12 +65,21 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
 
   const baseUrl = await getServerUrl()
-  let res = await fetch(`${baseUrl}${path}`, { ...options, headers })
+  let res: Response
+  try {
+    res = await fetch(`${baseUrl}${path}`, { ...options, headers })
+  } catch {
+    throw new NetworkError()
+  }
   if (res.status === 401 && accessToken) {
     const newToken = await refreshAccess()
     if (newToken) {
       headers["Authorization"] = `Bearer ${newToken}`
-      res = await fetch(`${baseUrl}${path}`, { ...options, headers })
+      try {
+        res = await fetch(`${baseUrl}${path}`, { ...options, headers })
+      } catch {
+        throw new NetworkError()
+      }
     }
   }
   if (!res.ok) {

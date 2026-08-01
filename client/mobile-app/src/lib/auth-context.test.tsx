@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import { AuthProvider, useAuth } from "./auth-context"
+import { getTokens, clearTokens, NetworkError } from "./api"
+import { cacheSet, offlineKeys } from "./offline-cache"
 import type { ReactNode } from "react"
 
 const mockApi = vi.fn()
@@ -14,6 +16,7 @@ vi.mock("./api", () => ({
   getTokens: vi.fn(() => Promise.resolve({ accessToken: null, refreshToken: null })),
   refreshAccess: vi.fn(() => Promise.resolve(null)),
   apiFormData: vi.fn(),
+  NetworkError: class NetworkError extends Error {},
   BASE_URL: "http://localhost:3000",
 }))
 
@@ -131,6 +134,60 @@ describe("AuthProvider", () => {
 
     expect(result.current.user).toBeNull()
     expect(mockWsDisconnect).toHaveBeenCalled()
+  })
+
+  it("network failure keeps tokens and shows offline instead of login", async () => {
+    vi.mocked(getTokens).mockResolvedValue({ accessToken: "at", refreshToken: "rt" })
+    mockApi.mockRejectedValueOnce(new NetworkError())
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(result.current.user).toBeNull()
+    expect(result.current.offline).toBe(true)
+    expect(result.current.loading).toBe(false)
+    expect(clearTokens).not.toHaveBeenCalled()
+    expect(mockWsConnect).not.toHaveBeenCalled()
+  })
+
+  it("network failure with cached user shows cached session", async () => {
+    const userData = { id: "u1", username: "cached", email: "c@test.com" }
+    await cacheSet(offlineKeys.user, userData)
+    vi.mocked(getTokens).mockResolvedValue({ accessToken: "at", refreshToken: "rt" })
+    mockApi.mockRejectedValueOnce(new NetworkError())
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(result.current.user).toEqual(userData)
+    expect(result.current.offline).toBe(true)
+    expect(result.current.loading).toBe(false)
+    expect(clearTokens).not.toHaveBeenCalled()
+  })
+
+  it("retry recovers when connectivity returns", async () => {
+    const userData = { id: "u2", username: "back", email: "b@test.com" }
+    vi.mocked(getTokens).mockResolvedValue({ accessToken: "at", refreshToken: "rt" })
+    mockApi.mockRejectedValueOnce(new NetworkError())
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(result.current.offline).toBe(true)
+
+    mockApi.mockResolvedValueOnce(userData)
+    await act(async () => {
+      await result.current.retry()
+    })
+
+    expect(result.current.user).toEqual(userData)
+    expect(result.current.offline).toBe(false)
+    expect(result.current.loading).toBe(false)
   })
 
   it("throws when useAuth is used outside AuthProvider", () => {

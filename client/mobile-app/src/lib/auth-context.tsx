@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { api, setTokens, clearTokens, getTokens } from "./api"
+import { api, setTokens, clearTokens, getTokens, NetworkError } from "./api"
 import { wsClient } from "./ws"
 import { getOrCreateKeyPair, deleteKeyPair } from "./crypto"
 import { cacheGet, cacheSet, cacheRemove, offlineKeys } from "./offline-cache"
@@ -19,6 +19,8 @@ interface User {
 interface AuthState {
   user: User | null
   loading: boolean
+  offline: boolean
+  retry: () => void
   needsSetup: boolean
   login: (login: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
@@ -31,6 +33,7 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [offline, setOffline] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
 
   const syncKey = useCallback(async () => {
@@ -52,20 +55,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api<User>("/api/users/me")
       setUser(me)
+      setOffline(false)
       cacheSet(offlineKeys.user, me)
       wsClient.connect()
       await syncKey()
-    } catch {
+    } catch (err) {
       const cached = await cacheGet<User>(offlineKeys.user)
       if (cached) {
         setUser(cached)
         wsClient.connect()
-      } else {
-        clearTokens()
-        setUser(null)
+      }
+      if (err instanceof NetworkError) {
+        setOffline(true)
       }
     }
   }, [syncKey])
+
+  const retry = useCallback(() => {
+    setOffline(false)
+    setLoading(true)
+    fetchMe().finally(() => setLoading(false))
+  }, [fetchMe])
 
   useEffect(() => {
     getTokens().then(async (t) => {
@@ -128,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, needsSetup, login, register, logout, completeSetup }}>
+    <AuthContext.Provider value={{ user, loading, offline, retry, needsSetup, login, register, logout, completeSetup }}>
       {children}
     </AuthContext.Provider>
   )

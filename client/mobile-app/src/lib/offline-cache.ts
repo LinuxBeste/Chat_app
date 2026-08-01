@@ -11,15 +11,33 @@ const keys = {
 
 export const offlineKeys = keys
 
+const memory = new Map<string, string>()
+
 async function cacheSet<T>(key: string, value: T): Promise<void> {
+  const raw = JSON.stringify({ v: CACHE_VERSION, data: value })
+  memory.set(key, raw)
   try {
-    await AsyncStorage.setItem(key, JSON.stringify({ v: CACHE_VERSION, data: value }))
-  } catch {}
+    await AsyncStorage.setItem(key, raw)
+  } catch (err) {
+    console.warn(`offline-cache: setItem failed for ${key}, using memory only`, err)
+  }
 }
 
 async function cacheGet<T>(key: string): Promise<T | null> {
+  if (memory.has(key)) {
+    return parseRaw(memory.get(key)!)
+  }
+  let raw: string | null = null
   try {
-    const raw = await AsyncStorage.getItem(key)
+    raw = await AsyncStorage.getItem(key)
+  } catch (err) {
+    console.warn(`offline-cache: getItem failed for ${key}`, err)
+  }
+  return parseRaw(raw)
+}
+
+function parseRaw<T>(raw: string | null): T | null {
+  try {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (parsed?.v !== CACHE_VERSION) return null
@@ -30,9 +48,12 @@ async function cacheGet<T>(key: string): Promise<T | null> {
 }
 
 async function cacheRemove(key: string): Promise<void> {
+  memory.delete(key)
   try {
     await AsyncStorage.removeItem(key)
-  } catch {}
+  } catch (err) {
+    console.warn(`offline-cache: removeItem failed for ${key}`, err)
+  }
 }
 
 export { cacheGet, cacheSet, cacheRemove }
