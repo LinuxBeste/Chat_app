@@ -23,6 +23,7 @@ interface SendMessagePayload {
   messageType?: "text" | "image" | "file"
   encrypted?: boolean
   attachment?: AttachmentPayload
+  clientMessageId?: string
 }
 
 interface EditMessagePayload {
@@ -98,6 +99,9 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       messageType: msg.type,
       encrypted: msg.encrypted,
       createdAt: msg.createdAt,
+    }
+    if (payload.clientMessageId) {
+      event.clientMessageId = payload.clientMessageId
     }
     if (attachment) {
       event.attachment = attachment

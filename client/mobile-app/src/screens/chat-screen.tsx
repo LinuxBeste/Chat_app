@@ -116,6 +116,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   const flatRef = useRef<FlatList>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const theirKeyRef = useRef<string | null>(null)
+  const sendingRef = useRef(false)
 
   const [showInfo, setShowInfo] = useState(false)
   const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "accepted" | "self">("none")
@@ -348,9 +349,16 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             const dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), key ?? undefined)
             if (dec) content = dec
           }
-          setMessages((p) =>
-            p.some((m) => m.id === data.id) ? p : [...p, { ...data, content, encrypted: data.encrypted } as Msg],
-          )
+          setMessages((p) => {
+            if (data.clientMessageId && p.some((m) => m.id === data.clientMessageId)) {
+              return p.map((m) =>
+                m.id === data.clientMessageId
+                  ? ({ ...data, content, encrypted: data.encrypted, replyTo: m.replyTo } as Msg)
+                  : m,
+              )
+            }
+            return p.some((m) => m.id === data.id) ? p : [...p, { ...data, content, encrypted: data.encrypted } as Msg]
+          })
         }
       }),
       wsClient.on("message:edited", (data: any) => {
@@ -409,7 +417,8 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   )
 
   const send = async () => {
-    if (!input.trim()) return
+    if (!input.trim() || sendingRef.current) return
+    sendingRef.current = true
     const tempId = "temp_" + Date.now()
     const text = input.trim()
     setMsgStatus((p) => ({ ...p, [tempId]: "sending" }))
@@ -445,6 +454,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       content: finalContent,
       encrypted: encrypted ? "true" : "false",
       messageType: "text",
+      clientMessageId: tempId,
     }
     if (replyingTo) payload.replyToId = replyingTo.id
     wsClient.send("message:send", payload)
@@ -458,6 +468,9 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         }),
       2000,
     )
+    setTimeout(() => {
+      sendingRef.current = false
+    }, 800)
   }
 
   const confirmEdit = async () => {
@@ -653,9 +666,9 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
               </Text>
             </TouchableOpacity>
           ) : (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <View style={mb.msgRow}>
               {isEncryptedMsg && <Lock size={10} color={me ? "rgba(255,255,255,0.5)" : "#8888A0"} />}
-              <Text style={[mb.msgText, me && mb.msgTextMe, { flex: 1 }]}>
+              <Text style={[mb.msgText, me && mb.msgTextMe]}>
                 {isEncryptedMsg && isEncrypted(getMsgContent(item)) ? "Could not decrypt" : getMsgContent(item)}
               </Text>
             </View>
@@ -849,11 +862,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   )
 
   return (
-    <KeyboardAvoidingView
-      style={s.container}
-      behavior="padding"
-      keyboardVerticalOffset={0}
-    >
+    <KeyboardAvoidingView style={s.container} behavior="padding" keyboardVerticalOffset={0}>
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <ChevronLeft size={24} color="#6C8CFF" />
@@ -1198,10 +1207,10 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 }
 
 const mb = StyleSheet.create({
-  bubbleWrap: { flexDirection: "row", marginBottom: 4, paddingHorizontal: 12 },
+  bubbleWrap: { flexDirection: "row", marginBottom: 4, paddingHorizontal: 12, alignItems: "flex-end" },
   me: { justifyContent: "flex-end" },
   them: { justifyContent: "flex-start" },
-  bubble: { maxWidth: "80%", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8 },
+  bubble: { maxWidth: "80%", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, flexShrink: 1 },
   bubbleMe: { backgroundColor: "#6C8CFF", borderBottomRightRadius: 4 },
   bubbleThem: { backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538", borderBottomLeftRadius: 4 },
   deletedBubble: { opacity: 0.4, backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538" },
@@ -1210,10 +1219,11 @@ const mb = StyleSheet.create({
   replyPreview: { borderLeftWidth: 2, borderLeftColor: "#6C8CFF", paddingLeft: 8, marginBottom: 6 },
   replySender: { color: "#6C8CFF", fontSize: 11, fontWeight: "600" },
   replyContent: { color: "#8888A0", fontSize: 12, marginTop: 1 },
-  msgText: { color: "#E8E8F0", fontSize: 15, lineHeight: 21 },
+  msgText: { color: "#E8E8F0", fontSize: 15, lineHeight: 21, flexShrink: 1 },
   msgTextMe: { color: "#FFFFFF" },
+  msgRow: { flexDirection: "row", alignItems: "flex-start", gap: 4, flexShrink: 1 },
   imagePreview: { width: 200, height: 150, borderRadius: 12, marginVertical: 4 },
-  fileRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  fileRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
   reactionRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
   reactionChip: {
     flexDirection: "row",
