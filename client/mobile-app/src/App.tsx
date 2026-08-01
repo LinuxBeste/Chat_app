@@ -158,6 +158,7 @@ function HomeContent() {
   const { user } = useAuth()
   const { view, setView, activeConversationId, setActiveConversationId } = useNav()
   const { unreadCount } = useNotificationCount()
+  const insets = useSafeAreaInsets()
   const [activeTab, setActiveTab] = useState<Tab>("chats")
   const [moreOpen, setMoreOpen] = useState(false)
   const [incomingCall, setIncomingCall] = useState<{ conversationId: string; type: "voice" | "video" } | null>(null)
@@ -255,7 +256,6 @@ function HomeContent() {
 
 function AppContent() {
   const { user, loading, needsSetup } = useAuth()
-  const insets = useSafeAreaInsets()
 
   if (loading) {
     return (
