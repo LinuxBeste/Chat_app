@@ -660,10 +660,15 @@ jobs:
       - name: Add missing expo-modules-core filesystem interfaces
         run: |
           # expo-file-system 18.1.11 AAR references interfaces removed in expo-modules-core 57
-          # Create stubs so prebuilt AAR classes resolve at runtime
-          IFACE_DIR=$(find node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/interfaces/filesystem" -type d | head -1)
-          echo "Creating interface stubs in: $IFACE_DIR"
-          cat > "$IFACE_DIR/FilePermissionModuleInterface.kt" << 'IFACE'
+          # Create stubs in EVERY expo-modules-core copy (multiple pnpm peer contexts exist)
+          # so whichever context Gradle compiles has the interfaces.
+          set -euo pipefail
+          IFACE_DIRS=$(find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/interfaces/filesystem" -type d)
+          [ -n "$IFACE_DIRS" ] || { echo "FAIL: no expo-modules-core filesystem interface dirs found"; exit 1; }
+          echo "Interface dirs: $IFACE_DIRS"
+          for IFACE_DIR in $IFACE_DIRS; do
+            echo "Creating interface stubs in: $IFACE_DIR"
+            cat > "$IFACE_DIR/FilePermissionModuleInterface.kt" << 'IFACE'
           package expo.modules.interfaces.filesystem
           import android.content.Context
           import java.util.EnumSet
@@ -671,7 +676,7 @@ jobs:
             fun getPathPermissions(context: Context, path: String): EnumSet<Permission>
           }
           IFACE
-          cat > "$IFACE_DIR/AppDirectoriesModuleInterface.kt" << 'IFACE'
+            cat > "$IFACE_DIR/AppDirectoriesModuleInterface.kt" << 'IFACE'
           package expo.modules.interfaces.filesystem
           import java.io.File
           interface AppDirectoriesModuleInterface {
@@ -679,7 +684,12 @@ jobs:
             val persistentFilesDirectory: File
           }
           IFACE
-          echo "Created: $(ls $IFACE_DIR)"
+          done
+          for IFACE_DIR in $IFACE_DIRS; do
+            grep -q "interface FilePermissionModuleInterface" "$IFACE_DIR/FilePermissionModuleInterface.kt"
+            grep -q "interface AppDirectoriesModuleInterface" "$IFACE_DIR/AppDirectoriesModuleInterface.kt"
+          done
+          echo "Verified stubs present in all expo-modules-core copies"
 
       - name: Patch expo-modules-core types API for prebuilt AARs (AnyTypeProvider, LazyKType, KType ctors)
         run: |
@@ -689,15 +699,17 @@ jobs:
           # ReturnType(KClass), PropertyComponentBuilderWithThis(KType, String),
           # SyncFunctionComponent.setOwnerType(KType) and the IsNotEmpty annotation.
           # Add them to the source-compiled core (57.0.6) so the AAR classes resolve at runtime.
-          python3 << 'PYEOF'
+          set -euo pipefail
+          CORES=$(find -L node_modules -path "*/expo-modules-core/android/src/main/java/expo/modules/kotlin" -type d)
+          [ -n "$CORES" ] || { echo "FAIL: no expo-modules-core kotlin dirs found"; exit 1; }
+          echo "Core dirs: $CORES"
+          for CORE_DIR in $CORES; do
+            echo "== Patching core: $CORE_DIR"
+            CORE_DIR="$CORE_DIR" python3 << 'PYEOF'
           import os
           import sys
 
-          def find_core_dir():
-              for root, dirs, files in os.walk('node_modules'):
-                  if 'expo-modules-core' in root and 'android/src/main/java/expo/modules/kotlin' in root:
-                      return root
-              return None
+          core = os.environ['CORE_DIR']
 
           def write_file(path, content):
               with open(path, 'w') as f:
@@ -720,12 +732,6 @@ jobs:
               with open(path, 'w') as f:
                   f.write(c)
               print('PATCHED:', path)
-
-          core = find_core_dir()
-          if not core:
-              print('FAIL: expo-modules-core kotlin dir not found')
-              sys.exit(1)
-          print('Core dir:', core)
 
           write_file(os.path.join(core, 'types', 'AnyTypeProvider.kt'), '''package expo.modules.kotlin.types
 
@@ -944,6 +950,7 @@ jobs:
 
           print('ALL PATCHES APPLIED')
           PYEOF
+          done
 
       - name: Build Android APK
         run: ./gradlew assembleRelease
