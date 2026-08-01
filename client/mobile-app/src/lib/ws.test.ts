@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { wsClient } from "./ws"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 vi.mock("./api", () => ({
   api: vi.fn(),
@@ -151,5 +152,50 @@ describe("WSClient", () => {
     vi.advanceTimersByTime(2000)
 
     vi.useRealTimers()
+  })
+
+  it("persists queued messages and flushes them on reconnect", async () => {
+    wsClient.disconnect()
+    await AsyncStorage.removeItem("@cache/pending-messages")
+
+    wsClient.send("message:send", { conversationId: "c1", id: "m1", content: "hello" })
+
+    const raw = await AsyncStorage.getItem("@cache/pending-messages")
+    expect(raw).toContain("m1")
+
+    await wsClient.connect()
+    await vi.waitFor(() => {
+      expect(wsClient.isConnected()).toBe(true)
+    })
+
+    expect(wsClient["ws"]?.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: "message:send", conversationId: "c1", id: "m1", content: "hello" }),
+    )
+    const after = await AsyncStorage.getItem("@cache/pending-messages")
+    expect(after).toBe("[]")
+  })
+
+  it("loads persisted queue from a previous session", async () => {
+    wsClient.disconnect()
+    await AsyncStorage.setItem(
+      "@cache/pending-messages",
+      JSON.stringify([
+        {
+          id: "m9",
+          type: "message:send",
+          payload: { conversationId: "c1", id: "m9", content: "queued" },
+          createdAt: new Date().toISOString(),
+        },
+      ]),
+    )
+
+    await wsClient.connect()
+    await vi.waitFor(() => {
+      expect(wsClient.isConnected()).toBe(true)
+    })
+
+    expect(wsClient["ws"]?.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: "message:send", conversationId: "c1", id: "m9", content: "queued" }),
+    )
   })
 })

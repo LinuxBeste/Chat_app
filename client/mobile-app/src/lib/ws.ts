@@ -1,12 +1,36 @@
 import { getTokens, refreshAccess } from "./api"
 import { getServerWsUrl } from "./server-config"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const HEARTBEAT_INTERVAL = 25000
 const HEARTBEAT_TIMEOUT = 10000
 const MAX_RECONNECT_DELAY = 30000
 const INITIAL_RECONNECT_DELAY = 1000
+const PENDING_KEY = "@cache/pending-messages"
 
 type MessageHandler = (data: Record<string, unknown>) => void
+
+interface PendingMessage {
+  id: string
+  type: string
+  payload: Record<string, unknown>
+  createdAt: string
+}
+
+async function loadPending(): Promise<PendingMessage[]> {
+  try {
+    const raw = await AsyncStorage.getItem(PENDING_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function savePending(pending: PendingMessage[]) {
+  try {
+    AsyncStorage.setItem(PENDING_KEY, JSON.stringify(pending.slice(-200)))
+  } catch {}
+}
 
 class WSClient {
   private ws: WebSocket | null = null
@@ -18,13 +42,19 @@ class WSClient {
   private authenticated = false
   private reconnectAttempts = 0
   private intentionalClose = false
-  private pending: { type: string; payload: Record<string, unknown> }[] = []
+  private pending: PendingMessage[] = []
   private static readonly MAX_PENDING = 100
 
   async connect() {
     const refreshed = await refreshAccess()
     let token = refreshed ?? (await getTokens()).accessToken
     if (!token) return
+
+    const saved = await loadPending()
+    if (saved.length > 0) {
+      const savedIds = new Set(saved.map((m) => m.id))
+      this.pending = [...saved, ...this.pending.filter((m) => !savedIds.has(m.id))].slice(-WSClient.MAX_PENDING)
+    }
 
     try {
       this.ws = new WebSocket(await getServerWsUrl())
@@ -119,7 +149,14 @@ class WSClient {
   send(type: string, payload: Record<string, unknown> = {}) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.authenticated) {
       if (type !== "typing:indicator" && this.pending.length < WSClient.MAX_PENDING) {
-        this.pending.push({ type, payload })
+        const msg: PendingMessage = {
+          id: (payload.id as string) || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          type,
+          payload,
+          createdAt: new Date().toISOString(),
+        }
+        this.pending.push(msg)
+        savePending(this.pending)
       }
       return
     }
@@ -139,6 +176,7 @@ class WSClient {
         break
       }
     }
+    savePending(this.pending)
   }
 
   on(type: string, handler: MessageHandler) {
@@ -155,6 +193,7 @@ class WSClient {
 
   disconnect() {
     this.intentionalClose = true
+    savePending(this.pending)
     this.pending = []
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
