@@ -575,11 +575,9 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         const dir = `${FileSystem.cacheDirectory}attachments/`
         await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {})
         const dest = `${dir}${Date.now()}-${tempId}.${ext}`
-        console.log("[uploadAndSend] copying content uri", uri, "->", dest)
         await FileSystem.copyAsync({ from: uri, to: dest })
         uri = dest
       }
-      console.log("[uploadAndSend] uploading", uri)
       const formData = new FormData()
       formData.append("file", { uri, name: file.name, type: file.type } as any)
       formData.append("conversationId", conversationId)
@@ -611,29 +609,23 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         encrypted: "false",
         clientMessageId: tempId,
       })
-    } catch (e) {
-      console.log("[uploadAndSend] failed", String(e))
+    } catch {
       showToast(t("chat.uploadFailed", "Upload failed"))
     }
     setUploading(false)
   }
 
   const pickImage = async () => {
-    console.log("[pickImage] start")
     let result: Awaited<ReturnType<typeof ImagePicker.launchImageLibraryAsync>>
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      console.log("[pickImage] perm", JSON.stringify(perm))
       if (!perm.granted) {
         showToast(t("chat.mediaPermission", "Photo permission needed to attach images"))
         return
       }
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
-      console.log("[pickImage] launch resolved canceled=", result.canceled, "assets=", result.assets?.length)
-    } catch (e) {
-      console.log("[pickImage] launch rejected:", String(e))
+    } catch {
       const pending = await ImagePicker.getPendingResultAsync()
-      console.log("[pickImage] pending", JSON.stringify(pending))
       if (!pending || pending.canceled || !pending.assets || pending.assets.length === 0) {
         showToast(t("chat.pickerFailed", "Could not open photo picker"))
         return
@@ -642,10 +634,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     }
     if (!result.canceled && result.assets[0]) {
       const file = result.assets[0]
-      console.log("[pickImage] sending asset uri=", file.uri, "name=", file.fileName, "type=", file.mimeType)
       await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" })
-    } else {
-      console.log("[pickImage] canceled or no assets")
     }
   }
 
