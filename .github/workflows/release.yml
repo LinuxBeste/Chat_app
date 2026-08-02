@@ -86,6 +86,8 @@ jobs:
   android:
     needs: prepare
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_USE_RN_FETCH: "1"
 
     steps:
       - uses: actions/checkout@v4
