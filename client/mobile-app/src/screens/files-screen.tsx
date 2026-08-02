@@ -11,12 +11,15 @@ import {
   Alert,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from "react-native"
 import { api, apiFormData } from "../lib/api"
 import * as DocumentPicker from "expo-document-picker"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Clipboard from "expo-clipboard"
+import * as WebBrowser from "expo-web-browser"
+import { resolveFileUrl } from "../lib/file-url"
 import {
   FileText,
   Image as ImageIcon,
@@ -33,8 +36,10 @@ import { Linking } from "react-native"
 
 interface FileEntry {
   id: string
-  name: string
-  type: string
+  name?: string
+  filename?: string
+  type?: string
+  mimeType?: string
   size: number
   url?: string
   folderId?: string
@@ -44,6 +49,57 @@ interface FileEntry {
 interface Folder {
   id: string
   name: string
+}
+
+const TEXT_MIME = new Set([
+  "text/plain",
+  "text/markdown",
+  "text/x-markdown",
+  "text/csv",
+  "text/xml",
+  "text/html",
+  "text/css",
+  "text/javascript",
+  "text/x-shellscript",
+  "text/yaml",
+  "application/json",
+  "application/xml",
+  "application/javascript",
+  "application/x-yaml",
+  "application/x-sh",
+  "application/x-httpd-php",
+])
+
+const TEXT_EXTS = [
+  "txt",
+  "md",
+  "markdown",
+  "json",
+  "log",
+  "csv",
+  "xml",
+  "html",
+  "htm",
+  "js",
+  "ts",
+  "tsx",
+  "css",
+  "yaml",
+  "yml",
+  "sh",
+  "py",
+  "sql",
+  "ini",
+  "conf",
+  "env",
+  "gitignore",
+  "dockerfile",
+]
+
+function isTextFile(f: FileEntry): boolean {
+  if (f.type && TEXT_MIME.has(f.type)) return true
+  const ext = (f.name || f.filename || "").split(".").pop()?.toLowerCase() || ""
+  return TEXT_EXTS.includes(ext)
 }
 
 export function FilesScreen() {
@@ -59,12 +115,24 @@ export function FilesScreen() {
   const [renameName, setRenameName] = useState("")
   const [activeFolder, setActiveFolder] = useState<string | null>(null)
   const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
+  const [previewText, setPreviewText] = useState<string | null>(null)
+  const [previewTextLoading, setPreviewTextLoading] = useState(false)
+  const [previewTextError, setPreviewTextError] = useState(false)
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({})
   const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null)
   const [showMoveModal, setShowMoveModal] = useState(false)
 
   const load = useCallback(() => {
     api<FileEntry[]>("/api/files/list")
-      .then(setFiles)
+      .then((data) =>
+        setFiles(
+          data.map((f) => ({
+            ...f,
+            name: f.name ?? f.filename ?? "Unknown file",
+            type: f.type ?? f.mimeType ?? "application/octet-stream",
+          })),
+        ),
+      )
       .catch(() => {})
     api<Folder[]>("/api/files/folders")
       .then(setFolders)
@@ -76,6 +144,19 @@ export function FilesScreen() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    const missing = files.filter((f) => f.url && !resolvedUrls[f.id])
+    if (missing.length === 0) return
+    Promise.all(missing.map(async (f) => ({ id: f.id, url: (await resolveFileUrl(f.url)) || "" }))).then((pairs) => {
+      setResolvedUrls((prev) => {
+        const next = { ...prev }
+        for (const p of pairs) if (p.url) next[p.id] = p.url
+        return next
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -189,6 +270,45 @@ export function FilesScreen() {
     } catch {}
   }
 
+  const openPreview = (item: FileEntry) => {
+    setPreviewFile(item)
+    setPreviewText(null)
+    setPreviewTextError(false)
+    if (!isTextFile(item)) return
+    setPreviewTextLoading(true)
+    resolveFileUrl(item.url)
+      .then((abs) => {
+        if (!abs) {
+          setPreviewTextLoading(false)
+          setPreviewTextError(true)
+          return null
+        }
+        return fetch(abs)
+          .then((r) => {
+            if (!r.ok) throw new Error(String(r.status))
+            return r.text()
+          })
+          .then((text) => {
+            setPreviewText(text)
+            setPreviewTextLoading(false)
+          })
+      })
+      .catch(() => {
+        setPreviewTextLoading(false)
+        setPreviewTextError(true)
+      })
+  }
+
+  const openPdf = async (item: FileEntry) => {
+    const abs = await resolveFileUrl(item.url)
+    if (abs) await WebBrowser.openBrowserAsync(abs)
+  }
+
+  const openExternal = async (item: FileEntry) => {
+    const abs = await resolveFileUrl(item.url)
+    if (abs) await Linking.openURL(abs)
+  }
+
   const handleFileLongPress = (item: FileEntry) => {
     Alert.alert(item.name, "", [
       {
@@ -276,11 +396,11 @@ export function FilesScreen() {
           return (
             <TouchableOpacity
               style={s.item}
-              onPress={() => setPreviewFile(item)}
+              onPress={() => openPreview(item)}
               onLongPress={() => handleFileLongPress(item)}
             >
               {isImage && item.url ? (
-                <Image source={{ uri: item.url }} style={s.fileThumb} />
+                <Image source={{ uri: resolvedUrls[item.id] }} style={s.fileThumb} />
               ) : (
                 <View style={s.fileIconWrap}>
                   <FileTypeIcon size={24} color="#8888A0" />
@@ -379,28 +499,58 @@ export function FilesScreen() {
           <TouchableOpacity style={s.previewClose} onPress={() => setPreviewFile(null)}>
             <Text style={s.previewCloseText}>✕</Text>
           </TouchableOpacity>
-          <View style={{ paddingVertical: 40, alignItems: "center" }}>
-            {previewFile?.type?.startsWith("image/") && previewFile?.url ? (
-              <Image source={{ uri: previewFile.url }} style={s.previewImage} resizeMode="contain" />
-            ) : previewFile ? (
-              <View style={s.previewFile}>
-                <FileText size={48} color="#E8E8F0" />
-                <Text style={s.previewFileText}> {previewFile.name}</Text>
-              </View>
-            ) : null}
-            {previewFile?.url && (
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
-                <TouchableOpacity style={s.downloadBtn} onPress={() => Clipboard.setStringAsync(previewFile!.url!)}>
-                  <Copy size={16} color="#FFFFFF" />
-                  <Text style={s.downloadBtnText}> Copy URL</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.downloadBtn} onPress={() => Linking.openURL(previewFile!.url!)}>
-                  <Download size={16} color="#FFFFFF" />
-                  <Text style={s.downloadBtnText}> Download</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+          {previewFile && (
+            <View style={s.previewBody}>
+              <Text style={s.previewName} numberOfLines={1}>
+                {previewFile.name}
+              </Text>
+              {previewFile.type?.startsWith("image/") && resolvedUrls[previewFile.id] ? (
+                <Image source={{ uri: resolvedUrls[previewFile.id] }} style={s.previewImage} resizeMode="contain" />
+              ) : isTextFile(previewFile) ? (
+                previewTextLoading ? (
+                  <View style={s.previewEmpty}>
+                    <ActivityIndicator color="#6C8CFF" />
+                  </View>
+                ) : previewTextError ? (
+                  <View style={s.previewEmpty}>
+                    <Text style={s.previewError}>Could not load text preview</Text>
+                  </View>
+                ) : (
+                  <ScrollView style={s.previewTextWrap} contentContainerStyle={s.previewTextContent}>
+                    <Text style={s.previewText}>{previewText}</Text>
+                  </ScrollView>
+                )
+              ) : previewFile.type === "application/pdf" ? (
+                <View style={s.previewFile}>
+                  <FileText size={48} color="#E8E8F0" />
+                  <Text style={s.previewFileText}>{previewFile.name}</Text>
+                  <TouchableOpacity style={s.downloadBtn} onPress={() => openPdf(previewFile)}>
+                    <Text style={s.downloadBtnText}>Open PDF</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={s.previewFile}>
+                  <FileText size={48} color="#E8E8F0" />
+                  <Text style={s.previewFileText}>{previewFile.name}</Text>
+                </View>
+              )}
+              {previewFile.url && (
+                <View style={s.previewActions}>
+                  <TouchableOpacity
+                    style={s.downloadBtn}
+                    onPress={() => Clipboard.setStringAsync(resolvedUrls[previewFile.id] || previewFile.url!)}
+                  >
+                    <Copy size={16} color="#FFFFFF" />
+                    <Text style={s.downloadBtnText}> Copy URL</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.downloadBtn} onPress={() => openExternal(previewFile)}>
+                    <Download size={16} color="#FFFFFF" />
+                    <Text style={s.downloadBtnText}> Download</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </Modal>
       <Modal visible={!!renameTarget} transparent animationType="fade">
@@ -478,8 +628,23 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   previewCloseText: { color: "#FFFFFF", fontSize: 18, fontWeight: "600" },
-  previewImage: { width: "100%", height: "80%" },
-  previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20 },
+  previewBody: { width: "90%", maxWidth: 420, alignItems: "center" },
+  previewName: {
+    color: "#E8E8F0",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 16,
+    textAlign: "center",
+    maxWidth: "100%",
+  },
+  previewImage: { width: "100%", height: "70%", borderRadius: 12 },
+  previewTextWrap: { width: "100%", maxHeight: "70%", backgroundColor: "#101016", borderRadius: 12 },
+  previewTextContent: { padding: 16 },
+  previewText: { color: "#D8D8E8", fontSize: 13, fontFamily: "monospace" },
+  previewEmpty: { padding: 48, alignItems: "center", justifyContent: "center" },
+  previewError: { color: "#8888A0", fontSize: 14 },
+  previewActions: { flexDirection: "row", gap: 12 },
+  previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20, alignItems: "center" },
   previewFileText: { color: "#E8E8F0", fontSize: 16 },
   folderRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538" },
   folderChip: {

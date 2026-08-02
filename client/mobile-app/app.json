@@ -22,7 +22,9 @@
         "backgroundColor": "#0A0A0F"
       },
       "package": "com.chatapp.mobile",
-      "blockedPermissions": ["android.permission.READ_MEDIA_VIDEO"],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
       "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
@@ -42,7 +44,8 @@
         {
           "iCloudContainerEnvironment": "Production"
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

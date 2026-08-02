@@ -67,20 +67,6 @@ router.get(
   }),
 )
 
-router.put(
-  "/:id",
-  authGuard,
-  validate(createSchema),
-  catchAsync(async (req: Request, res: Response) => {
-    const [updated] = await db
-      .update(communities)
-      .set({ name: req.body.name, description: req.body.description })
-      .where(eq(communities.id, req.params.id as string))
-      .returning()
-    res.json(updated)
-  }),
-)
-
 const requireCommunityOwner = async (req: Request, res: Response, next: () => void) => {
   try {
     const communityId = req.params.id as string
@@ -99,6 +85,21 @@ const requireCommunityOwner = async (req: Request, res: Response, next: () => vo
     res.status(500).json({ error: "Internal server error" })
   }
 }
+
+router.put(
+  "/:id",
+  authGuard,
+  requireCommunityOwner,
+  validate(createSchema),
+  catchAsync(async (req: Request, res: Response) => {
+    const [updated] = await db
+      .update(communities)
+      .set({ name: req.body.name, description: req.body.description })
+      .where(eq(communities.id, req.params.id as string))
+      .returning()
+    res.json(updated)
+  }),
+)
 
 // --- Channels ---
 
@@ -168,6 +169,46 @@ router.delete(
         ),
       )
     res.json({ message: "Member removed" })
+  }),
+)
+
+// --- Community management ---
+
+router.delete(
+  "/:id",
+  authGuard,
+  requireCommunityOwner,
+  catchAsync(async (req: Request, res: Response) => {
+    await db.delete(communities).where(eq(communities.id, req.params.id as string))
+    res.json({ message: "Community deleted" })
+  }),
+)
+
+router.post(
+  "/:id/leave",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const [member] = await db
+      .select({ role: communityMembers.role })
+      .from(communityMembers)
+      .where(
+        and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.user!.userId)),
+      )
+      .limit(1)
+    if (!member) {
+      res.status(404).json({ error: "Not a member of this community" })
+      return
+    }
+    if (member.role === "owner") {
+      res.status(400).json({ error: "Owner cannot leave; delete the community instead" })
+      return
+    }
+    await db
+      .delete(communityMembers)
+      .where(
+        and(eq(communityMembers.communityId, req.params.id as string), eq(communityMembers.userId, req.user!.userId)),
+      )
+    res.json({ message: "Left community" })
   }),
 )
 

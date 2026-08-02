@@ -32,7 +32,7 @@ vi.mock("../lib/db.js", () => {
     returning: vi.fn(() => chain),
     values: vi.fn(() => chain),
     set: vi.fn(() => chain),
-    onConflictDoNothing: vi.fn(() => Promise.resolve(undefined)),
+    onConflictDoNothing: vi.fn(() => chain),
   }
   return {
     db: {
@@ -283,5 +283,28 @@ describe("POST /api/conversations/:id/messages", () => {
       .set("Authorization", "Bearer token")
       .send({ content: "hello" })
     expect(res.status).toBe(404)
+  })
+})
+
+describe("Mute /api/conversations/:id/mute", () => {
+  it("mutes a conversation", async () => {
+    queryQueue.push([{ id: "c1", type: "dm" }])
+    queryQueue.push([{ conversationId: "c1", userId: "u1" }])
+    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("muted", true)
+  })
+
+  it("returns 403 for non-member", async () => {
+    queryQueue.push([{ id: "c1", type: "dm" }])
+    queryQueue.push([])
+    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token")
+    expect(res.status).toBe(403)
+  })
+
+  it("unmutes a conversation", async () => {
+    const res = await request(app).delete("/api/conversations/c1/mute").set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("muted", false)
   })
 })

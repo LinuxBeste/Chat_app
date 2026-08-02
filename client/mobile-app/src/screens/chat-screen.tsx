@@ -92,6 +92,7 @@ interface ConvInfo {
   avatar?: string
   members: { id: string; username: string; displayName?: string; role?: string; avatar?: string; status?: string }[]
   createdBy?: string
+  muted?: boolean
 }
 
 export function ChatScreen({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
@@ -161,7 +162,17 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     } catch {}
   }
 
-  const toggleMute = () => setMuted((p) => !p)
+  const toggleMute = async () => {
+    const next = !muted
+    try {
+      if (next) {
+        await api(`/api/conversations/${conversationId}/mute`, { method: "PUT" })
+      } else {
+        await api(`/api/conversations/${conversationId}/mute`, { method: "DELETE" })
+      }
+      setMuted(next)
+    } catch {}
+  }
 
   const loadPinnedMessages = async () => {
     try {
@@ -196,11 +207,15 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         setMessages(msgs)
         decryptMessages(msgs)
       }
-      if (info) setConvInfo(info)
+      if (info) {
+        setConvInfo(info)
+        setMuted(!!info.muted)
+      }
     })
     api<ConvInfo>(`/api/conversations/${conversationId}`)
       .then((info) => {
         setConvInfo(info)
+        setMuted(!!info.muted)
         cacheSet(offlineKeys.convInfo(conversationId), info)
         if (info.type === "dm") {
           const other = info.members.find((m) => m.id !== user!.id)

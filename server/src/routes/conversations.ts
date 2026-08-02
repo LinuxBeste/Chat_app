@@ -6,7 +6,7 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { conversations, participants, messages, users, attachments } from "../db/schema.js"
+import { conversations, participants, messages, users, attachments, mutes } from "../db/schema.js"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 import { clients, sendToConversation } from "../ws/clients.js"
@@ -204,7 +204,52 @@ router.get(
       .innerJoin(users, eq(users.id, participants.userId))
       .where(eq(participants.conversationId, conv.id))
 
-    res.json({ ...conv, members })
+    const [muteRow] = await db
+      .select({ id: mutes.id })
+      .from(mutes)
+      .where(and(eq(mutes.conversationId, conv.id), eq(mutes.userId, req.user!.userId)))
+      .limit(1)
+
+    res.json({ ...conv, members, muted: !!muteRow })
+  }),
+)
+
+router.put(
+  "/:id/mute",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const convId = req.params.id as string
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" })
+      return
+    }
+    const [member] = await db
+      .select()
+      .from(participants)
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, req.user!.userId)))
+      .limit(1)
+    if (!member) {
+      res.status(403).json({ error: "Not a member of this conversation" })
+      return
+    }
+    const [row] = await db
+      .insert(mutes)
+      .values({ conversationId: convId, userId: req.user!.userId })
+      .onConflictDoNothing()
+      .returning()
+    res.json({ muted: true, mutesId: row?.id ?? null })
+  }),
+)
+
+router.delete(
+  "/:id/mute",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    await db
+      .delete(mutes)
+      .where(and(eq(mutes.conversationId, req.params.id as string), eq(mutes.userId, req.user!.userId)))
+    res.json({ muted: false })
   }),
 )
 

@@ -17,7 +17,24 @@ import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Clipboard from "expo-clipboard"
-import { Plus, X, Volume2, VolumeX, ChevronDown, ChevronRight, Hash, Mic, Users, Link2 } from "lucide-react-native"
+import {
+  Plus,
+  X,
+  Volume2,
+  VolumeX,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Hash,
+  Mic,
+  Users,
+  Link2,
+  LogOut,
+  Settings,
+  Pencil,
+  Trash2,
+  Check,
+} from "lucide-react-native"
 import { useAuth } from "../lib/auth-context"
 
 interface Channel {
@@ -51,6 +68,7 @@ interface Community {
   id: string
   name: string
   description?: string
+  ownerId?: string
   memberCount?: number
   role?: string
   channels?: Channel[]
@@ -58,7 +76,7 @@ interface Community {
   members?: Member[]
 }
 
-export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
+export function CommunitiesScreen() {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
 
@@ -84,6 +102,11 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
     communityName: string
     channelName: string
   } | null>(null)
+  const [manageCommunity, setManageCommunity] = useState<Community | null>(null)
+  const [manageName, setManageName] = useState("")
+  const [manageDesc, setManageDesc] = useState("")
+  const [savingManage, setSavingManage] = useState(false)
+  const [saveMsg, setSaveMsg] = useState("")
 
   const load = useCallback(() => {
     api<Community[]>("/api/communities")
@@ -109,6 +132,11 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
       ])
       setExpanded((p) => ({ ...p, [id]: detail }))
       setInvites((p) => ({ ...p, [id]: inviteList }))
+      if (manageCommunity?.id === id) {
+        setManageCommunity(detail)
+        setManageName(detail.name || "")
+        setManageDesc(detail.description || "")
+      }
     } catch {}
   }
 
@@ -145,14 +173,61 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
     } catch {}
   }
 
+  const openManage = (item: Community) => {
+    setManageCommunity(item)
+    setManageName(item.name || "")
+    setManageDesc(item.description || "")
+    setSaveMsg("")
+    loadDetail(item.id)
+  }
+
+  const saveManage = async () => {
+    if (!manageCommunity || !manageName.trim()) return
+    setSavingManage(true)
+    setSaveMsg("")
+    try {
+      await api(`/api/communities/${manageCommunity.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ name: manageName.trim(), description: manageDesc.trim() }),
+      })
+      setSaveMsg("Saved")
+      load()
+      loadDetail(manageCommunity.id)
+      setTimeout(() => setSaveMsg(""), 2000)
+    } catch {
+      setSaveMsg("Failed to save")
+    } finally {
+      setSavingManage(false)
+    }
+  }
+
   const deleteCommunity = (id: string) => {
-    Alert.alert("Delete Community", "Are you sure?", [
+    Alert.alert("Delete Community", "Are you sure? This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: () => {
           api(`/api/communities/${id}`, { method: "DELETE" })
+            .then(() => {
+              load()
+              setSelected(null)
+              setManageCommunity(null)
+            })
+            .catch(() => {})
+        },
+      },
+    ])
+  }
+
+  const leaveCommunity = (id: string) => {
+    Alert.alert("Leave Community", "Are you sure you want to leave?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: () => {
+          api(`/api/communities/${id}/leave`, { method: "POST" })
             .then(() => {
               load()
               setSelected(null)
@@ -226,6 +301,250 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
     }
   }
 
+  const ChannelList = ({ community, manage }: { community: Community; manage?: boolean }) => {
+    const isAdmin = manage || community.role === "owner" || community.role === "admin"
+    return (
+      <View style={st.section}>
+        <View style={st.sectionHeader}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Hash size={12} color={c.textMuted} />
+            <Text style={[st.sectionTitle, { color: c.textMuted }]}>Text Channels</Text>
+          </View>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => openChModal(community.id, "text")}>
+              <Plus size={14} color={c.accent} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {(community.channels ?? []).length === 0 ? (
+          <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No text channels</Text>
+        ) : (
+          (community.channels ?? []).map((ch) => (
+            <View key={ch.id} style={st.channelRow}>
+              <View style={st.channelNameWrap}>
+                <Text style={[st.channelName, { color: c.text }]} numberOfLines={1}>
+                  # {ch.name}
+                </Text>
+                {ch.topic ? (
+                  <Text style={[st.channelTopic, { color: c.textMuted }]} numberOfLines={1}>
+                    {ch.topic}
+                  </Text>
+                ) : null}
+              </View>
+              {isAdmin && (
+                <TouchableOpacity
+                  onPress={() => deleteChannel(community.id, ch.id, false)}
+                  style={{ padding: 4, flexShrink: 0 }}
+                >
+                  <X size={14} color={c.danger} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
+      </View>
+    )
+  }
+
+  const VoiceChannelList = ({ community, manage }: { community: Community; manage?: boolean }) => {
+    const isAdmin = manage || community.role === "owner" || community.role === "admin"
+    return (
+      <View style={st.section}>
+        <View style={st.sectionHeader}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Mic size={12} color={c.textMuted} />
+            <Text style={[st.sectionTitle, { color: c.textMuted }]}>Voice Channels</Text>
+          </View>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => openChModal(community.id, "voice")}>
+              <Plus size={14} color={c.accent} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {(community.voiceChannels ?? []).length === 0 ? (
+          <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No voice channels</Text>
+        ) : (
+          (community.voiceChannels ?? []).map((vc) => (
+            <View key={vc.id} style={st.channelRow}>
+              <TouchableOpacity style={st.channelNameWrap} onPress={() => joinVoiceChannel(vc, community)}>
+                <Text style={[st.channelName, { color: c.text }]} numberOfLines={1}>
+                  🔊 {vc.name}
+                </Text>
+              </TouchableOpacity>
+              {isAdmin && (
+                <TouchableOpacity
+                  onPress={() => deleteChannel(community.id, vc.id, true)}
+                  style={{ padding: 4, flexShrink: 0 }}
+                >
+                  <X size={14} color={c.danger} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
+      </View>
+    )
+  }
+
+  const ManagePage = () => {
+    if (!manageCommunity) return null
+    const mc = manageCommunity
+    return (
+      <Modal visible animationType="slide" onRequestClose={() => setManageCommunity(null)}>
+        <View style={[st.container, { backgroundColor: c.bg }]}>
+          <View
+            style={[
+              st.manageHeader,
+              { backgroundColor: c.bg, borderBottomColor: c.borderLight, paddingTop: insets.top + 10 },
+            ]}
+          >
+            <TouchableOpacity onPress={() => setManageCommunity(null)} style={st.backBtn}>
+              <ChevronLeft size={24} color={c.accent} />
+            </TouchableOpacity>
+            <Text style={[st.manageTitle, { color: c.text }]}>Manage Community</Text>
+            <View style={{ width: 32 }} />
+          </View>
+          <ScrollView style={st.manageScroll} showsVerticalScrollIndicator={false}>
+            <View style={[st.manageCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
+              <View style={st.manageCardHeader}>
+                <Pencil size={14} color={c.accent} />
+                <Text style={[st.manageCardTitle, { color: c.text }]}>Community Info</Text>
+              </View>
+              <TextInput
+                style={[st.modalInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
+                placeholder="Name"
+                placeholderTextColor={c.textMuted}
+                value={manageName}
+                onChangeText={setManageName}
+              />
+              <TextInput
+                style={[
+                  st.modalInput,
+                  st.modalTextArea,
+                  { backgroundColor: c.inputBg, color: c.text, borderColor: c.border },
+                ]}
+                placeholder="Description (optional)"
+                placeholderTextColor={c.textMuted}
+                value={manageDesc}
+                onChangeText={setManageDesc}
+                multiline
+              />
+              <TouchableOpacity
+                style={[st.confirmBtn, { backgroundColor: c.accent, alignSelf: "flex-start" }]}
+                onPress={saveManage}
+                disabled={savingManage}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Check size={14} color="#FFFFFF" />
+                  <Text style={st.confirmText}>{savingManage ? "Saving..." : "Save"}</Text>
+                </View>
+              </TouchableOpacity>
+              {saveMsg ? <Text style={{ color: c.success, fontSize: 12, marginTop: 6 }}>{saveMsg}</Text> : null}
+            </View>
+
+            <View style={[st.manageCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
+              <ChannelList community={mc} manage />
+            </View>
+
+            <View style={[st.manageCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
+              <VoiceChannelList community={mc} manage />
+            </View>
+
+            <View style={[st.manageCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
+              <View style={st.section}>
+                <View style={st.sectionHeader}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Users size={12} color={c.textMuted} />
+                    <Text style={[st.sectionTitle, { color: c.textMuted }]}>Members ({mc.members?.length ?? 0})</Text>
+                  </View>
+                </View>
+                {(mc.members ?? []).map((m) => (
+                  <View key={m.userId} style={st.memberRow}>
+                    <View style={[st.memberAvatar, { backgroundColor: c.surfaceAlt }]}>
+                      <Text style={[st.memberAvatarText, { color: c.text }]}>
+                        {(m.username || "?")[0].toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={[st.memberName, { color: c.text }]} numberOfLines={1}>
+                      {m.username || m.userId}
+                    </Text>
+                    <Text style={[st.memberRole, { color: c.textMuted }]}>{m.role}</Text>
+                    {m.role !== "owner" && (
+                      <View style={{ flexDirection: "row", gap: 4, flexShrink: 0 }}>
+                        <TouchableOpacity
+                          onPress={() => changeRole(mc.id, m.userId, m.role === "admin" ? "member" : "admin")}
+                          style={{ padding: 4 }}
+                        >
+                          <Text style={{ color: c.accent, fontSize: 11, fontWeight: "600" }}>
+                            {m.role === "admin" ? "Demote" : "Promote"}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => removeMember(mc.id, m.userId)} style={{ padding: 4 }}>
+                          <X size={14} color={c.danger} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={[st.manageCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
+              <View style={st.section}>
+                <View style={st.sectionHeader}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Link2 size={12} color={c.textMuted} />
+                    <Text style={[st.sectionTitle, { color: c.textMuted }]}>Invites</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => createInvite(mc.id)}>
+                    <Plus size={14} color={c.accent} />
+                  </TouchableOpacity>
+                </View>
+                {(invites[mc.id] || []).length === 0 && (
+                  <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No invites yet</Text>
+                )}
+                {(invites[mc.id] || []).map((inv) => (
+                  <View key={inv.id} style={st.channelRow}>
+                    <Text
+                      style={{ color: c.accent, fontSize: 12, fontFamily: "monospace", flexShrink: 1 }}
+                      numberOfLines={1}
+                    >
+                      {inv.code}
+                    </Text>
+                    <Text style={{ color: c.textMuted, fontSize: 11, flexShrink: 0 }}>
+                      {inv.useCount}
+                      {inv.maxUses ? `/${inv.maxUses}` : ""}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        Clipboard.setStringAsync(inv.code)
+                        setCopiedInvite(inv.id)
+                        setTimeout(() => setCopiedInvite(null), 2000)
+                      }}
+                      style={{ flexShrink: 0, padding: 4 }}
+                    >
+                      <Text style={{ color: copiedInvite === inv.id ? c.success : c.accent, fontSize: 12 }}>
+                        {copiedInvite === inv.id ? "Copied!" : "Copy"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[st.dangerBtn, { backgroundColor: "rgba(239,68,68,0.12)", borderColor: c.border }]}
+              onPress={() => deleteCommunity(mc.id)}
+            >
+              <Trash2 size={16} color={c.danger} />
+              <Text style={{ color: c.danger, fontSize: 15, fontWeight: "600" }}>Delete Community</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+    )
+  }
+
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
       <View style={[st.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
@@ -246,7 +565,6 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
         renderItem={({ item }) => {
           const detail = expanded[item.id]
           const isOwner = item.role === "owner"
-          const isAdmin = item.role === "owner" || item.role === "admin"
           const isExpanded = selected === item.id
           return (
             <View>
@@ -266,6 +584,15 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
                     </Text>
                   ) : null}
                 </View>
+                {isOwner && (
+                  <TouchableOpacity
+                    style={[st.manageBtn, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
+                    onPress={() => openManage(item)}
+                  >
+                    <Settings size={13} color={c.accent} />
+                    <Text style={[st.manageBtnText, { color: c.accent }]}>Manage</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 }}>
                   <Text style={[st.memberCount, { color: c.textMuted }]}>
                     {item.memberCount ?? detail?.members?.length ?? 0}
@@ -279,87 +606,8 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
               </TouchableOpacity>
               {isExpanded && (
                 <View style={[st.expanded, { backgroundColor: c.surface, borderBottomColor: c.borderLight }]}>
-                  {isOwner && (
-                    <TouchableOpacity style={st.deleteBtn} onPress={() => deleteCommunity(item.id)}>
-                      <Text style={{ color: c.danger, fontSize: 13, fontWeight: "500" }}>Delete Community</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <View style={st.section}>
-                    <View style={st.sectionHeader}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Hash size={12} color={c.textMuted} />
-                        <Text style={[st.sectionTitle, { color: c.textMuted }]}>Text Channels</Text>
-                      </View>
-                      {isAdmin && (
-                        <TouchableOpacity onPress={() => openChModal(item.id, "text")}>
-                          <Plus size={14} color={c.accent} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    {(detail?.channels ?? []).length === 0 ? (
-                      <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No text channels</Text>
-                    ) : (
-                      (detail?.channels ?? []).map((ch) => (
-                        <View key={ch.id} style={st.channelRow}>
-                          <TouchableOpacity style={st.channelNameWrap} onPress={() => onSelectChat?.(ch.id)}>
-                            <Text style={[st.channelName, { color: c.text }]} numberOfLines={1}>
-                              # {ch.name}
-                            </Text>
-                            {ch.topic ? (
-                              <Text style={[st.channelTopic, { color: c.textMuted }]} numberOfLines={1}>
-                                {ch.topic}
-                              </Text>
-                            ) : null}
-                          </TouchableOpacity>
-                          {isAdmin && (
-                            <TouchableOpacity
-                              onPress={() => deleteChannel(item.id, ch.id, false)}
-                              style={{ padding: 4, flexShrink: 0 }}
-                            >
-                              <X size={14} color={c.danger} />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      ))
-                    )}
-                  </View>
-
-                  <View style={st.section}>
-                    <View style={st.sectionHeader}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Mic size={12} color={c.textMuted} />
-                        <Text style={[st.sectionTitle, { color: c.textMuted }]}>Voice Channels</Text>
-                      </View>
-                      {isAdmin && (
-                        <TouchableOpacity onPress={() => openChModal(item.id, "voice")}>
-                          <Plus size={14} color={c.accent} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    {(detail?.voiceChannels ?? []).length === 0 ? (
-                      <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No voice channels</Text>
-                    ) : (
-                      (detail?.voiceChannels ?? []).map((vc) => (
-                        <View key={vc.id} style={st.channelRow}>
-                          <TouchableOpacity style={st.channelNameWrap} onPress={() => joinVoiceChannel(vc, item)}>
-                            <Text style={[st.channelName, { color: c.text }]} numberOfLines={1}>
-                              🔊 {vc.name}
-                            </Text>
-                          </TouchableOpacity>
-                          {isAdmin && (
-                            <TouchableOpacity
-                              onPress={() => deleteChannel(item.id, vc.id, true)}
-                              style={{ padding: 4, flexShrink: 0 }}
-                            >
-                              <X size={14} color={c.danger} />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      ))
-                    )}
-                  </View>
-
+                  <ChannelList community={detail ?? item} />
+                  <VoiceChannelList community={detail ?? item} />
                   {detail?.members && (
                     <View style={st.section}>
                       <View style={st.sectionHeader}>
@@ -381,67 +629,18 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
                             {m.username || m.userId}
                           </Text>
                           <Text style={[st.memberRole, { color: c.textMuted }]}>{m.role}</Text>
-                          {m.role !== "owner" && isOwner && (
-                            <View style={{ flexDirection: "row", gap: 4, flexShrink: 0 }}>
-                              <TouchableOpacity
-                                onPress={() => changeRole(item.id, m.userId, m.role === "admin" ? "member" : "admin")}
-                                style={{ padding: 4 }}
-                              >
-                                <Text style={{ color: c.accent, fontSize: 11, fontWeight: "600" }}>
-                                  {m.role === "admin" ? "Demote" : "Promote"}
-                                </Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity onPress={() => removeMember(item.id, m.userId)} style={{ padding: 4 }}>
-                                <X size={14} color={c.danger} />
-                              </TouchableOpacity>
-                            </View>
-                          )}
                         </View>
                       ))}
                     </View>
                   )}
-
-                  {isAdmin && (
-                    <View style={st.section}>
-                      <View style={st.sectionHeader}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Link2 size={12} color={c.textMuted} />
-                          <Text style={[st.sectionTitle, { color: c.textMuted }]}>Invites</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => createInvite(item.id)}>
-                          <Plus size={14} color={c.accent} />
-                        </TouchableOpacity>
-                      </View>
-                      {(invites[item.id] || []).length === 0 && (
-                        <Text style={{ color: c.textMuted, fontSize: 12, paddingVertical: 4 }}>No invites yet</Text>
-                      )}
-                      {(invites[item.id] || []).map((inv) => (
-                        <View key={inv.id} style={st.channelRow}>
-                          <Text
-                            style={{ color: c.accent, fontSize: 12, fontFamily: "monospace", flexShrink: 1 }}
-                            numberOfLines={1}
-                          >
-                            {inv.code}
-                          </Text>
-                          <Text style={{ color: c.textMuted, fontSize: 11, flexShrink: 0 }}>
-                            {inv.useCount}
-                            {inv.maxUses ? `/${inv.maxUses}` : ""}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => {
-                              Clipboard.setStringAsync(inv.code)
-                              setCopiedInvite(inv.id)
-                              setTimeout(() => setCopiedInvite(null), 2000)
-                            }}
-                            style={{ flexShrink: 0, padding: 4 }}
-                          >
-                            <Text style={{ color: copiedInvite === inv.id ? c.success : c.accent, fontSize: 12 }}>
-                              {copiedInvite === inv.id ? "Copied!" : "Copy"}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </View>
+                  {!isOwner && (
+                    <TouchableOpacity
+                      style={[st.leaveBtn, { backgroundColor: "rgba(239,68,68,0.1)", borderColor: c.border }]}
+                      onPress={() => leaveCommunity(item.id)}
+                    >
+                      <LogOut size={14} color={c.danger} />
+                      <Text style={{ color: c.danger, fontSize: 13, fontWeight: "600" }}>Leave Community</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               )}
@@ -463,6 +662,8 @@ export function CommunitiesScreen({ onSelectChat }: { onSelectChat?: (id: string
           </TouchableOpacity>
         </View>
       )}
+
+      <ManagePage />
 
       <Modal visible={createModal} transparent animationType="fade" onRequestClose={() => setCreateModal(false)}>
         <View style={[st.overlay, { backgroundColor: c.overlay }]}>
@@ -562,22 +763,31 @@ const st = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 6, flexShrink: 0 },
   actionBtn: { borderRadius: 18, paddingHorizontal: 12, paddingVertical: 7 },
   actionText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
-  communityItem: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1 },
+  communityItem: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, gap: 8 },
   communityAvatar: {
     width: 44,
     height: 44,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 4,
     borderWidth: 1,
   },
   communityAvatarText: { fontSize: 18, fontWeight: "700" },
-  communityContent: { flex: 1, marginRight: 8 },
+  communityContent: { flex: 1, marginRight: 4 },
   communityName: { fontSize: 15, fontWeight: "600" },
   communityDesc: { fontSize: 11, marginTop: 1 },
   memberCount: { fontSize: 11 },
-  deleteBtn: { paddingVertical: 8, alignItems: "center" },
+  manageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+  },
+  manageBtnText: { fontSize: 12, fontWeight: "600" },
   expanded: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   section: { marginBottom: 10 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
@@ -604,6 +814,16 @@ const st = StyleSheet.create({
   memberAvatarText: { fontSize: 11, fontWeight: "600" },
   memberName: { fontSize: 13, flexShrink: 1 },
   memberRole: { fontSize: 11, textTransform: "capitalize", flexShrink: 0 },
+  leaveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    marginTop: 4,
+  },
   voiceBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -624,4 +844,33 @@ const st = StyleSheet.create({
   cancelBtn: { paddingHorizontal: 20, paddingVertical: 10 },
   confirmBtn: { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
   confirmText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  manageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  manageTitle: { fontSize: 18, fontWeight: "700" },
+  backBtn: { padding: 4, width: 32 },
+  manageScroll: { padding: 16 },
+  manageCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 12,
+  },
+  manageCardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  manageCardTitle: { fontSize: 14, fontWeight: "600" },
+  dangerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 14,
+    marginBottom: 24,
+  },
 })

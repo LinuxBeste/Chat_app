@@ -115,6 +115,7 @@ describe("GET /api/communities/:id", () => {
 
 describe("PUT /api/communities/:id", () => {
   it("updates a community", async () => {
+    queryQueue.push([{ role: "owner" }])
     mockData.current = [
       {
         id: COM_ID,
@@ -297,5 +298,58 @@ describe("POST /api/communities/join/:code", () => {
     const res = await request(app).post("/api/communities/join/invalid").set("Authorization", "Bearer token")
     expect(res.status).toBe(404)
     expect(res.body).toHaveProperty("error", "Invalid invite code")
+  })
+})
+
+describe("POST /api/communities/:id/leave", () => {
+  it("lets a member leave", async () => {
+    queryQueue.push([{ role: "member" }])
+    const res = await request(app).post(`/api/communities/${COM_ID}/leave`).set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("message", "Left community")
+  })
+
+  it("blocks the owner from leaving", async () => {
+    queryQueue.push([{ role: "owner" }])
+    const res = await request(app).post(`/api/communities/${COM_ID}/leave`).set("Authorization", "Bearer token")
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty("error")
+  })
+
+  it("returns 404 when not a member", async () => {
+    queryQueue.push([])
+    const res = await request(app).post(`/api/communities/${COM_ID}/leave`).set("Authorization", "Bearer token")
+    expect(res.status).toBe(404)
+    expect(res.body).toHaveProperty("error", "Not a member of this community")
+  })
+})
+
+describe("PUT /api/communities/:id rename guard", () => {
+  it("returns 403 for non-owner/admin", async () => {
+    queryQueue.push([{ role: "member" }])
+    const res = await request(app)
+      .put(`/api/communities/${COM_ID}`)
+      .set("Authorization", "Bearer token")
+      .send({ name: "Hijack", description: "" })
+    expect(res.status).toBe(403)
+  })
+
+  it("allows owner to rename", async () => {
+    queryQueue.push([{ role: "owner" }])
+    mockData.current = [
+      {
+        id: COM_ID,
+        name: "Renamed",
+        description: "x",
+        ownerId: "u1",
+        createdAt: new Date().toISOString(),
+      },
+    ]
+    const res = await request(app)
+      .put(`/api/communities/${COM_ID}`)
+      .set("Authorization", "Bearer token")
+      .send({ name: "Renamed", description: "x" })
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("name", "Renamed")
   })
 })

@@ -27,6 +27,7 @@
     "expo-secure-store": "^57.0.1",
     "expo-status-bar": "~2.2.0",
     "expo-system-ui": "^57.0.1",
+    "expo-web-browser": "~57.0.2",
     "i18next": "^24.0.0",
     "lucide-react-native": "^0.400.0",
     "react": "19.0.0",
