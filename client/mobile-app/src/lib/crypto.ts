@@ -22,16 +22,22 @@ export function generateKeyPair(): KeyPair {
 }
 
 async function storeKeypair(kp: KeyPair): Promise<void> {
-  await SecureStore.setItemAsync(KEY_STORE_KEY, JSON.stringify(kp))
+  try {
+    await SecureStore.setItemAsync(KEY_STORE_KEY, JSON.stringify(kp))
+  } catch {}
   cachedKeyPair = kp
 }
 
 async function loadKeypair(): Promise<KeyPair | null> {
   if (cachedKeyPair) return cachedKeyPair
-  const json = await SecureStore.getItemAsync(KEY_STORE_KEY)
-  if (json) {
-    cachedKeyPair = JSON.parse(json)
-    return cachedKeyPair
+  try {
+    const json = await SecureStore.getItemAsync(KEY_STORE_KEY)
+    if (json) {
+      cachedKeyPair = JSON.parse(json)
+      return cachedKeyPair
+    }
+  } catch {
+    return null
   }
   return null
 }
@@ -64,13 +70,19 @@ export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8
 }
 
 async function getConvKey(conversationId: string): Promise<Uint8Array | null> {
-  const raw = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
-  if (raw) return decodeBase64(raw)
+  try {
+    const raw = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
+    if (raw) return decodeBase64(raw)
+  } catch {
+    return null
+  }
   return null
 }
 
 async function setConvKey(conversationId: string, key: Uint8Array) {
-  await AsyncStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
+  try {
+    await AsyncStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
+  } catch {}
 }
 
 export async function encryptMessage(

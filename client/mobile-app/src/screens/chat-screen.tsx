@@ -502,13 +502,18 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     let finalContent = text
     let encrypted = false
     if (isDm && otherMember?.id) {
-      const theirKey = await getTheirKey(otherMember.id)
-      if (theirKey) {
-        const ciphertext = await encryptMessage(conversationId, text, theirKey)
-        if (ciphertext) {
-          finalContent = "e2ee:" + ciphertext
-          encrypted = true
+      try {
+        const theirKey = await getTheirKey(otherMember.id)
+        if (theirKey) {
+          const ciphertext = await encryptMessage(conversationId, text, theirKey)
+          if (ciphertext) {
+            finalContent = "e2ee:" + ciphertext
+            encrypted = true
+          }
         }
+      } catch {
+        finalContent = text
+        encrypted = false
       }
     }
     const payload: any = {
