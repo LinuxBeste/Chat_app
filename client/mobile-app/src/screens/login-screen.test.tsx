@@ -32,7 +32,7 @@ vi.mock("../lib/theme-context", async () => {
         bg: "#0A0A0F",
         text: "#E8E8F0",
         surface: "#101016",
-        border: "#252538",
+        border: "#1A1A28",
         primary: "#6C8CFF",
         muted: "#585870",
         card: "#161625",

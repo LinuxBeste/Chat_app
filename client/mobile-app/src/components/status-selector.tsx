@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     padding: 8,
     minWidth: 200,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   menuItem: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12 },
   menuItemActive: { backgroundColor: "rgba(108,140,255,0.1)" },
@@ -92,6 +92,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
 })

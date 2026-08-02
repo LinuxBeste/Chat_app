@@ -49,7 +49,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   close: { color: "#6C8CFF", fontSize: 15 },
@@ -62,7 +62,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   fileIcon: { fontSize: 28 },
 })

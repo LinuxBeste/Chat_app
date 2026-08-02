@@ -21,17 +21,7 @@ import * as Clipboard from "expo-clipboard"
 import * as WebBrowser from "expo-web-browser"
 import { resolveFileUrl } from "../lib/file-url"
 import { isTextFile } from "../lib/file-types"
-import {
-  FileText,
-  Folder,
-  X,
-  Film,
-  Music,
-  Archive,
-  Download,
-  Users,
-  Copy,
-} from "lucide-react-native"
+import { FileText, Folder, X, Film, Music, Archive, Download, Users, Copy } from "lucide-react-native"
 import { Linking } from "react-native"
 
 interface FileEntry {
@@ -557,7 +547,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
   headerActions: { flexDirection: "row", gap: 8 },
@@ -595,7 +585,7 @@ const s = StyleSheet.create({
   previewActions: { flexDirection: "row", gap: 12 },
   previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20, alignItems: "center" },
   previewFileText: { color: "#E8E8F0", fontSize: 16 },
-  folderRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  folderRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
   folderChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -607,7 +597,7 @@ const s = StyleSheet.create({
   },
   folderChipActive: { backgroundColor: "#6C8CFF" },
   folderChipText: { color: "#E8E8F0", fontSize: 13, fontWeight: "500" },
-  item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
   fileIcon: { fontSize: 22, marginRight: 14 },
   fileThumb: { width: 40, height: 40, borderRadius: 8, marginRight: 14 },
   itemContent: { flex: 1 },
@@ -624,7 +614,7 @@ const s = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
   modalInput: {
@@ -634,7 +624,7 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
     marginBottom: 20,
   },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },

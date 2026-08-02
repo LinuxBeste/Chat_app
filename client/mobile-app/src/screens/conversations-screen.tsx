@@ -423,7 +423,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   userAvatarText: { color: "#E8E8F0", fontSize: 16, fontWeight: "600" },
   userName: { color: "#E8E8F0", fontSize: 15 },

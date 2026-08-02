@@ -183,7 +183,7 @@ function AdminManagement() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#252538" }}>
+      <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#1A1A28" }}>
         <Text style={{ color: "#E8E8F0", fontSize: 15, fontWeight: "600", marginBottom: 8 }}>Add Admin</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
@@ -195,7 +195,7 @@ function AdminManagement() {
               color: "#E8E8F0",
               fontSize: 14,
               borderWidth: 1,
-              borderColor: "#252538",
+              borderColor: "#1A1A28",
             }}
             placeholder="User ID"
             placeholderTextColor="#585870"
@@ -517,7 +517,7 @@ const ss = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
     alignItems: "center",
     flex: 1,
     minWidth: 140,
@@ -531,7 +531,7 @@ const ss = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
     marginBottom: 12,
   },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825" },
@@ -542,7 +542,7 @@ const ss = StyleSheet.create({
     flexDirection: "row",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
     alignItems: "center",
   },
   userName: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
@@ -551,7 +551,7 @@ const ss = StyleSheet.create({
   smallBtn: { backgroundColor: "#6C8CFF", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   dangerBtn: { backgroundColor: "#EF4444" },
   smallBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
-  reportItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  reportItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
   reportTitle: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
   reportMeta: { color: "#585870", fontSize: 12, marginTop: 4, marginBottom: 8 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
@@ -562,7 +562,7 @@ const ss = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
   btn: {
@@ -585,12 +585,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
   title: { fontSize: 17, fontWeight: "600", color: "#E8E8F0" },
-  tabsRow: { borderBottomWidth: 1, borderBottomColor: "#252538" },
+  tabsRow: { borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
   tabsContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, backgroundColor: "#181825" },
   tabActive: { backgroundColor: "#6C8CFF" },

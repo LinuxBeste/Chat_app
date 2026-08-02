@@ -32,7 +32,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 22,
   },
   primary: { backgroundColor: "#6C8CFF" },
-  secondary: { backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538" },
+  secondary: { backgroundColor: "#181825", borderWidth: 1, borderColor: "#1A1A28" },
   danger: { backgroundColor: "#EF4444" },
   disabled: { opacity: 0.4 },
   text: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", letterSpacing: 0.2 },

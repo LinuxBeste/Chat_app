@@ -49,6 +49,8 @@ import {
 import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
+import { useToast } from "../lib/toast-context"
+import { cacheClear } from "../lib/offline-cache"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { supportedLanguages } from "../lib/i18n/index"
@@ -1311,6 +1313,58 @@ function AppearanceSettings({ prefs, updatePref }: { prefs: any; updatePref: (k:
         </SettingRow>
       </Section>
 
+      <Section title={t("settings.appearance.chatAppearance", "Chat Appearance")} icon={MessageSquare}>
+        <SettingRow
+          label={t("settings.appearance.showBubbleTails", "Bubble Tails")}
+          description={t("settings.appearance.showBubbleTailsDesc", "Show the little tail on message bubbles")}
+        >
+          <Toggle value={prefs.showBubbleTails !== false} onValueChange={(v) => updatePref("showBubbleTails", v)} />
+        </SettingRow>
+        <SettingRow
+          label={t("settings.appearance.outgoingBubbleColor", "Outgoing Bubble Color")}
+          description={t("settings.appearance.outgoingBubbleColorDesc", "Color of your message bubbles")}
+        >
+          <ColorSwatchPicker
+            value={prefs.outgoingBubbleColor || "#005C4B"}
+            onChange={(v) => updatePref("outgoingBubbleColor", v)}
+            colors={["#005C4B", "#1E6F9F", "#3B5BDB", "#6741D9", "#A61E4D", "#2B8A3E", "#5C3D2E"]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("settings.appearance.incomingBubbleColor", "Incoming Bubble Color")}
+          description={t("settings.appearance.incomingBubbleColorDesc", "Color of incoming message bubbles")}
+        >
+          <ColorSwatchPicker
+            value={prefs.incomingBubbleColor || "#1F2C34"}
+            onChange={(v) => updatePref("incomingBubbleColor", v)}
+            colors={["#1F2C34", "#2B2B3D", "#233043", "#3A2B3D", "#26353A"]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("settings.appearance.coloredSenderNames", "Colored Sender Names")}
+          description={t(
+            "settings.appearance.coloredSenderNamesDesc",
+            "Show sender names in different colors in groups",
+          )}
+        >
+          <Toggle
+            value={prefs.coloredSenderNames !== false}
+            onValueChange={(v) => updatePref("coloredSenderNames", v)}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("settings.appearance.chatBackground", "Chat Background")}
+          description={t("settings.appearance.chatBackgroundDesc", "Background color of the chat screen")}
+          last
+        >
+          <ColorSwatchPicker
+            value={prefs.chatBackground || "#0B141A"}
+            onChange={(v) => updatePref("chatBackground", v)}
+            colors={["#0B141A", "#0A0A0F", "#10151C", "#1B1116", "#101010", "#0C1620"]}
+          />
+        </SettingRow>
+      </Section>
+
       <Section title={t("settings.appearance.contentStyling", "Content Styling")} icon={Hash}>
         <SettingRow
           label={t("settings.appearance.codeBlockTheme", "Code Block Theme")}
@@ -1951,6 +2005,8 @@ function CallSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: strin
 /* ---------- MEDIA ---------- */
 
 function MediaSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: string, v: any) => void }) {
+  const { c } = useTheme()
+  const { showToast } = useToast()
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Images & Video" icon={Camera}>
@@ -1980,6 +2036,19 @@ function MediaSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: stri
             ]}
             label="Max File Size"
           />
+        </SettingRow>
+      </Section>
+      <Section title="Storage" icon={Trash2}>
+        <SettingRow label="Clear Offline Cache" description="Remove cached conversations and files">
+          <TouchableOpacity
+            style={[ss.btnSm, { backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: c.border }]}
+            onPress={async () => {
+              await cacheClear()
+              showToast("Offline cache cleared", "success")
+            }}
+          >
+            <Text style={{ color: "#EF4444", fontSize: 13, fontWeight: "600" }}>Clear</Text>
+          </TouchableOpacity>
         </SettingRow>
       </Section>
     </View>
@@ -2256,7 +2325,7 @@ const ss = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: "600" },
   modalInput: { borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1, marginBottom: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 16, marginTop: 8, alignItems: "center" },
-  colorSwatch: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: "#252538" },
+  colorSwatch: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: "#1A1A28" },
   colorInput: { flex: 1, borderRadius: 10, padding: 10, fontSize: 13, borderWidth: 1 },
   langItem: {
     flexDirection: "row",

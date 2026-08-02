@@ -136,11 +136,7 @@ describe("handleSendMessage", () => {
     )
 
     expect(mockRedisPublish).toHaveBeenCalledWith("chat:conversation:conv1", expect.any(String))
-    expect(mockSendToConversation).toHaveBeenCalledWith(
-      "conv1",
-      expect.objectContaining({ type: "message:new" }),
-      "user1",
-    )
+    expect(mockSendToConversation).not.toHaveBeenCalled()
   })
 
   it("works without redis", async () => {

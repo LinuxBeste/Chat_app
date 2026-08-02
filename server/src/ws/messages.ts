@@ -110,11 +110,13 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
     const redis = getRedis()
     if (redis) {
       redis.publish(`chat:conversation:${payload.conversationId}`, JSON.stringify(event))
+    } else {
+      // Without redis pub/sub, deliver directly to connected clients
+      sendToConversation(payload.conversationId, event, userId)
     }
 
-    // Confirm to sender, then deliver to other participants
+    // Confirm to sender
     ws.send(JSON.stringify(event))
-    sendToConversation(payload.conversationId, event, userId)
     log.info({ conversationId: payload.conversationId, messageType: msg.type }, "Message sent")
   } catch (err) {
     log.error({ err, conversationId: payload.conversationId }, "Send message failed")

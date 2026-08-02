@@ -26,7 +26,7 @@ const dark: ThemeColors = {
   bg: "#0A0A0F",
   surface: "#101016",
   surfaceAlt: "#181825",
-  border: "#252538",
+  border: "#1A1A28",
   borderLight: "#181825",
   text: "#E8E8F0",
   textSecondary: "#8888A0",

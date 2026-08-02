@@ -82,7 +82,7 @@ const s = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
   input: {
@@ -92,7 +92,7 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
     marginBottom: 12,
   },
   item: {
@@ -101,7 +101,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   name: { color: "#E8E8F0", fontSize: 15 },
   addBtn: { color: "#6C8CFF", fontSize: 14, fontWeight: "600" },

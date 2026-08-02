@@ -49,6 +49,9 @@ import { api, apiFormData } from "../lib/api"
 import { wsClient } from "../lib/ws"
 import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useAuth } from "../lib/auth-context"
+import { useTheme } from "../lib/theme-context"
+import { useToast } from "../lib/toast-context"
+import { resolveFileUrl } from "../lib/file-url"
 import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix } from "../lib/crypto"
 import { useTranslation } from "react-i18next"
 import * as DocumentPicker from "expo-document-picker"
@@ -106,11 +109,15 @@ const senderColor = (id: string) => {
 export function ChatScreen({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { c } = useTheme()
+  const { showToast } = useToast()
   const insets = useSafeAreaInsets()
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [convInfo, setConvInfo] = useState<ConvInfo | null>(null)
   const [decrypted, setDecrypted] = useState<Record<string, string>>({})
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({})
+  const [prefs, setPrefs] = useState<Record<string, any>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
   const [showEmoji, setShowEmoji] = useState(false)
@@ -143,6 +150,20 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
   const isDm = convInfo?.type === "dm"
   const otherMember = isDm ? convInfo?.members?.find((m) => m.id !== user!.id) : undefined
+
+  const outgoingBubbleColor = prefs.outgoingBubbleColor || "#005C4B"
+  const incomingBubbleColor = prefs.incomingBubbleColor || "#1F2C34"
+  const chatBackground = prefs.chatBackground || "#0B141A"
+  const showBubbleTails = prefs.showBubbleTails !== false
+  const coloredSenderNames = prefs.coloredSenderNames !== false
+
+  const mergeMsgs = (incoming: Msg[]) => {
+    setMessages((prev) => {
+      const map = new Map(prev.map((m) => [m.id, m]))
+      for (const m of incoming) map.set(m.id, m)
+      return Array.from(map.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    })
+  }
 
   const COMMON_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
 
@@ -212,7 +233,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     const cachedInfo = cacheGet<ConvInfo>(offlineKeys.convInfo(conversationId))
     Promise.all([cachedMsgs, cachedInfo]).then(([msgs, info]) => {
       if (msgs) {
-        setMessages(msgs)
+        mergeMsgs(msgs)
         decryptMessages(msgs)
       }
       if (info) {
@@ -233,10 +254,13 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       .catch(() => {})
     api<Msg[]>(`/api/conversations/${conversationId}/messages`)
       .then((msgs) => {
-        setMessages(msgs)
+        mergeMsgs(msgs)
         cacheSet(offlineKeys.messages(conversationId), msgs)
         decryptMessages(msgs)
       })
+      .catch(() => {})
+    api<Record<string, any>>("/api/users/preferences")
+      .then(setPrefs)
       .catch(() => {})
     checkFriendStatus()
     checkBlocked()
@@ -422,6 +446,21 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     setMediaItems(messages.filter((m) => m.messageType === "image" || (m.fileUrl && m.fileType?.startsWith("image/"))))
   }, [messages])
 
+  useEffect(() => {
+    const tasks = messages
+      .filter((m) => m.fileUrl || m.attachment?.url)
+      .map(async (m) => {
+        const url = m.fileUrl || m.attachment?.url || ""
+        return [m.id, (await resolveFileUrl(url)) || url] as [string, string]
+      })
+    if (tasks.length === 0) return
+    Promise.all(tasks).then((pairs) => {
+      setResolvedUrls((p) => ({ ...p, ...Object.fromEntries(pairs) }))
+    })
+  }, [messages])
+
+  const msgImageUrl = (item: Msg) => resolvedUrls[item.id] || item.fileUrl || item.attachment?.url
+
   const decryptMessages = useCallback(
     async (msgs: Msg[]) => {
       const entries = await Promise.all(
@@ -522,6 +561,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
 
   const uploadAndSend = async (file: { uri: string; name: string; type: string }) => {
     setUploading(true)
+    const tempId = "temp_" + Date.now()
     try {
       const formData = new FormData()
       formData.append("file", { uri: file.uri, name: file.name, type: file.type } as any)
@@ -532,7 +572,6 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       )
       const messageType = file.type.startsWith("image/") ? "image" : "file"
       const attachment = { url: result.url, filename: result.filename, mimeType: result.mimeType, size: result.size }
-      const tempId = "temp_" + Date.now()
       setMessages((p) => [
         ...p,
         {
@@ -553,20 +592,29 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         messageType,
         attachment,
         encrypted: "false",
+        clientMessageId: tempId,
       })
-    } catch {}
+    } catch {
+      showToast(t("chat.uploadFailed", "Upload failed"))
+    }
     setUploading(false)
   }
 
   const pickImage = async () => {
     try {
-      const result = await (ImagePicker as any).launchImageLibraryAsync({ quality: 0.8 })
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!perm.granted) {
+        showToast(t("chat.mediaPermission", "Photo permission needed to attach images"))
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
         await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" })
       }
     } catch {
       setUploading(false)
+      showToast(t("chat.pickerFailed", "Could not open photo picker"))
     }
   }
 
@@ -575,10 +623,11 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
-        await uploadAndSend({ uri: file.uri, name: file.name, type: file.mimeType })
+        await uploadAndSend({ uri: file.uri, name: file.name, type: file.mimeType || "application/octet-stream" })
       }
     } catch {
       setUploading(false)
+      showToast(t("chat.pickerFailed", "Could not open file picker"))
     }
   }
 
@@ -662,12 +711,34 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         style={[mb.bubbleWrap, me ? mb.me : mb.them]}
       >
         {!me && !isDeleted && item.sender && (
-          <Text style={[mb.sender, { color: senderColor(item.sender.id || item.sender.username || "") }]}>
+          <Text
+            style={[
+              mb.sender,
+              { color: coloredSenderNames ? senderColor(item.sender.id || item.sender.username || "") : "#B9C2C8" },
+            ]}
+          >
             {item.sender.displayName ?? item.sender.username}
           </Text>
         )}
-        <View style={[mb.bubble, me ? mb.bubbleMe : mb.bubbleThem, isDeleted && mb.deletedBubble]}>
-          {!isDeleted && <View style={[mb.tail, me ? mb.tailMe : mb.tailThem]} />}
+        <View
+          style={[
+            mb.bubble,
+            me
+              ? [mb.bubbleMe, { backgroundColor: outgoingBubbleColor }]
+              : [mb.bubbleThem, { backgroundColor: incomingBubbleColor }],
+            isDeleted && mb.deletedBubble,
+          ]}
+        >
+          {showBubbleTails && !isDeleted && (
+            <View
+              style={[
+                mb.tail,
+                me
+                  ? [mb.tailMe, { backgroundColor: outgoingBubbleColor }]
+                  : [mb.tailThem, { backgroundColor: incomingBubbleColor }],
+              ]}
+            />
+          )}
           {item.replyTo && !isDeleted && (
             <View style={[mb.replyPreview, me && mb.replyPreviewMe]}>
               <Text style={mb.replySender}>{item.replyTo.sender.displayName ?? item.replyTo.sender.username}</Text>
@@ -680,11 +751,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             <Text style={mb.deletedText}>This message was deleted</Text>
           ) : item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/")) ? (
             <TouchableOpacity onPress={() => setPreviewFile(item)}>
-              <Image
-                source={{ uri: item.fileUrl || item.attachment?.url }}
-                style={mb.imagePreview}
-                resizeMode="cover"
-              />
+              <Image source={{ uri: msgImageUrl(item) }} style={mb.imagePreview} resizeMode="cover" />
             </TouchableOpacity>
           ) : item.messageType === "file" || (item.fileUrl && !item.fileType?.startsWith("image/")) ? (
             <TouchableOpacity onPress={() => setPreviewFile(item)} style={mb.fileRow}>
@@ -892,7 +959,11 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   )
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior="padding" keyboardVerticalOffset={0}>
+    <KeyboardAvoidingView
+      style={[s.container, { backgroundColor: chatBackground }]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <ChevronLeft size={24} color="#6C8CFF" />
@@ -965,15 +1036,11 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             <ScrollView contentContainerStyle={s.previewScrollContent}>
               {previewFile.messageType === "image" || previewFile.fileType?.startsWith("image/") ? (
                 <>
-                  <Image
-                    source={{ uri: previewFile.fileUrl || previewFile.attachment?.url }}
-                    style={s.previewImage}
-                    resizeMode="contain"
-                  />
+                  <Image source={{ uri: msgImageUrl(previewFile) }} style={s.previewImage} resizeMode="contain" />
                   {(previewFile.fileUrl || previewFile.attachment?.url) && (
                     <TouchableOpacity
                       style={s.downloadBtn}
-                      onPress={() => Clipboard.setStringAsync(previewFile.fileUrl || previewFile.attachment?.url || "")}
+                      onPress={() => Clipboard.setStringAsync(msgImageUrl(previewFile) || "")}
                     >
                       <Text style={s.downloadBtnText}>Copy URL</Text>
                     </TouchableOpacity>
@@ -1016,7 +1083,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
               keyExtractor={(m) => m.id}
               renderItem={({ item }) => (
                 <TouchableOpacity style={s.mediaItem} onPress={() => setPreviewFile(item)}>
-                  <Image source={{ uri: item.fileUrl || item.attachment?.url }} style={s.mediaThumb} />
+                  <Image source={{ uri: msgImageUrl(item) }} style={s.mediaThumb} />
                 </TouchableOpacity>
               )}
             />
@@ -1067,7 +1134,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
               contentContainerStyle={{ padding: 16 }}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538" }}
+                  style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A1A28" }}
                   onPress={() => {
                     setShowSearch(false)
                     setReplyingTo(item)
@@ -1114,7 +1181,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
               keyExtractor={(m) => m.id}
               contentContainerStyle={{ padding: 16 }}
               renderItem={({ item }) => (
-                <View style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#252538" }}>
+                <View style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A1A28" }}>
                   <Text style={{ color: "#6C8CFF", fontSize: 12, fontWeight: "600", marginBottom: 2 }}>
                     {item.sender?.displayName ?? item.sender?.username ?? "Unknown"}
                   </Text>
@@ -1184,10 +1251,10 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         </View>
       ) : (
         <View style={s.inputRow}>
-          <TouchableOpacity style={s.attachBtn} onPress={pickImage}>
+          <TouchableOpacity style={s.attachBtn} onPress={pickImage} testID="attachImage">
             <ImageIcon size={20} color="#8888A0" />
           </TouchableOpacity>
-          <TouchableOpacity style={s.attachBtn} onPress={pickFile}>
+          <TouchableOpacity style={s.attachBtn} onPress={pickFile} testID="attachFile">
             <Paperclip size={20} color="#8888A0" />
           </TouchableOpacity>
           <TouchableOpacity style={s.attachBtn} onPress={() => setShowEmoji(true)}>
@@ -1199,7 +1266,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             placeholderTextColor="#585870"
             value={input}
             onChangeText={handleInputChange}
-            onSubmitEditing={send}
+            onSubmitEditing={prefs.enterToSend !== false ? send : undefined}
             multiline
           />
           {uploading ? (
@@ -1223,7 +1290,15 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         }}
         onClose={() => setShowEmoji(false)}
       />
-      {inCall && <CallOverlay conversationId={conversationId} type={inCall} onEnd={() => setInCall(null)} />}
+      {inCall && (
+        <CallOverlay
+          conversationId={conversationId}
+          type={inCall}
+          onEnd={() => setInCall(null)}
+          name={isDm ? (otherMember?.displayName ?? otherMember?.username) : convInfo?.name || "Group Call"}
+          avatar={isDm ? otherMember?.avatar : convInfo?.avatar}
+        />
+      )}
       <InfoPanel />
       <AddParticipantsModal
         visible={showAddPeople}
@@ -1361,7 +1436,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "#181825",
     borderTopWidth: 1,
-    borderTopColor: "#252538",
+    borderTopColor: "#1A1A28",
     gap: 8,
   },
   replyBarContent: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
@@ -1393,7 +1468,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   mediaTitle: { color: "#E8E8F0", fontSize: 17, fontWeight: "600" },
   mediaItem: { flex: 1, aspectRatio: 1, padding: 2 },
@@ -1406,7 +1481,7 @@ const s = StyleSheet.create({
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   reactionOption: {
     width: 40,
@@ -1416,7 +1491,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   inputRow: {
     flexDirection: "row",
@@ -1454,7 +1529,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     borderTopWidth: 1,
-    borderTopColor: "#252538",
+    borderTopColor: "#1A1A28",
     gap: 6,
   },
   editInput: {
@@ -1466,7 +1541,7 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   saveBtn: { backgroundColor: "#22C55E", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   saveText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
@@ -1487,7 +1562,7 @@ const s = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: "80%",
     borderTopWidth: 1,
-    borderTopColor: "#252538",
+    borderTopColor: "#1A1A28",
   },
   infoHeader: {
     flexDirection: "row",
@@ -1496,7 +1571,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   infoTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   infoBody: { padding: 20 },
@@ -1510,7 +1585,7 @@ const s = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   infoAvatarImage: { width: 64, height: 64, borderRadius: 32, alignSelf: "center", marginBottom: 12 },
   infoAvatarText: { color: "#E8E8F0", fontSize: 28, fontWeight: "600" },
@@ -1518,7 +1593,7 @@ const s = StyleSheet.create({
   infoLabel: { color: "#585870", fontSize: 12, textAlign: "center", marginBottom: 16 },
   infoAction: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 8 },
   infoActionText: { color: "#6C8CFF", fontSize: 15 },
-  infoDivider: { height: 1, backgroundColor: "#252538", marginVertical: 8 },
+  infoDivider: { height: 1, backgroundColor: "#1A1A28", marginVertical: 8 },
   infoSectionTitle: {
     color: "#8888A0",
     fontSize: 12,
@@ -1536,7 +1611,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   memberAvatarText: { color: "#E8E8F0", fontSize: 14, fontWeight: "600" },
   memberName: { color: "#E8E8F0", fontSize: 14, flex: 1 },
@@ -1551,7 +1626,7 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 14,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
   renameSave: { backgroundColor: "#22C55E", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
   renameSaveText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
@@ -1563,6 +1638,6 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
 })

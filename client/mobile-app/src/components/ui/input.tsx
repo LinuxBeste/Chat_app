@@ -12,6 +12,6 @@ const s = StyleSheet.create({
     color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#252538",
+    borderColor: "#1A1A28",
   },
 })
