@@ -53,7 +53,10 @@ const FlatList = React.forwardRef<any, any>(
   },
 )
 FlatList.displayName = "FlatList"
-const Image = render("img")
+const Image = React.forwardRef<any, any>(({ source, ...props }, ref) => {
+  return React.createElement("img", { ...props, src: source?.uri, ref })
+})
+Image.displayName = "Image"
 const ActivityIndicator = render("div", { "aria-label": "Loading" })
 const KeyboardAvoidingView = render("div")
 const TouchableOpacity = React.forwardRef<any, any>(({ children, onPress, disabled, style, testID, ...props }, ref) => {
@@ -111,6 +114,8 @@ const Dimensions = { get: () => ({ width: 390, height: 844 }) }
 const Platform = { OS: "ios", select: (obj: Record<string, unknown>) => obj.ios ?? obj.default }
 const useColorScheme = () => "dark"
 const Alert = { alert: () => {} }
+const Linking = { openURL: () => Promise.resolve() }
+const RefreshControl = (props: Record<string, unknown>) => React.createElement("div", props)
 
 const exports = {
   View,
@@ -129,6 +134,8 @@ const exports = {
   Platform,
   useColorScheme,
   Alert,
+  Linking,
+  RefreshControl,
 }
 export default exports
 export {
@@ -148,4 +155,6 @@ export {
   Platform,
   useColorScheme,
   Alert,
+  Linking,
+  RefreshControl,
 }

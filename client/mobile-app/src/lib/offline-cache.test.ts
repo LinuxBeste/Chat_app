@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { cacheGet, cacheSet, cacheRemove, offlineKeys } from "./offline-cache"
+import { cacheGet, cacheSet, cacheRemove, cacheClear, offlineKeys } from "./offline-cache"
 
 describe("offline-cache", () => {
   beforeEach(async () => {
@@ -38,5 +38,15 @@ describe("offline-cache", () => {
     await cacheSet(offlineKeys.conversations, [{ id: "c1" }])
     await cacheRemove(offlineKeys.conversations)
     expect(await cacheGet(offlineKeys.conversations)).toBeNull()
+  })
+
+  it("clears all cached values", async () => {
+    await cacheSet(offlineKeys.user, { id: "u1" })
+    await cacheSet(offlineKeys.convInfo("c1"), { id: "c1", type: "group", name: "G", members: [], muted: true })
+    await AsyncStorage.setItem("@other/settings", "keep-me")
+    await cacheClear()
+    expect(await cacheGet(offlineKeys.user)).toBeNull()
+    expect(await cacheGet(offlineKeys.convInfo("c1"))).toBeNull()
+    expect(await AsyncStorage.getItem("@other/settings")).toBe("keep-me")
   })
 })

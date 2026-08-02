@@ -68,6 +68,13 @@ vi.mock("expo-file-system", () => {
   }
 })
 
+vi.mock("expo-web-browser", () => {
+  return {
+    default: { openBrowserAsync: vi.fn() },
+    openBrowserAsync: vi.fn(() => Promise.resolve({ type: "cancel" })),
+  }
+})
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => {
@@ -114,6 +121,15 @@ vi.mock("react-i18next", () => ({
         "setup.displayName": "Display Name",
         "setup.skip": "Skip",
         "setup.next": "Next",
+        "files.title": "Files",
+        "files.upload": "Upload",
+        "files.newFolder": "New Folder",
+        "files.rename": "Rename",
+        "files.noFiles": "No files",
+        "common.cancel": "Cancel",
+        "common.create": "Create",
+        "common.delete": "Delete",
+        "common.save": "Save",
       }
       return map[key] ?? key
     },

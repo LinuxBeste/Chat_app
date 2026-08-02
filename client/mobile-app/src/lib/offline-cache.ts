@@ -56,4 +56,14 @@ async function cacheRemove(key: string): Promise<void> {
   }
 }
 
-export { cacheGet, cacheSet, cacheRemove }
+async function cacheClear(): Promise<void> {
+  memory.clear()
+  try {
+    const keys = await AsyncStorage.getAllKeys()
+    await Promise.all(keys.filter((k) => k.startsWith("@cache/")).map((k) => AsyncStorage.removeItem(k)))
+  } catch (err) {
+    console.warn(`offline-cache: clear failed`, err)
+  }
+}
+
+export { cacheGet, cacheSet, cacheRemove, cacheClear }

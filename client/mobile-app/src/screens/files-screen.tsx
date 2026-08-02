@@ -20,9 +20,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Clipboard from "expo-clipboard"
 import * as WebBrowser from "expo-web-browser"
 import { resolveFileUrl } from "../lib/file-url"
+import { isTextFile } from "../lib/file-types"
 import {
   FileText,
-  Image as ImageIcon,
   Folder,
   X,
   Film,
@@ -46,60 +46,9 @@ interface FileEntry {
   createdAt?: string
 }
 
-interface Folder {
+interface FolderEntry {
   id: string
   name: string
-}
-
-const TEXT_MIME = new Set([
-  "text/plain",
-  "text/markdown",
-  "text/x-markdown",
-  "text/csv",
-  "text/xml",
-  "text/html",
-  "text/css",
-  "text/javascript",
-  "text/x-shellscript",
-  "text/yaml",
-  "application/json",
-  "application/xml",
-  "application/javascript",
-  "application/x-yaml",
-  "application/x-sh",
-  "application/x-httpd-php",
-])
-
-const TEXT_EXTS = [
-  "txt",
-  "md",
-  "markdown",
-  "json",
-  "log",
-  "csv",
-  "xml",
-  "html",
-  "htm",
-  "js",
-  "ts",
-  "tsx",
-  "css",
-  "yaml",
-  "yml",
-  "sh",
-  "py",
-  "sql",
-  "ini",
-  "conf",
-  "env",
-  "gitignore",
-  "dockerfile",
-]
-
-function isTextFile(f: FileEntry): boolean {
-  if (f.type && TEXT_MIME.has(f.type)) return true
-  const ext = (f.name || f.filename || "").split(".").pop()?.toLowerCase() || ""
-  return TEXT_EXTS.includes(ext)
 }
 
 export function FilesScreen() {
@@ -107,7 +56,7 @@ export function FilesScreen() {
   const insets = useSafeAreaInsets()
 
   const [files, setFiles] = useState<FileEntry[]>([])
-  const [folders, setFolders] = useState<Folder[]>([])
+  const [folders, setFolders] = useState<FolderEntry[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [folderModal, setFolderModal] = useState(false)
   const [folderName, setFolderName] = useState("")
@@ -134,7 +83,7 @@ export function FilesScreen() {
         ),
       )
       .catch(() => {})
-    api<Folder[]>("/api/files/folders")
+    api<FolderEntry[]>("/api/files/folders")
       .then(setFolders)
       .catch(() => {})
   }, [])
@@ -274,7 +223,7 @@ export function FilesScreen() {
     setPreviewFile(item)
     setPreviewText(null)
     setPreviewTextError(false)
-    if (!isTextFile(item)) return
+    if (!isTextFile(item.type, item.name)) return
     setPreviewTextLoading(true)
     resolveFileUrl(item.url)
       .then((abs) => {
@@ -506,7 +455,7 @@ export function FilesScreen() {
               </Text>
               {previewFile.type?.startsWith("image/") && resolvedUrls[previewFile.id] ? (
                 <Image source={{ uri: resolvedUrls[previewFile.id] }} style={s.previewImage} resizeMode="contain" />
-              ) : isTextFile(previewFile) ? (
+              ) : isTextFile(previewFile.type, previewFile.name) ? (
                 previewTextLoading ? (
                   <View style={s.previewEmpty}>
                     <ActivityIndicator color="#6C8CFF" />
