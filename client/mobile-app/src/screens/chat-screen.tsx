@@ -606,20 +606,25 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
   }
 
   const pickImage = async () => {
+    let result: Awaited<ReturnType<typeof ImagePicker.launchImageLibraryAsync>>
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (!perm.granted) {
         showToast(t("chat.mediaPermission", "Photo permission needed to attach images"))
         return
       }
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
-      if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0]
-        await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" })
-      }
+      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
     } catch {
-      setUploading(false)
-      showToast(t("chat.pickerFailed", "Could not open photo picker"))
+      const pending = await ImagePicker.getPendingResultAsync()
+      if (!pending || pending.canceled || !pending.assets || pending.assets.length === 0) {
+        showToast(t("chat.pickerFailed", "Could not open photo picker"))
+        return
+      }
+      result = pending
+    }
+    if (!result.canceled && result.assets[0]) {
+      const file = result.assets[0]
+      await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" })
     }
   }
 
