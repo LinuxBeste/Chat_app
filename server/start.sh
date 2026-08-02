@@ -165,7 +165,10 @@ if [[ "$MODE" == "native" ]]; then
 
   pnpm dev
 else
-  trap cleanup EXIT INT TERM
+  trap cleanup INT TERM
+  if ! "$DETACH" && ! "$FOLLOW"; then
+    trap cleanup EXIT INT TERM
+  fi
 
   echo "Starting server in Docker on http://localhost:$PORT ..."
 
