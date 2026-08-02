@@ -195,6 +195,7 @@ function HomeContent() {
   if (view === "events")
     return (
       <EventsScreen
+        onBack={() => setView("chats")}
         onSelectChat={(id) => {
           setActiveConversationId(id)
           setView("chats")

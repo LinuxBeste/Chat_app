@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native"
-import { Calendar, Plus, X, ChevronRight, MessageSquare, Clock } from "lucide-react-native"
+import { Calendar, Plus, X, ChevronRight, MessageSquare, Clock, ChevronLeft } from "lucide-react-native"
 import { api } from "../lib/api"
 import { useTheme } from "../lib/theme-context"
 import { useTranslation } from "react-i18next"
@@ -39,7 +39,7 @@ interface Conv {
   type: string
 }
 
-export function EventsScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
+export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; onSelectChat?: (id: string) => void }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
 
@@ -169,6 +169,11 @@ export function EventsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
       <View style={[st.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={st.backBtn}>
+            <ChevronLeft size={24} color={c.accent} />
+          </TouchableOpacity>
+        )}
         <Text style={[st.title, { color: c.text }]}>Events</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity style={[st.createBtn, { backgroundColor: c.accent }]} onPress={() => setModalVisible(true)}>
@@ -452,6 +457,7 @@ const st = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: { fontSize: 24, fontWeight: "700" },
+  backBtn: { marginRight: 8, padding: 4 },
   createBtn: {
     borderRadius: 20,
     paddingHorizontal: 14,
