@@ -21,7 +21,7 @@ interface SendMessagePayload {
   conversationId: string
   content: string
   messageType?: "text" | "image" | "file"
-  encrypted?: boolean
+  encrypted?: boolean | "true" | "false"
   attachment?: AttachmentPayload
   clientMessageId?: string
 }
