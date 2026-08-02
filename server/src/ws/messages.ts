@@ -64,7 +64,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
         senderId: userId,
         content: payload.content,
         type: payload.messageType ?? "text",
-        encrypted: payload.encrypted ? "true" : "false",
+        encrypted: payload.encrypted === true || payload.encrypted === "true" ? "true" : "false",
       })
       .returning()
 

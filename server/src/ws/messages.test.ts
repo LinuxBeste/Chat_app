@@ -111,6 +111,50 @@ describe("handleSendMessage", () => {
     )
   })
 
+  it("stores encrypted flag only for real truthy values", async () => {
+    mockChain.current = [
+      {
+        userId: "user1",
+        id: "msg1",
+        conversationId: "conv1",
+        content: "hello",
+        type: "text",
+        createdAt: new Date("2024-01-01"),
+        username: "testuser",
+        displayName: "Test",
+        avatar: null,
+      },
+    ]
+
+    const valuesSpy = () => mockInsert.mock.results[0].value.values
+
+    await handleSendMessage(
+      mockWs,
+      { type: "message:send", conversationId: "conv1", content: "hello", encrypted: "false" },
+      "user1",
+      "test",
+    )
+    expect(valuesSpy().mock.calls[0][0].encrypted).toBe("false")
+
+    valuesSpy().mockClear()
+    await handleSendMessage(
+      mockWs,
+      { type: "message:send", conversationId: "conv1", content: "secret", encrypted: "true" },
+      "user1",
+      "test",
+    )
+    expect(valuesSpy().mock.calls[0][0].encrypted).toBe("true")
+
+    valuesSpy().mockClear()
+    await handleSendMessage(
+      mockWs,
+      { type: "message:send", conversationId: "conv1", content: "secret", encrypted: true },
+      "user1",
+      "test",
+    )
+    expect(valuesSpy().mock.calls[0][0].encrypted).toBe("true")
+  })
+
   it("publishes to redis when available", async () => {
     const mockRedis = { publish: mockRedisPublish }
     vi.mocked(getRedis).mockReturnValue(mockRedis as any)
