@@ -11,5 +11,16 @@ export function Card({ children, style }: CardProps) {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: "#101016", borderRadius: 20, borderWidth: 1, borderColor: "#252538", padding: 20 },
+  card: {
+    backgroundColor: "#101016",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#252538",
+    padding: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
 })

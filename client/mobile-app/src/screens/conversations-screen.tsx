@@ -37,6 +37,14 @@ interface Conv {
   unreadCount?: number
 }
 
+const avatarPalette = ["#5B8DEF", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#E5A13C"]
+
+const avatarColor = (name: string) => {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return avatarPalette[h % avatarPalette.length]
+}
+
 interface SearchUser {
   id: string
   username: string
@@ -188,12 +196,14 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
         keyExtractor={(c) => c.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C8CFF" />}
         renderItem={({ item }) => (
-          <TouchableOpacity style={s.item} onPress={() => onSelect(item.id)}>
+          <TouchableOpacity style={s.item} onPress={() => onSelect(item.id)} activeOpacity={0.7}>
             <View style={s.avatarWrap}>
               {item.avatar ? (
                 <Image source={{ uri: item.avatar }} style={s.avatar} />
               ) : (
-                <View style={s.avatar}>
+                <View
+                  style={[s.avatar, { backgroundColor: avatarColor(item.name || item.otherUser?.username || "?") }]}
+                >
                   <Text style={s.avatarText}>
                     {item.type === "dm"
                       ? (item.otherUser?.displayName?.[0] ?? item.otherUser?.username?.[0] ?? "?")
@@ -215,7 +225,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
             </View>
             <View style={s.itemContent}>
               <View style={s.itemTop}>
-                <Text style={s.name} numberOfLines={1}>
+                <Text style={[s.name, item.unreadCount && item.unreadCount > 0 && s.nameUnread]} numberOfLines={1}>
                   {item.name ||
                     (item.type === "dm"
                       ? (item.otherUser?.displayName ?? item.otherUser?.username ?? "User")
@@ -225,7 +235,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                 </Text>
                 {item.lastMessage && <Text style={s.time}>{formatTime(item.lastMessage.createdAt)}</Text>}
               </View>
-              <Text style={s.lastMsg} numberOfLines={1}>
+              <Text style={[s.lastMsg, item.unreadCount && item.unreadCount > 0 && s.lastMsgUnread]} numberOfLines={1}>
                 {item.lastMessage
                   ? `${item.lastMessage.sender.displayName ?? item.lastMessage.sender.username}: ${item.lastMessage.content.replace(/^e2ee:/, "🔒 ")}`
                   : item.type === "dm" && item.otherUser?.customStatus
@@ -300,44 +310,46 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#252538",
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
+  title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0", letterSpacing: -0.4 },
   addBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#181825",
+    backgroundColor: "#101016",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#252538",
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#252538",
-    backgroundColor: "#0A0A0F",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#101016",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1A1A28",
   },
-  searchInput: { flex: 1, color: "#E8E8F0", fontSize: 14, padding: 4 },
-  item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#252538" },
+  searchInput: { flex: 1, color: "#E8E8F0", fontSize: 14, padding: 2 },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1A1A28",
+  },
   avatarWrap: { position: "relative", marginRight: 14 },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#181825",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#252538",
   },
-  avatarText: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
+  avatarText: { color: "#FFFFFF", fontSize: 18, fontWeight: "700" },
   statusDot: {
     position: "absolute",
     bottom: 0,
@@ -351,8 +363,10 @@ const s = StyleSheet.create({
   itemContent: { flex: 1 },
   itemTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   name: { color: "#E8E8F0", fontSize: 16, fontWeight: "500", flex: 1 },
+  nameUnread: { fontWeight: "700" },
   time: { color: "#585870", fontSize: 11, marginLeft: 8 },
   lastMsg: { color: "#8888A0", fontSize: 13, marginTop: 2 },
+  lastMsgUnread: { color: "#C6C6D8", fontWeight: "600" },
   unreadBadge: {
     minWidth: 20,
     height: 20,
@@ -367,13 +381,11 @@ const s = StyleSheet.create({
   empty: { color: "#585870", textAlign: "center", marginTop: 60, fontSize: 15 },
   modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalContent: {
-    backgroundColor: "#0A0A0F",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: "#0E0E14",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: "80%",
     paddingBottom: 40,
-    borderTopWidth: 1,
-    borderTopColor: "#252538",
   },
   modalHeader: {
     flexDirection: "row",
@@ -382,7 +394,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
   userSearchRow: {
@@ -392,7 +404,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   userSearchInput: { flex: 1, color: "#E8E8F0", fontSize: 14, padding: 4 },
   userItem: {
@@ -400,7 +412,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1A1A28",
   },
   userAvatar: {
     width: 40,

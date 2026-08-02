@@ -95,6 +95,14 @@ interface ConvInfo {
   muted?: boolean
 }
 
+const senderPalette = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"]
+
+const senderColor = (id: string) => {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return senderPalette[h % senderPalette.length]
+}
+
 export function ChatScreen({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -653,18 +661,23 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         }}
         style={[mb.bubbleWrap, me ? mb.me : mb.them]}
       >
+        {!me && !isDeleted && item.sender && (
+          <Text style={[mb.sender, { color: senderColor(item.sender.id || item.sender.username || "") }]}>
+            {item.sender.displayName ?? item.sender.username}
+          </Text>
+        )}
         <View style={[mb.bubble, me ? mb.bubbleMe : mb.bubbleThem, isDeleted && mb.deletedBubble]}>
-          {!me && !isDeleted && <Text style={mb.sender}>{item.sender?.displayName ?? item.sender?.username}</Text>}
+          {!isDeleted && <View style={[mb.tail, me ? mb.tailMe : mb.tailThem]} />}
           {item.replyTo && !isDeleted && (
-            <View style={mb.replyPreview}>
+            <View style={[mb.replyPreview, me && mb.replyPreviewMe]}>
               <Text style={mb.replySender}>{item.replyTo.sender.displayName ?? item.replyTo.sender.username}</Text>
-              <Text style={mb.replyContent} numberOfLines={1}>
+              <Text style={[mb.replyContent, me && mb.replyContentMe]} numberOfLines={1}>
                 {item.replyTo.content}
               </Text>
             </View>
           )}
           {isDeleted ? (
-            <Text style={mb.deletedText}>message deleted</Text>
+            <Text style={mb.deletedText}>This message was deleted</Text>
           ) : item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/")) ? (
             <TouchableOpacity onPress={() => setPreviewFile(item)}>
               <Image
@@ -675,14 +688,14 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             </TouchableOpacity>
           ) : item.messageType === "file" || (item.fileUrl && !item.fileType?.startsWith("image/")) ? (
             <TouchableOpacity onPress={() => setPreviewFile(item)} style={mb.fileRow}>
-              <FileText size={14} color={me ? "#FFFFFF" : "#E8E8F0"} />
+              <FileText size={14} color={me ? "#E9EDEF" : "#B9C2C8"} />
               <Text style={[mb.msgText, me && mb.msgTextMe]}>
                 {item.fileName || item.attachment?.filename || "File"}
               </Text>
             </TouchableOpacity>
           ) : (
             <View style={mb.msgRow}>
-              {isEncryptedMsg && <Lock size={10} color={me ? "rgba(255,255,255,0.5)" : "#8888A0"} />}
+              {isEncryptedMsg && <Lock size={10} color={me ? "rgba(233,237,239,0.5)" : "#8696A0"} />}
               <Text style={[mb.msgText, me && mb.msgTextMe]}>
                 {isEncryptedMsg && isEncrypted(getMsgContent(item)) ? "Could not decrypt" : getMsgContent(item)}
               </Text>
@@ -699,13 +712,15 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
             </View>
           )}
           <View style={mb.metaRow}>
+            {me && msgStatus[item.id] === "failed" && <Text style={mb.failedIcon}>!</Text>}
+            {me && msgStatus[item.id] === "sent" && <Text style={mb.check}>✓</Text>}
             {msgStatus[item.id] === "sending" && (
-              <ActivityIndicator size={8} color={me ? "rgba(255,255,255,0.5)" : "#8888A0"} />
+              <ActivityIndicator size={8} color={me ? "rgba(233,237,239,0.6)" : "#8696A0"} />
             )}
             <Text style={[mb.time, me && mb.timeMe]}>
               {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </Text>
-            {item.editedAt && !isDeleted && <Text style={[mb.time, me && mb.timeMe]}> edited</Text>}
+            {item.editedAt && !isDeleted && <Text style={[mb.time, me && mb.timeMe]}>edited</Text>}
           </View>
         </View>
       </TouchableOpacity>
@@ -932,9 +947,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         renderItem={({ item }: any) =>
           item._isDate ? (
             <View style={mb.dateSep}>
-              <View style={mb.dateSepLine} />
               <Text style={mb.dateSepText}>{item.label}</Text>
-              <View style={mb.dateSepLine} />
             </View>
           ) : (
             renderMsg({ item })
@@ -1225,64 +1238,99 @@ const mb = StyleSheet.create({
   bubbleWrap: { flexDirection: "row", marginBottom: 4, paddingHorizontal: 12, alignItems: "flex-end" },
   me: { justifyContent: "flex-end" },
   them: { justifyContent: "flex-start" },
-  bubble: { maxWidth: "80%", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, flexShrink: 1 },
-  bubbleMe: { backgroundColor: "#6C8CFF", borderBottomRightRadius: 4 },
-  bubbleThem: { backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538", borderBottomLeftRadius: 4 },
-  deletedBubble: { opacity: 0.4, backgroundColor: "#181825", borderWidth: 1, borderColor: "#252538" },
-  deletedText: { color: "#585870", fontSize: 13, fontStyle: "italic", textAlign: "center" },
-  sender: { color: "#6C8CFF", fontSize: 11, fontWeight: "600", marginBottom: 2 },
-  replyPreview: { borderLeftWidth: 2, borderLeftColor: "#6C8CFF", paddingLeft: 8, marginBottom: 6 },
-  replySender: { color: "#6C8CFF", fontSize: 11, fontWeight: "600" },
-  replyContent: { color: "#8888A0", fontSize: 12, marginTop: 1 },
-  msgText: { color: "#E8E8F0", fontSize: 15, lineHeight: 21, flexShrink: 1 },
-  msgTextMe: { color: "#FFFFFF" },
+  bubble: {
+    maxWidth: "80%",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    flexShrink: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  bubbleMe: { backgroundColor: "#005C4B", borderTopRightRadius: 2 },
+  bubbleThem: { backgroundColor: "#1F2C34", borderTopLeftRadius: 2 },
+  tail: { position: "absolute", top: -5, width: 11, height: 11, transform: [{ rotate: "45deg" }] },
+  tailMe: { right: 2, backgroundColor: "#005C4B" },
+  tailThem: { left: 2, backgroundColor: "#1F2C34" },
+  deletedBubble: { opacity: 0.5, backgroundColor: "#1F2C34", borderTopLeftRadius: 8, borderTopRightRadius: 8 },
+  deletedText: { color: "#8696A0", fontSize: 13, fontStyle: "italic", textAlign: "center" },
+  sender: { fontSize: 12, fontWeight: "600", marginBottom: 2, marginLeft: 4 },
+  replyPreview: {
+    borderLeftWidth: 3,
+    borderLeftColor: "#53BDEB",
+    backgroundColor: "rgba(0,0,0,0.14)",
+    borderRadius: 6,
+    paddingLeft: 8,
+    paddingRight: 8,
+    paddingVertical: 5,
+    marginBottom: 6,
+  },
+  replyPreviewMe: { borderLeftColor: "rgba(233,237,239,0.5)" },
+  replySender: { color: "#53BDEB", fontSize: 11, fontWeight: "600" },
+  replyContent: { color: "#B9C2C8", fontSize: 12, marginTop: 1 },
+  replyContentMe: { color: "rgba(233,237,239,0.75)" },
+  msgText: { color: "#E9EDEF", fontSize: 15, lineHeight: 21, flexShrink: 1 },
+  msgTextMe: { color: "#E9EDEF" },
   msgRow: { flexDirection: "row", alignItems: "flex-start", gap: 4, flexShrink: 1 },
-  imagePreview: { width: 200, height: 150, borderRadius: 12, marginVertical: 4 },
+  imagePreview: { width: 200, height: 150, borderRadius: 6, marginVertical: 2 },
   fileRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
-  reactionRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
+  reactionRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 5 },
   reactionChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    backgroundColor: "rgba(108,140,255,0.15)",
-    borderRadius: 12,
-    paddingHorizontal: 6,
+    gap: 3,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderRadius: 10,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  reactionEmoji: { fontSize: 14 },
-  reactionCount: { color: "#8888A0", fontSize: 10 },
-  metaRow: { flexDirection: "row", alignItems: "center", marginTop: 2, gap: 4 },
-  time: { color: "#8888A0", fontSize: 10 },
-  timeMe: { color: "rgba(255,255,255,0.5)" },
-  dateSep: { flexDirection: "row", alignItems: "center", marginVertical: 12, paddingHorizontal: 12 },
-  dateSepLine: { flex: 1, height: 1, backgroundColor: "#252538" },
-  dateSepText: { color: "#585870", fontSize: 11, fontWeight: "600", marginHorizontal: 12, textTransform: "uppercase" },
+  reactionEmoji: { fontSize: 13 },
+  reactionCount: { color: "#B9C2C8", fontSize: 10 },
+  metaRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 2, gap: 3 },
+  time: { color: "#8696A0", fontSize: 10, fontWeight: "500" },
+  timeMe: { color: "rgba(233,237,239,0.7)" },
+  check: { color: "rgba(233,237,239,0.9)", fontSize: 11, fontWeight: "700", lineHeight: 12 },
+  failedIcon: { color: "#FF6B6B", fontSize: 12, fontWeight: "800" },
+  dateSep: { alignItems: "center", marginVertical: 10 },
+  dateSepText: {
+    color: "#8696A0",
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    backgroundColor: "#1F2C34",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    overflow: "hidden",
+  },
 })
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1, backgroundColor: "#0B141A" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 10,
-    backgroundColor: "#0A0A0F",
+    backgroundColor: "#0B141A",
     borderBottomWidth: 1,
-    borderBottomColor: "#181825",
+    borderBottomColor: "#1E2830",
   },
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   headerCenter: { flex: 1, marginLeft: 4 },
-  title: { color: "#E8E8F0", fontSize: 16, fontWeight: "600" },
-  subtitle: { color: "#585870", fontSize: 11, marginTop: 1 },
+  title: { color: "#E9EDEF", fontSize: 16, fontWeight: "600" },
+  subtitle: { color: "#8696A0", fontSize: 11, marginTop: 1 },
   moreBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#181825",
+    backgroundColor: "#1F2C34",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#252538",
     marginLeft: 4,
   },
   editBar: {
@@ -1291,21 +1339,21 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "#181825",
+    backgroundColor: "#101820",
   },
-  editLabel: { color: "#6C8CFF", fontSize: 13 },
-  editCancel: { color: "#EF4444", fontSize: 13, fontWeight: "500" },
+  editLabel: { color: "#53BDEB", fontSize: 13 },
+  editCancel: { color: "#FF6B6B", fontSize: 13, fontWeight: "500" },
   pinnedBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 6,
-    backgroundColor: "#101016",
+    backgroundColor: "#101820",
     borderBottomWidth: 1,
-    borderBottomColor: "#252538",
+    borderBottomColor: "#1E2830",
   },
-  pinnedText: { color: "#6C8CFF", fontSize: 12 },
+  pinnedText: { color: "#53BDEB", fontSize: 12 },
   replyBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1372,31 +1420,30 @@ const s = StyleSheet.create({
   },
   inputRow: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
+    alignItems: "flex-end",
+    paddingHorizontal: 8,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#181825",
+    borderTopColor: "#1E2830",
+    backgroundColor: "#0B141A",
     gap: 4,
   },
   input: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: "#101016",
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    backgroundColor: "#1F2C34",
+    borderRadius: 22,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    color: "#E8E8F0",
+    color: "#E9EDEF",
     fontSize: 15,
-    borderWidth: 1,
-    borderColor: "#252538",
   },
-  attachBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+  attachBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: "center", alignItems: "center" },
   sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#6C8CFF",
     justifyContent: "center",
     alignItems: "center",

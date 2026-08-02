@@ -6,8 +6,8 @@ export function Input(props: TextInputProps) {
 
 const s = StyleSheet.create({
   input: {
-    backgroundColor: "#0A0A0F",
-    borderRadius: 12,
+    backgroundColor: "#101016",
+    borderRadius: 14,
     padding: 14,
     color: "#E8E8F0",
     fontSize: 15,

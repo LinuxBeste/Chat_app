@@ -149,8 +149,8 @@ function TabIcon({
   badgeCount?: number
 }) {
   return (
-    <View style={ti.container}>
-      <Icon size={22} color={active ? "#6C8CFF" : "#585870"} />
+    <View style={[ti.container, active && ti.containerActive]}>
+      <Icon size={21} color={active ? "#6C8CFF" : "#585870"} />
       {badgeCount !== undefined && badgeCount > 0 && (
         <View style={ti.badge}>
           <Text style={ti.badgeText}>{badgeCount > 99 ? "99+" : badgeCount}</Text>
@@ -339,12 +339,19 @@ export default function App() {
 }
 
 const ti = StyleSheet.create({
-  container: { position: "relative", alignItems: "center", justifyContent: "center" },
-  active: { opacity: 1 },
+  container: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 44,
+    height: 28,
+    borderRadius: 14,
+  },
+  containerActive: { backgroundColor: "rgba(108,140,255,0.12)" },
   badge: {
     position: "absolute",
-    top: -6,
-    right: -12,
+    top: -4,
+    right: -8,
     minWidth: 17,
     height: 17,
     borderRadius: 9,
@@ -379,48 +386,44 @@ const hc = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: "#0A0A0F",
     borderBottomWidth: 1,
-    borderBottomColor: "#181825",
+    borderBottomColor: "#1A1A28",
   },
   topBarLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   offlineTag: { fontSize: 11, fontWeight: "600", color: "#8888A0", textTransform: "uppercase", letterSpacing: 0.5 },
-  appTitle: { fontSize: 28, fontWeight: "800", color: "#E8E8F0", letterSpacing: -0.5 },
+  appTitle: { fontSize: 26, fontWeight: "800", color: "#E8E8F0", letterSpacing: -0.6 },
   topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#181825",
+    backgroundColor: "#101016",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#252538",
   },
   content: { flex: 1 },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#0E0E14",
     borderTopWidth: 1,
-    borderTopColor: "#181825",
+    borderTopColor: "#1A1A28",
     paddingBottom: Platform.OS === "ios" ? 28 : 8,
     paddingTop: 6,
   },
   tab: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4 },
   tabLabel: { color: "#585870", fontSize: 10, marginTop: 3, fontWeight: "500" },
-  tabLabelActive: { color: "#6C8CFF" },
+  tabLabelActive: { color: "#6C8CFF", fontWeight: "600" },
 })
 
 const ms = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
   sheet: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#0E0E14",
+    backgroundColor: "#101016",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderTopColor: "#252538",
     maxHeight: "80%",
     paddingBottom: Platform.OS === "ios" ? 34 : 16,
   },
@@ -428,7 +431,7 @@ const ms = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#252538",
+    backgroundColor: "#2A2A3C",
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 8,
@@ -436,7 +439,7 @@ const ms = StyleSheet.create({
   userRow: { flexDirection: "row", alignItems: "center", padding: 20, gap: 14 },
   userInfo: { flex: 1 },
   userName: { color: "#E8E8F0", fontSize: 17, fontWeight: "600" },
-  divider: { height: 1, backgroundColor: "#181825" },
+  divider: { height: 1, backgroundColor: "#1A1A28" },
   items: { maxHeight: 300 },
   item: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 20 },
   itemActive: { backgroundColor: "rgba(108,140,255,0.08)" },
