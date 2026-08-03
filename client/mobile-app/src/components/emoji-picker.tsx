@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Dimensions } from "react-native"
 import { Search, X } from "lucide-react-native"
+import { useTheme } from "../lib/theme-context"
 
 const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
   {
@@ -1042,6 +1043,7 @@ export function EmojiPicker({
 }) {
   const [activeCategory, setActiveCategory] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
+  const { c } = useTheme()
 
   const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), [])
 
@@ -1064,13 +1066,13 @@ export function EmojiPicker({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose}>
-        <View style={s.container}>
-          <View style={s.searchRow}>
-            <Search size={14} color="#585870" />
+        <View style={[s.container, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+          <View style={[s.searchRow, { borderBottomColor: c.border, backgroundColor: c.inputBg }]}>
+            <Search size={14} color={c.textMuted} />
             <TextInput
-              style={s.searchInput}
+              style={[s.searchInput, { color: c.text }]}
               placeholder="Search emoji..."
-              placeholderTextColor="#585870"
+              placeholderTextColor={c.textMuted}
               value={searchQuery}
               onChangeText={(v) => {
                 setSearchQuery(v)
@@ -1079,7 +1081,7 @@ export function EmojiPicker({
             />
             {searchQuery ? (
               <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <X size={14} color="#585870" />
+                <X size={14} color={c.textMuted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1087,13 +1089,17 @@ export function EmojiPicker({
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={s.catRow}
+              style={[s.catRow, { borderBottomColor: c.border, backgroundColor: c.inputBg }]}
               contentContainerStyle={s.catContent}
             >
               {EMOJI_CATEGORIES.map((cat, i) => (
                 <TouchableOpacity
                   key={cat.name}
-                  style={[s.catTab, i === activeCategory && s.catTabActive]}
+                  style={[
+                    s.catTab,
+                    { backgroundColor: c.surfaceAlt },
+                    i === activeCategory && [s.catTabActive, { backgroundColor: c.accentLight }],
+                  ]}
                   onPress={() => setActiveCategory(i)}
                 >
                   <Text style={s.catEmoji}>{cat.emojis[0]}</Text>
@@ -1109,7 +1115,9 @@ export function EmojiPicker({
                 </TouchableOpacity>
               ))}
             </View>
-            {searchQuery && displayEmojis.length === 0 && <Text style={s.noResults}>No emojis found</Text>}
+            {searchQuery && displayEmojis.length === 0 && (
+              <Text style={[s.noResults, { color: c.textMuted }]}>No emojis found</Text>
+            )}
           </ScrollView>
         </View>
       </TouchableOpacity>
@@ -1122,10 +1130,8 @@ const s = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH - 32,
     maxHeight: "70%",
-    backgroundColor: "#101016",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#1A1A28",
     overflow: "hidden",
   },
   searchRow: {
@@ -1135,18 +1141,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
-    backgroundColor: "#0A0A0F",
   },
-  searchInput: { flex: 1, color: "#E8E8F0", fontSize: 13, padding: 0 },
-  catRow: { borderBottomWidth: 1, borderBottomColor: "#1A1A28", backgroundColor: "#0A0A0F" },
+  searchInput: { flex: 1, fontSize: 13, padding: 0 },
+  catRow: { borderBottomWidth: 1 },
   catContent: { paddingHorizontal: 8, paddingVertical: 6, gap: 4 },
-  catTab: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: "#181825" },
-  catTabActive: { backgroundColor: "rgba(108,140,255,0.2)" },
+  catTab: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  catTabActive: {},
   catEmoji: { fontSize: 16 },
   gridScroll: { maxHeight: 350 },
   grid: { flexDirection: "row", flexWrap: "wrap", padding: 8 },
   item: { width: EMOJI_SIZE, height: EMOJI_SIZE, justifyContent: "center", alignItems: "center" },
   emoji: { fontSize: 24 },
-  noResults: { color: "#585870", textAlign: "center", paddingVertical: 32, fontSize: 13 },
+  noResults: { textAlign: "center", paddingVertical: 32, fontSize: 13 },
 })

@@ -107,7 +107,15 @@ const senderColor = (id: string) => {
   return senderPalette[h % senderPalette.length]
 }
 
-export function ChatScreen({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
+export function ChatScreen({
+  conversationId,
+  onBack,
+  onOpenConversation,
+}: {
+  conversationId: string
+  onBack: () => void
+  onOpenConversation?: (id: string) => void
+}) {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { c } = useTheme()
@@ -375,15 +383,15 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       const existing = await api<{ id: string } | null>(`/api/conversations/dm/${targetUserId}`)
       if (existing) {
         setShowInfo(false)
-        onBack()
+        onOpenConversation?.(existing.id)
         return
       }
-      await api<{ id: string }>("/api/conversations", {
+      const created = await api<{ id: string }>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
       })
       setShowInfo(false)
-      onBack()
+      onOpenConversation?.(created.id)
     } catch {}
   }
 
@@ -651,25 +659,37 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
     }
   }
 
-  const showContextMenu = (item: Msg) => {
+  const [contextMenu, setContextMenu] = useState<Msg | null>(null)
+  const showContextMenu = (item: Msg) => setContextMenu(item)
+
+  const contextMenuActions = (item: Msg) => {
     const me = item.senderId === user!.id
     const isDeleted = !!item.deletedAt
-    const buttons: { text: string; onPress?: () => void; style?: "cancel" | "destructive" }[] = [
-      { text: "Copy", onPress: () => Clipboard.setStringAsync(decrypted[item.id] || item.content) },
-      { text: "Reply", onPress: () => setReplyingTo(item) },
-    ]
+    const actions: { key: string; icon: any; label: string; tint?: string; onPress: () => void }[] = []
+    actions.push({
+      key: "copy",
+      icon: Copy,
+      label: "Copy",
+      onPress: () => Clipboard.setStringAsync(decrypted[item.id] || item.content),
+    })
+    actions.push({ key: "reply", icon: Reply, label: "Reply", onPress: () => setReplyingTo(item) })
     if (me) {
-      buttons.push({
-        text: "Edit",
+      actions.push({
+        key: "edit",
+        icon: Edit3,
+        label: "Edit",
         onPress: () => {
           setEditingId(item.id)
           setEditText(item.content)
         },
       })
-      buttons.push({ text: "Delete", onPress: () => deleteMsg(item.id), style: "destructive" })
+      actions.push({ key: "delete", icon: Trash2, label: "Delete", tint: "#EF4444", onPress: () => deleteMsg(item.id) })
     } else {
-      buttons.push({
-        text: "Report",
+      actions.push({
+        key: "report",
+        icon: Flag,
+        label: "Report",
+        tint: "#EAB308",
         onPress: () => {
           api("/api/moderation/reports", {
             method: "POST",
@@ -679,14 +699,18 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
       })
     }
     if (!isDeleted) {
-      buttons.push({ text: "Add Reaction", onPress: () => setShowReactionPicker(item.id) })
-      if (!me) buttons.push({ text: "Pin", onPress: () => pinMessage(item.id) })
+      actions.push({
+        key: "react",
+        icon: SmilePlus,
+        label: "Add Reaction",
+        onPress: () => setShowReactionPicker(item.id),
+      })
+      if (!me) actions.push({ key: "pin", icon: Pin, label: "Pin", onPress: () => pinMessage(item.id) })
     }
     if (item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/"))) {
-      buttons.push({ text: "View Image", onPress: () => setPreviewFile(item) })
+      actions.push({ key: "view", icon: ImageIcon, label: "View Image", onPress: () => setPreviewFile(item) })
     }
-    buttons.push({ text: "Cancel", style: "cancel" })
-    Alert.alert("Message", "", buttons)
+    return actions
   }
 
   const getMsgContent = (item: Msg) => {
@@ -1088,7 +1112,7 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         </Modal>
       )}
 
-      {showMedia && mediaItems.length > 0 && (
+      {showMedia && (
         <Modal visible transparent animationType="slide" onRequestClose={() => setShowMedia(false)}>
           <View style={[s.mediaOverlay, { paddingTop: insets.top + 20 }]}>
             <View style={s.mediaHeader}>
@@ -1097,16 +1121,26 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
                 <X size={20} color="#8888A0" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={mediaItems}
-              numColumns={3}
-              keyExtractor={(m) => m.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={s.mediaItem} onPress={() => setPreviewFile(item)}>
-                  <Image source={{ uri: msgImageUrl(item) }} style={s.mediaThumb} />
+            {mediaItems.length === 0 ? (
+              <View style={s.mediaEmpty}>
+                <ImageIcon size={40} color="#585870" />
+                <Text style={s.mediaEmptyText}>No shared media yet</Text>
+                <TouchableOpacity style={s.mediaEmptyBtn} onPress={pickImage}>
+                  <Text style={s.mediaEmptyBtnText}>Attach a photo</Text>
                 </TouchableOpacity>
-              )}
-            />
+              </View>
+            ) : (
+              <FlatList
+                data={mediaItems}
+                numColumns={3}
+                keyExtractor={(m) => m.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={s.mediaItem} onPress={() => setPreviewFile(item)}>
+                    <Image source={{ uri: msgImageUrl(item) }} style={s.mediaThumb} />
+                  </TouchableOpacity>
+                )}
+              />
+            )}
           </View>
         </Modal>
       )}
@@ -1303,6 +1337,45 @@ export function ChatScreen({ conversationId, onBack }: { conversationId: string;
         </View>
       )}
 
+      {contextMenu && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setContextMenu(null)}>
+          <TouchableOpacity style={s.ctxOverlay} activeOpacity={1} onPress={() => setContextMenu(null)}>
+            <View style={s.ctxSheet}>
+              <View style={s.ctxHandle} />
+              <View style={s.ctxPreview}>
+                <Text style={s.ctxPreviewSender}>
+                  {contextMenu.sender?.displayName ?? contextMenu.sender?.username ?? "Message"}
+                </Text>
+                <Text style={s.ctxPreviewText} numberOfLines={2}>
+                  {getMsgContent(contextMenu)}
+                </Text>
+              </View>
+              {contextMenuActions(contextMenu).map((a) => {
+                const Icon = a.icon
+                return (
+                  <TouchableOpacity
+                    key={a.key}
+                    style={s.ctxItem}
+                    onPress={() => {
+                      setContextMenu(null)
+                      a.onPress()
+                    }}
+                  >
+                    <View style={[s.ctxIconWrap, a.tint && { backgroundColor: "rgba(239,68,68,0.08)" }]}>
+                      {a.tint ? <Icon size={18} color={a.tint} /> : <Icon size={18} color="#6C8CFF" />}
+                    </View>
+                    <Text style={[s.ctxItemLabel, a.tint && { color: a.tint }]}>{a.label}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+              <TouchableOpacity style={s.ctxCancel} onPress={() => setContextMenu(null)}>
+                <Text style={s.ctxCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
+
       <EmojiPicker
         visible={showEmoji}
         onSelect={(emoji) => {
@@ -1493,6 +1566,10 @@ const s = StyleSheet.create({
   mediaTitle: { color: "#E8E8F0", fontSize: 17, fontWeight: "600" },
   mediaItem: { flex: 1, aspectRatio: 1, padding: 2 },
   mediaThumb: { flex: 1, borderRadius: 8 },
+  mediaEmpty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingBottom: 60 },
+  mediaEmptyText: { color: "#8888A0", fontSize: 15 },
+  mediaEmptyBtn: { backgroundColor: "#6C8CFF", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  mediaEmptyBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
   reactionOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
   reactionPicker: {
     flexDirection: "row",
@@ -1660,4 +1737,60 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1A1A28",
   },
+  ctxOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  ctxSheet: {
+    backgroundColor: "#101016",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+    borderTopWidth: 1,
+    borderTopColor: "#1A1A28",
+  },
+  ctxHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#2A2A3C",
+    alignSelf: "center",
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  ctxPreview: {
+    backgroundColor: "#181825",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#1A1A28",
+  },
+  ctxPreviewSender: { color: "#6C8CFF", fontSize: 12, fontWeight: "600", marginBottom: 4 },
+  ctxPreviewText: { color: "#E8E8F0", fontSize: 14, lineHeight: 20 },
+  ctxItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#1A1A28",
+  },
+  ctxIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(108,140,255,0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ctxItemLabel: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
+  ctxCancel: {
+    marginTop: 12,
+    backgroundColor: "#181825",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#1A1A28",
+  },
+  ctxCancelText: { color: "#8888A0", fontSize: 15, fontWeight: "600" },
 })

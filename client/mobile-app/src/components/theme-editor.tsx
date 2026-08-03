@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal,
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
 import { Check, Trash2 } from "lucide-react-native"
+import { useTheme } from "../lib/theme-context"
 
 interface ThemeEditorProps {
   visible: boolean
@@ -18,6 +19,7 @@ interface ThemeData {
 
 export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
   const { t } = useTranslation()
+  const { c } = useTheme()
   const [themes, setThemes] = useState<ThemeData[]>([])
   const [name, setName] = useState("")
   const [saving, setSaving] = useState(false)
@@ -75,46 +77,46 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={s.overlay}>
-        <View style={s.editor}>
+        <View style={[s.editor, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
           <View style={s.header}>
-            <Text style={s.title}>Theme Editor</Text>
+            <Text style={[s.title, { color: c.text }]}>Theme Editor</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={s.close}>Close</Text>
+              <Text style={[s.close, { color: c.accent }]}>Close</Text>
             </TouchableOpacity>
           </View>
           <ScrollView>
             {themes.length > 0 && (
               <>
-                <Text style={s.sectionTitle}>Saved Themes</Text>
+                <Text style={[s.sectionTitle, { color: c.textSecondary }]}>Saved Themes</Text>
                 {themes.map((th) => (
-                  <View key={th.id} style={s.themeRow}>
-                    <Text style={s.themeName}>{th.name}</Text>
+                  <View key={th.id} style={[s.themeRow, { borderBottomColor: c.borderLight }]}>
+                    <Text style={[s.themeName, { color: c.text }]}>{th.name}</Text>
                     <TouchableOpacity style={s.activateBtn} onPress={() => activateTheme(th.id)}>
-                      <Check size={14} color="#22C55E" />
+                      <Check size={14} color={c.success} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteTheme(th.id)}>
-                      <Trash2 size={14} color="#EF4444" />
+                      <Trash2 size={14} color={c.danger} />
                     </TouchableOpacity>
                   </View>
                 ))}
               </>
             )}
-            <Text style={s.sectionTitle}>Create Theme</Text>
+            <Text style={[s.sectionTitle, { color: c.textSecondary }]}>Create Theme</Text>
             <TextInput
-              style={s.nameInput}
+              style={[s.nameInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
               placeholder="Theme name"
-              placeholderTextColor="#585870"
+              placeholderTextColor={c.textMuted}
               value={name}
               onChangeText={setName}
               maxLength={64}
             />
             {colorKeys.map((key) => (
               <View key={key} style={s.row}>
-                <Text style={s.label}>{key}</Text>
+                <Text style={[s.label, { color: c.textSecondary }]}>{key}</Text>
                 <View style={s.colorRow}>
-                  <View style={[s.swatch, { backgroundColor: colors[key] }]} />
+                  <View style={[s.swatch, { backgroundColor: colors[key], borderColor: c.border }]} />
                   <TextInput
-                    style={s.colorInput}
+                    style={[s.colorInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
                     value={colors[key]}
                     onChangeText={(v) => setColors((p) => ({ ...p, [key]: v }))}
                     autoCapitalize="none"
@@ -122,7 +124,11 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
                 </View>
               </View>
             ))}
-            <TouchableOpacity style={s.saveBtn} onPress={saveTheme} disabled={saving || !name.trim()}>
+            <TouchableOpacity
+              style={[s.saveBtn, { backgroundColor: c.accent }]}
+              onPress={saveTheme}
+              disabled={saving || !name.trim()}
+            >
               {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={s.saveText}>Save Theme</Text>}
             </TouchableOpacity>
           </ScrollView>
@@ -135,20 +141,17 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   editor: {
-    backgroundColor: "#101016",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     padding: 24,
     maxHeight: "85%",
     borderWidth: 1,
-    borderColor: "#1A1A28",
     borderBottomWidth: 0,
   },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
-  close: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
+  title: { fontSize: 18, fontWeight: "600" },
+  close: { fontSize: 15, fontWeight: "500" },
   sectionTitle: {
-    color: "#8888A0",
     fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -161,34 +164,27 @@ const s = StyleSheet.create({
     gap: 10,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  themeName: { color: "#E8E8F0", fontSize: 14, flex: 1 },
+  themeName: { fontSize: 14, flex: 1 },
   activateBtn: { padding: 4 },
   nameInput: {
-    backgroundColor: "#0A0A0F",
     borderRadius: 10,
     padding: 12,
-    color: "#E8E8F0",
     fontSize: 14,
     borderWidth: 1,
-    borderColor: "#1A1A28",
     marginBottom: 16,
   },
   row: { marginBottom: 12 },
-  label: { color: "#8888A0", fontSize: 11, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
+  label: { fontSize: 11, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
   colorRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  swatch: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: "#1A1A28" },
+  swatch: { width: 28, height: 28, borderRadius: 8, borderWidth: 1 },
   colorInput: {
     flex: 1,
-    backgroundColor: "#0A0A0F",
     borderRadius: 10,
     padding: 10,
-    color: "#E8E8F0",
     fontSize: 13,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  saveBtn: { backgroundColor: "#6C8CFF", borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
+  saveBtn: { borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
   saveText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 })

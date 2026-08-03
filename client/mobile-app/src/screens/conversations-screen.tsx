@@ -17,6 +17,7 @@ import { wsClient } from "../lib/ws"
 import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useTheme } from "../lib/theme-context"
 import { Search, Plus, X } from "lucide-react-native"
 
 interface Conv {
@@ -55,6 +56,7 @@ interface SearchUser {
 export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => void }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -174,19 +176,19 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
     : dms
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
       <View style={[s.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={s.title}>{t("chat.chats")}</Text>
-        <TouchableOpacity onPress={() => setShowNewDM(true)} style={s.addBtn}>
-          <Plus size={20} color="#E8E8F0" />
+        <Text style={[s.title, { color: c.text }]}>{t("chat.chats")}</Text>
+        <TouchableOpacity onPress={() => setShowNewDM(true)} style={[s.addBtn, { backgroundColor: c.surface }]}>
+          <Plus size={20} color={c.text} />
         </TouchableOpacity>
       </View>
-      <View style={s.searchRow}>
-        <Search size={16} color="#585870" />
+      <View style={[s.searchRow, { backgroundColor: c.inputBg, borderColor: c.border }]}>
+        <Search size={16} color={c.textMuted} />
         <TextInput
-          style={s.searchInput}
+          style={[s.searchInput, { color: c.text }]}
           placeholder="Search conversations..."
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -194,9 +196,13 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
       <FlatList
         data={filtered}
         keyExtractor={(c) => c.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C8CFF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => (
-          <TouchableOpacity style={s.item} onPress={() => onSelect(item.id)} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={[s.item, { borderBottomColor: c.borderLight }]}
+            onPress={() => onSelect(item.id)}
+            activeOpacity={0.7}
+          >
             <View style={s.avatarWrap}>
               {item.avatar ? (
                 <Image source={{ uri: item.avatar }} style={s.avatar} />
@@ -215,17 +221,24 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                 item.otherUser?.status &&
                 item.otherUser.status !== "offline" &&
                 (() => {
-                  const statusColors: Record<string, string> = { online: "#22C55E", away: "#EAB308", busy: "#EF4444" }
+                  const statusColors: Record<string, string> = {
+                    online: c.success,
+                    away: c.warning,
+                    busy: c.danger,
+                  }
                   return (
                     <View
-                      style={[s.statusDot, { backgroundColor: statusColors[item.otherUser!.status] || "#8888A0" }]}
+                      style={[s.statusDot, { backgroundColor: statusColors[item.otherUser!.status] || c.textMuted }]}
                     />
                   )
                 })()}
             </View>
             <View style={s.itemContent}>
               <View style={s.itemTop}>
-                <Text style={[s.name, item.unreadCount && item.unreadCount > 0 && s.nameUnread]} numberOfLines={1}>
+                <Text
+                  style={[s.name, { color: c.text }, item.unreadCount && item.unreadCount > 0 && s.nameUnread]}
+                  numberOfLines={1}
+                >
                   {item.name ||
                     (item.type === "dm"
                       ? (item.otherUser?.displayName ?? item.otherUser?.username ?? "User")
@@ -233,9 +246,18 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                         ? "Group"
                         : "User")}
                 </Text>
-                {item.lastMessage && <Text style={s.time}>{formatTime(item.lastMessage.createdAt)}</Text>}
+                {item.lastMessage && (
+                  <Text style={[s.time, { color: c.textMuted }]}>{formatTime(item.lastMessage.createdAt)}</Text>
+                )}
               </View>
-              <Text style={[s.lastMsg, item.unreadCount && item.unreadCount > 0 && s.lastMsgUnread]} numberOfLines={1}>
+              <Text
+                style={[
+                  s.lastMsg,
+                  { color: c.textSecondary },
+                  item.unreadCount && item.unreadCount > 0 && [s.lastMsgUnread, { color: c.text }],
+                ]}
+                numberOfLines={1}
+              >
                 {item.lastMessage
                   ? `${item.lastMessage.sender.displayName ?? item.lastMessage.sender.username}: ${item.lastMessage.content.replace(/^e2ee:/, "🔒 ")}`
                   : item.type === "dm" && item.otherUser?.customStatus
@@ -244,20 +266,24 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
               </Text>
             </View>
             {item.unreadCount && item.unreadCount > 0 ? (
-              <View style={s.unreadBadge}>
+              <View style={[s.unreadBadge, { backgroundColor: c.accent }]}>
                 <Text style={s.unreadText}>{item.unreadCount > 99 ? "99+" : item.unreadCount}</Text>
               </View>
             ) : null}
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={s.empty}>{searchQuery ? "No matches" : t("chat.noConversations")}</Text>}
+        ListEmptyComponent={
+          <Text style={[s.empty, { color: c.textMuted }]}>
+            {searchQuery ? "No matches" : t("chat.noConversations")}
+          </Text>
+        }
       />
 
       <Modal visible={showNewDM} transparent animationType="slide" onRequestClose={() => setShowNewDM(false)}>
         <View style={s.modalContainer}>
-          <View style={s.modalContent}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>New Message</Text>
+          <View style={[s.modalContent, { backgroundColor: c.sheetBg }]}>
+            <View style={[s.modalHeader, { borderBottomColor: c.border }]}>
+              <Text style={[s.modalTitle, { color: c.text }]}>New Message</Text>
               <TouchableOpacity
                 onPress={() => {
                   setShowNewDM(false)
@@ -265,34 +291,39 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                   setUserResults([])
                 }}
               >
-                <X size={20} color="#8888A0" />
+                <X size={20} color={c.textSecondary} />
               </TouchableOpacity>
             </View>
-            <View style={s.userSearchRow}>
-              <Search size={16} color="#585870" />
+            <View style={[s.userSearchRow, { borderBottomColor: c.border }]}>
+              <Search size={16} color={c.textMuted} />
               <TextInput
-                style={s.userSearchInput}
+                style={[s.userSearchInput, { color: c.text }]}
                 placeholder="Search users..."
-                placeholderTextColor="#585870"
+                placeholderTextColor={c.textMuted}
                 value={userSearchQuery}
                 onChangeText={setUserSearchQuery}
                 autoFocus
               />
-              {searchingUsers && <ActivityIndicator size="small" color="#6C8CFF" />}
+              {searchingUsers && <ActivityIndicator size="small" color={c.accent} />}
             </View>
             <FlatList
               data={userResults}
               keyExtractor={(u) => u.id}
               renderItem={({ item }) => (
-                <TouchableOpacity style={s.userItem} onPress={() => startDM(item.id)}>
-                  <View style={s.userAvatar}>
-                    <Text style={s.userAvatarText}>{item.username[0].toUpperCase()}</Text>
+                <TouchableOpacity
+                  style={[s.userItem, { borderBottomColor: c.borderLight }]}
+                  onPress={() => startDM(item.id)}
+                >
+                  <View style={[s.userAvatar, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+                    <Text style={[s.userAvatarText, { color: c.text }]}>{item.username[0].toUpperCase()}</Text>
                   </View>
-                  <Text style={s.userName}>{item.username}</Text>
+                  <Text style={[s.userName, { color: c.text }]}>{item.username}</Text>
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
-                userSearchQuery.length >= 2 && !searchingUsers ? <Text style={s.empty}>No users found</Text> : null
+                userSearchQuery.length >= 2 && !searchingUsers ? (
+                  <Text style={[s.empty, { color: c.textMuted }]}>No users found</Text>
+                ) : null
               }
             />
           </View>
@@ -303,7 +334,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -311,12 +342,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0", letterSpacing: -0.4 },
+  title: { fontSize: 24, fontWeight: "700", letterSpacing: -0.4 },
   addBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#101016",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -328,18 +358,15 @@ const s = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "#101016",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  searchInput: { flex: 1, color: "#E8E8F0", fontSize: 14, padding: 2 },
+  searchInput: { flex: 1, fontSize: 14, padding: 2 },
   item: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
   avatarWrap: { position: "relative", marginRight: 14 },
   avatar: {
@@ -362,26 +389,24 @@ const s = StyleSheet.create({
   },
   itemContent: { flex: 1 },
   itemTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  name: { color: "#E8E8F0", fontSize: 16, fontWeight: "500", flex: 1 },
+  name: { fontSize: 16, fontWeight: "500", flex: 1 },
   nameUnread: { fontWeight: "700" },
-  time: { color: "#585870", fontSize: 11, marginLeft: 8 },
-  lastMsg: { color: "#8888A0", fontSize: 13, marginTop: 2 },
-  lastMsgUnread: { color: "#C6C6D8", fontWeight: "600" },
+  time: { fontSize: 11, marginLeft: 8 },
+  lastMsg: { fontSize: 13, marginTop: 2 },
+  lastMsgUnread: { fontWeight: "600" },
   unreadBadge: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#6C8CFF",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 6,
     marginLeft: 8,
   },
   unreadText: { color: "#FFFFFF", fontSize: 10, fontWeight: "700" },
-  empty: { color: "#585870", textAlign: "center", marginTop: 60, fontSize: 15 },
+  empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
   modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalContent: {
-    backgroundColor: "#0E0E14",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "80%",
@@ -394,9 +419,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
+  modalTitle: { fontSize: 18, fontWeight: "600" },
   userSearchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -404,27 +428,23 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  userSearchInput: { flex: 1, color: "#E8E8F0", fontSize: 14, padding: 4 },
+  userSearchInput: { flex: 1, fontSize: 14, padding: 4 },
   userItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
   userAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#181825",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  userAvatarText: { color: "#E8E8F0", fontSize: 16, fontWeight: "600" },
-  userName: { color: "#E8E8F0", fontSize: 15 },
+  userAvatarText: { fontSize: 16, fontWeight: "600" },
+  userName: { fontSize: 15 },
 })

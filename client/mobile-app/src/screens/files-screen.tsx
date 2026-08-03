@@ -23,6 +23,7 @@ import { resolveFileUrl } from "../lib/file-url"
 import { isTextFile } from "../lib/file-types"
 import { FileText, Folder, X, Film, Music, Archive, Download, Users, Copy } from "lucide-react-native"
 import { Linking } from "react-native"
+import { useTheme } from "../lib/theme-context"
 
 interface FileEntry {
   id: string
@@ -44,6 +45,7 @@ interface FolderEntry {
 export function FilesScreen() {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const [files, setFiles] = useState<FileEntry[]>([])
   const [folders, setFolders] = useState<FolderEntry[]>([])
@@ -276,33 +278,47 @@ export function FilesScreen() {
   }
 
   return (
-    <View style={s.container}>
-      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={s.title}>{t("files.title")}</Text>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
+      <View style={[s.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
+        <Text style={[s.title, { color: c.text }]}>{t("files.title")}</Text>
         <View style={s.headerActions}>
-          <TouchableOpacity style={s.actionBtn} onPress={uploadFile}>
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: c.accent }]} onPress={uploadFile}>
             <Text style={s.actionText}>{t("files.upload")}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.actionBtn} onPress={() => setFolderModal(true)}>
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: c.accent }]} onPress={() => setFolderModal(true)}>
             <Text style={s.actionText}>{t("files.newFolder")}</Text>
           </TouchableOpacity>
         </View>
       </View>
       {folders.length > 0 && (
         <>
-          <ScrollView horizontal style={s.folderRow} showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            style={[s.folderRow, { borderBottomColor: c.borderLight }]}
+            showsHorizontalScrollIndicator={false}
+          >
             {activeFolder && (
-              <TouchableOpacity style={[s.folderChip, s.folderChipActive]} onPress={() => setActiveFolder(null)}>
+              <TouchableOpacity
+                style={[s.folderChip, s.folderChipActive, { backgroundColor: c.accent }]}
+                onPress={() => setActiveFolder(null)}
+              >
                 <Text style={s.folderChipText}>All</Text>
               </TouchableOpacity>
             )}
             {folders.map((f) => (
-              <View key={f.id} style={[s.folderChip, activeFolder === f.id && s.folderChipActive]}>
+              <View
+                key={f.id}
+                style={[
+                  s.folderChip,
+                  { backgroundColor: c.surfaceAlt },
+                  activeFolder === f.id && [s.folderChipActive, { backgroundColor: c.accent }],
+                ]}
+              >
                 <TouchableOpacity
                   onPress={() => setActiveFolder(activeFolder === f.id ? null : f.id)}
                   onLongPress={() => deleteFolder(f.id)}
                 >
-                  <Text style={s.folderChipText}>{f.name}</Text>
+                  <Text style={[s.folderChipText, { color: c.text }]}>{f.name}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{ marginLeft: 4 }}
@@ -311,7 +327,7 @@ export function FilesScreen() {
                     loadFolderMembers(f.id)
                   }}
                 >
-                  <Users size={14} color="#8888A0" />
+                  <Users size={14} color={c.textMuted} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -321,7 +337,7 @@ export function FilesScreen() {
       <FlatList
         data={filteredFiles}
         keyExtractor={(f) => f.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C8CFF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
           const isImage = item.type?.startsWith("image/")
           const isVideo = item.type?.startsWith("video/")
@@ -334,20 +350,20 @@ export function FilesScreen() {
           const FileTypeIcon = isVideo ? Film : isAudio ? Music : isArchive ? Archive : FileText
           return (
             <TouchableOpacity
-              style={s.item}
+              style={[s.item, { borderBottomColor: c.borderLight }]}
               onPress={() => openPreview(item)}
               onLongPress={() => handleFileLongPress(item)}
             >
               {isImage && item.url ? (
                 <Image source={{ uri: resolvedUrls[item.id] }} style={s.fileThumb} />
               ) : (
-                <View style={s.fileIconWrap}>
-                  <FileTypeIcon size={24} color="#8888A0" />
+                <View style={[s.fileIconWrap, { backgroundColor: c.surfaceAlt }]}>
+                  <FileTypeIcon size={24} color={c.textMuted} />
                 </View>
               )}
               <View style={s.itemContent}>
-                <Text style={s.name}>{item.name}</Text>
-                <Text style={s.meta}>
+                <Text style={[s.name, { color: c.text }]}>{item.name}</Text>
+                <Text style={[s.meta, { color: c.textMuted }]}>
                   {item.type} · {formatSize(item.size)}
                 </Text>
               </View>
@@ -357,24 +373,24 @@ export function FilesScreen() {
             </TouchableOpacity>
           )
         }}
-        ListEmptyComponent={<Text style={s.empty}>{t("files.noFiles")}</Text>}
+        ListEmptyComponent={<Text style={[s.empty, { color: c.textMuted }]}>{t("files.noFiles")}</Text>}
       />
       <Modal visible={folderModal} transparent animationType="fade">
         <View style={s.overlay}>
-          <View style={s.modal}>
-            <Text style={s.modalTitle}>{t("files.newFolder")}</Text>
+          <View style={[s.modal, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+            <Text style={[s.modalTitle, { color: c.text }]}>{t("files.newFolder")}</Text>
             <TextInput
-              style={s.modalInput}
+              style={[s.modalInput, { backgroundColor: c.bg, color: c.text, borderColor: c.border }]}
               placeholder="Folder name"
-              placeholderTextColor="#585870"
+              placeholderTextColor={c.textMuted}
               value={folderName}
               onChangeText={setFolderName}
             />
             <View style={s.modalActions}>
               <TouchableOpacity onPress={() => setFolderModal(false)} style={s.cancelBtn}>
-                <Text style={s.cancelText}>{t("common.cancel")}</Text>
+                <Text style={[s.cancelText, { color: c.textSecondary }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={createFolder} style={s.confirmBtn}>
+              <TouchableOpacity onPress={createFolder} style={[s.confirmBtn, { backgroundColor: c.accent }]}>
                 <Text style={s.confirmText}>{t("common.create")}</Text>
               </TouchableOpacity>
             </View>
@@ -384,11 +400,11 @@ export function FilesScreen() {
       {showFolderMembers && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setShowFolderMembers(null)}>
           <View style={s.overlay}>
-            <View style={s.modal}>
-              <Text style={s.modalTitle}>Folder Members</Text>
+            <View style={[s.modal, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+              <Text style={[s.modalTitle, { color: c.text }]}>Folder Members</Text>
               <View style={{ maxHeight: 200, marginBottom: 12 }}>
                 {folderMembers.length === 0 && (
-                  <Text style={{ color: "#585870", fontSize: 13, marginBottom: 8 }}>No members</Text>
+                  <Text style={{ color: c.textMuted, fontSize: 13, marginBottom: 8 }}>No members</Text>
                 )}
                 {folderMembers.map((m) => (
                   <View
@@ -400,11 +416,11 @@ export function FilesScreen() {
                       paddingVertical: 8,
                     }}
                   >
-                    <Text style={{ color: "#E8E8F0", fontSize: 13, fontFamily: "monospace" }}>
+                    <Text style={{ color: c.text, fontSize: 13, fontFamily: "monospace" }}>
                       {m.userId.slice(0, 8)}...
                     </Text>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text style={{ color: "#585870", fontSize: 12, textTransform: "capitalize" }}>
+                      <Text style={{ color: c.textMuted, fontSize: 12, textTransform: "capitalize" }}>
                         {m.permission}
                       </Text>
                       <TouchableOpacity onPress={() => removeFolderMember(m.userId)}>
@@ -416,18 +432,21 @@ export function FilesScreen() {
               </View>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
                 <TextInput
-                  style={[s.modalInput, { flex: 1, marginBottom: 0 }]}
+                  style={[
+                    s.modalInput,
+                    { flex: 1, marginBottom: 0, backgroundColor: c.bg, color: c.text, borderColor: c.border },
+                  ]}
                   placeholder="User ID"
-                  placeholderTextColor="#585870"
+                  placeholderTextColor={c.textMuted}
                   value={addMemberId}
                   onChangeText={setAddMemberId}
                 />
-                <TouchableOpacity onPress={addFolderMember} style={s.confirmBtn}>
+                <TouchableOpacity onPress={addFolderMember} style={[s.confirmBtn, { backgroundColor: c.accent }]}>
                   <Text style={s.confirmText}>Add</Text>
                 </TouchableOpacity>
               </View>
               <TouchableOpacity style={s.cancelBtn} onPress={() => setShowFolderMembers(null)}>
-                <Text style={s.cancelText}>Close</Text>
+                <Text style={[s.cancelText, { color: c.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -440,7 +459,7 @@ export function FilesScreen() {
           </TouchableOpacity>
           {previewFile && (
             <View style={s.previewBody}>
-              <Text style={s.previewName} numberOfLines={1}>
+              <Text style={[s.previewName, { color: c.text }]} numberOfLines={1}>
                 {previewFile.name}
               </Text>
               {previewFile.type?.startsWith("image/") && resolvedUrls[previewFile.id] ? (
@@ -448,41 +467,50 @@ export function FilesScreen() {
               ) : isTextFile(previewFile.type, previewFile.name) ? (
                 previewTextLoading ? (
                   <View style={s.previewEmpty}>
-                    <ActivityIndicator color="#6C8CFF" />
+                    <ActivityIndicator color={c.accent} />
                   </View>
                 ) : previewTextError ? (
                   <View style={s.previewEmpty}>
-                    <Text style={s.previewError}>Could not load text preview</Text>
+                    <Text style={[s.previewError, { color: c.textSecondary }]}>Could not load text preview</Text>
                   </View>
                 ) : (
-                  <ScrollView style={s.previewTextWrap} contentContainerStyle={s.previewTextContent}>
-                    <Text style={s.previewText}>{previewText}</Text>
+                  <ScrollView
+                    style={[s.previewTextWrap, { backgroundColor: c.sheetBg }]}
+                    contentContainerStyle={s.previewTextContent}
+                  >
+                    <Text style={[s.previewText, { color: c.textSecondary }]}>{previewText}</Text>
                   </ScrollView>
                 )
               ) : previewFile.type === "application/pdf" ? (
-                <View style={s.previewFile}>
-                  <FileText size={48} color="#E8E8F0" />
-                  <Text style={s.previewFileText}>{previewFile.name}</Text>
-                  <TouchableOpacity style={s.downloadBtn} onPress={() => openPdf(previewFile)}>
+                <View style={[s.previewFile, { backgroundColor: c.surfaceAlt }]}>
+                  <FileText size={48} color={c.text} />
+                  <Text style={[s.previewFileText, { color: c.text }]}>{previewFile.name}</Text>
+                  <TouchableOpacity
+                    style={[s.downloadBtn, { backgroundColor: c.accent }]}
+                    onPress={() => openPdf(previewFile)}
+                  >
                     <Text style={s.downloadBtnText}>Open PDF</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={s.previewFile}>
-                  <FileText size={48} color="#E8E8F0" />
-                  <Text style={s.previewFileText}>{previewFile.name}</Text>
+                <View style={[s.previewFile, { backgroundColor: c.surfaceAlt }]}>
+                  <FileText size={48} color={c.text} />
+                  <Text style={[s.previewFileText, { color: c.text }]}>{previewFile.name}</Text>
                 </View>
               )}
               {previewFile.url && (
                 <View style={s.previewActions}>
                   <TouchableOpacity
-                    style={s.downloadBtn}
+                    style={[s.downloadBtn, { backgroundColor: c.accent }]}
                     onPress={() => Clipboard.setStringAsync(resolvedUrls[previewFile.id] || previewFile.url!)}
                   >
                     <Copy size={16} color="#FFFFFF" />
                     <Text style={s.downloadBtnText}> Copy URL</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={s.downloadBtn} onPress={() => openExternal(previewFile)}>
+                  <TouchableOpacity
+                    style={[s.downloadBtn, { backgroundColor: c.accent }]}
+                    onPress={() => openExternal(previewFile)}
+                  >
                     <Download size={16} color="#FFFFFF" />
                     <Text style={s.downloadBtnText}> Download</Text>
                   </TouchableOpacity>
@@ -494,20 +522,20 @@ export function FilesScreen() {
       </Modal>
       <Modal visible={!!renameTarget} transparent animationType="fade">
         <View style={s.overlay}>
-          <View style={s.modal}>
-            <Text style={s.modalTitle}>{t("files.rename")}</Text>
+          <View style={[s.modal, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+            <Text style={[s.modalTitle, { color: c.text }]}>{t("files.rename")}</Text>
             <TextInput
-              style={s.modalInput}
+              style={[s.modalInput, { backgroundColor: c.bg, color: c.text, borderColor: c.border }]}
               placeholder="New name"
-              placeholderTextColor="#585870"
+              placeholderTextColor={c.textMuted}
               value={renameName}
               onChangeText={setRenameName}
             />
             <View style={s.modalActions}>
               <TouchableOpacity onPress={() => setRenameTarget(null)} style={s.cancelBtn}>
-                <Text style={s.cancelText}>{t("common.cancel")}</Text>
+                <Text style={[s.cancelText, { color: c.textSecondary }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={renameFile} style={s.confirmBtn}>
+              <TouchableOpacity onPress={renameFile} style={[s.confirmBtn, { backgroundColor: c.accent }]}>
                 <Text style={s.confirmText}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
@@ -516,20 +544,20 @@ export function FilesScreen() {
       </Modal>
       <Modal visible={showMoveModal} transparent animationType="fade" onRequestClose={() => setShowMoveModal(false)}>
         <View style={s.overlay}>
-          <View style={s.modal}>
-            <Text style={s.modalTitle}>Move to folder</Text>
+          <View style={[s.modal, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+            <Text style={[s.modalTitle, { color: c.text }]}>Move to folder</Text>
             <TouchableOpacity style={s.moveItem} onPress={() => moveFile(null)}>
-              <Folder size={18} color="#E8E8F0" />
-              <Text style={s.moveItemText}>Root (no folder)</Text>
+              <Folder size={18} color={c.text} />
+              <Text style={[s.moveItemText, { color: c.text }]}>Root (no folder)</Text>
             </TouchableOpacity>
             {folders.map((f) => (
               <TouchableOpacity key={f.id} style={s.moveItem} onPress={() => moveFile(f.id)}>
-                <Folder size={18} color="#6C8CFF" />
-                <Text style={s.moveItemText}>{f.name}</Text>
+                <Folder size={18} color={c.accent} />
+                <Text style={[s.moveItemText, { color: c.text }]}>{f.name}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={s.cancelBtn} onPress={() => setShowMoveModal(false)}>
-              <Text style={s.cancelText}>Cancel</Text>
+              <Text style={[s.cancelText, { color: c.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -539,7 +567,7 @@ export function FilesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -547,11 +575,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
+  title: { fontSize: 24, fontWeight: "700" },
   headerActions: { flexDirection: "row", gap: 8 },
-  actionBtn: { backgroundColor: "#6C8CFF", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
+  actionBtn: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
   actionText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
   previewOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
   previewClose: {
@@ -569,7 +596,6 @@ const s = StyleSheet.create({
   previewCloseText: { color: "#FFFFFF", fontSize: 18, fontWeight: "600" },
   previewBody: { width: "90%", maxWidth: 420, alignItems: "center" },
   previewName: {
-    color: "#E8E8F0",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 16,
@@ -577,74 +603,66 @@ const s = StyleSheet.create({
     maxWidth: "100%",
   },
   previewImage: { width: "100%", height: "70%", borderRadius: 12 },
-  previewTextWrap: { width: "100%", maxHeight: "70%", backgroundColor: "#101016", borderRadius: 12 },
+  previewTextWrap: { width: "100%", maxHeight: "70%", borderRadius: 12 },
   previewTextContent: { padding: 16 },
-  previewText: { color: "#D8D8E8", fontSize: 13, fontFamily: "monospace" },
+  previewText: { fontSize: 13, fontFamily: "monospace" },
   previewEmpty: { padding: 48, alignItems: "center", justifyContent: "center" },
-  previewError: { color: "#8888A0", fontSize: 14 },
+  previewError: { fontSize: 14 },
   previewActions: { flexDirection: "row", gap: 12 },
-  previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20, alignItems: "center" },
-  previewFileText: { color: "#E8E8F0", fontSize: 16 },
-  folderRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
+  previewFile: { padding: 40, borderRadius: 20, alignItems: "center" },
+  previewFileText: { fontSize: 16 },
+  folderRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   folderChip: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#181825",
     marginRight: 8,
   },
-  folderChipActive: { backgroundColor: "#6C8CFF" },
+  folderChipActive: {},
   folderChipText: { color: "#E8E8F0", fontSize: 13, fontWeight: "500" },
-  item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
+  item: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1 },
   fileIcon: { fontSize: 22, marginRight: 14 },
   fileThumb: { width: 40, height: 40, borderRadius: 8, marginRight: 14 },
   itemContent: { flex: 1 },
-  name: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
-  meta: { color: "#585870", fontSize: 12, marginTop: 2 },
+  name: { fontSize: 15, fontWeight: "500" },
+  meta: { fontSize: 12, marginTop: 2 },
   deleteBtn: { padding: 8 },
   deleteText: { color: "#EF4444", fontSize: 16 },
-  empty: { color: "#585870", textAlign: "center", marginTop: 60, fontSize: 15 },
+  empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
   modal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#101016",
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 16 },
   modalInput: {
-    backgroundColor: "#0A0A0F",
     borderRadius: 12,
     padding: 14,
-    color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#1A1A28",
     marginBottom: 20,
   },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },
   cancelBtn: { paddingHorizontal: 20, paddingVertical: 10, alignItems: "center" },
-  cancelText: { color: "#8888A0", fontSize: 15 },
-  confirmBtn: { backgroundColor: "#6C8CFF", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  cancelText: { fontSize: 15 },
+  confirmBtn: { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
   confirmText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   moveItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
-  moveItemText: { color: "#E8E8F0", fontSize: 14 },
+  moveItemText: { fontSize: 14 },
   fileIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: "#181825",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
   downloadBtn: {
-    backgroundColor: "#6C8CFF",
     borderRadius: 12,
     paddingHorizontal: 24,
     paddingVertical: 12,

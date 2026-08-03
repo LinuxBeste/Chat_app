@@ -79,6 +79,7 @@ function MoreSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const { view, setView } = useNav()
+  const { c } = useTheme()
 
   const menuItems = [
     { label: "Profile", icon: User, desc: "Edit your profile", view: "profile" as NavView },
@@ -95,41 +96,43 @@ function MoreSheet({ visible, onClose }: { visible: boolean; onClose: () => void
       <TouchableOpacity style={ms.overlay} activeOpacity={1} onPress={onClose}>
         <View />
       </TouchableOpacity>
-      <View style={ms.sheet}>
-        <View style={ms.handle} />
+      <View style={[ms.sheet, { backgroundColor: c.sheetBg }]}>
+        <View style={[ms.handle, { backgroundColor: c.borderLight }]} />
         <View style={ms.userRow}>
           <Avatar name={user?.displayName || user?.username} size={48} />
           <View style={ms.userInfo}>
-            <Text style={ms.userName}>{user?.displayName || user?.username}</Text>
+            <Text style={[ms.userName, { color: c.text }]}>{user?.displayName || user?.username}</Text>
             <StatusSelector />
           </View>
         </View>
-        <View style={ms.divider} />
+        <View style={[ms.divider, { backgroundColor: c.borderLight }]} />
         <ScrollView style={ms.items}>
           {menuItems.map((item) => {
             const Icon = item.icon
             return (
               <TouchableOpacity
                 key={item.view}
-                style={[ms.item, view === item.view && ms.itemActive]}
+                style={[ms.item, view === item.view && { backgroundColor: c.accentLight }]}
                 onPress={() => {
                   setView(item.view)
                   onClose()
                 }}
               >
                 <View style={ms.itemIconWrap}>
-                  <Icon size={20} color={view === item.view ? "#6C8CFF" : "#E8E8F0"} />
+                  <Icon size={20} color={view === item.view ? c.accent : c.text} />
                 </View>
                 <View style={ms.itemContent}>
-                  <Text style={[ms.itemLabel, view === item.view && ms.itemLabelActive]}>{item.label}</Text>
-                  <Text style={ms.itemDesc}>{item.desc}</Text>
+                  <Text style={[ms.itemLabel, { color: c.text }, view === item.view && { color: c.accent }]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[ms.itemDesc, { color: c.textMuted }]}>{item.desc}</Text>
                 </View>
-                <ChevronRight size={18} color="#585870" />
+                <ChevronRight size={18} color={c.textMuted} />
               </TouchableOpacity>
             )
           })}
         </ScrollView>
-        <View style={ms.divider} />
+        <View style={[ms.divider, { backgroundColor: c.borderLight }]} />
         <TouchableOpacity style={ms.logoutBtn} onPress={logout}>
           <LogOut size={20} color="#EF4444" />
           <Text style={ms.logoutText}>Log Out</Text>
@@ -148,9 +151,10 @@ function TabIcon({
   active: boolean
   badgeCount?: number
 }) {
+  const { c } = useTheme()
   return (
-    <View style={[ti.container, active && ti.containerActive]}>
-      <Icon size={21} color={active ? "#6C8CFF" : "#585870"} />
+    <View style={[ti.container, active && { backgroundColor: c.accentLight }]}>
+      <Icon size={21} color={active ? c.accent : c.textMuted} />
       {badgeCount !== undefined && badgeCount > 0 && (
         <View style={ti.badge}>
           <Text style={ti.badgeText}>{badgeCount > 99 ? "99+" : badgeCount}</Text>
@@ -165,6 +169,7 @@ function HomeContent() {
   const { view, setView, activeConversationId, setActiveConversationId } = useNav()
   const { unreadCount } = useNotificationCount()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
   const [activeTab, setActiveTab] = useState<Tab>("chats")
   const [moreOpen, setMoreOpen] = useState(false)
   const [incomingCall, setIncomingCall] = useState<{ conversationId: string; type: "voice" | "video" } | null>(null)
@@ -216,7 +221,13 @@ function HomeContent() {
       />
     )
   if (activeConversationId)
-    return <ChatScreen conversationId={activeConversationId} onBack={() => setActiveConversationId(null)} />
+    return (
+      <ChatScreen
+        conversationId={activeConversationId}
+        onBack={() => setActiveConversationId(null)}
+        onOpenConversation={(id) => setActiveConversationId(id)}
+      />
+    )
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -236,15 +247,15 @@ function HomeContent() {
   }
 
   return (
-    <View style={hc.container}>
-      <View style={[hc.topBar, { paddingTop: insets.top + 12 }]}>
+    <View style={[hc.container, { backgroundColor: c.bg }]}>
+      <View style={[hc.topBar, { paddingTop: insets.top + 12, backgroundColor: c.bg, borderBottomColor: c.border }]}>
         <View style={hc.topBarLeft}>
-          <Text style={hc.appTitle}>Chat App</Text>
-          {!online && <Text style={hc.offlineTag}>Offline</Text>}
+          <Text style={[hc.appTitle, { color: c.text }]}>Chat App</Text>
+          {!online && <Text style={[hc.offlineTag, { color: c.textSecondary }]}>Offline</Text>}
         </View>
         <View style={hc.topBarRight}>
-          <TouchableOpacity style={hc.iconBtn} onPress={() => setView("search")}>
-            <Search size={18} color="#8888A0" />
+          <TouchableOpacity style={[hc.iconBtn, { backgroundColor: c.surface }]} onPress={() => setView("search")}>
+            <Search size={18} color={c.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity style={hc.iconBtn} onPress={() => setMoreOpen(true)}>
             <Avatar name={user?.displayName || user?.username} size={32} />
@@ -252,13 +263,15 @@ function HomeContent() {
         </View>
       </View>
       <View style={hc.content}>{renderScreen()}</View>
-      <View style={hc.tabBar}>
+      <View style={[hc.tabBar, { backgroundColor: c.sheetBg, borderTopColor: c.border }]}>
         {tabs.map((t) => {
           const isActive = activeTab === t.key
           return (
             <TouchableOpacity key={t.key} style={hc.tab} onPress={() => setActiveTab(t.key)} activeOpacity={0.6}>
               <TabIcon icon={t.icon} active={isActive} badgeCount={t.badge ? unreadCount : undefined} />
-              <Text style={[hc.tabLabel, isActive && hc.tabLabelActive]}>{t.label}</Text>
+              <Text style={[hc.tabLabel, { color: c.textMuted }, isActive && [hc.tabLabelActive, { color: c.accent }]]}>
+                {t.label}
+              </Text>
             </TouchableOpacity>
           )
         })}
@@ -348,7 +361,6 @@ const ti = StyleSheet.create({
     height: 28,
     borderRadius: 14,
   },
-  containerActive: { backgroundColor: "rgba(108,140,255,0.12)" },
   badge: {
     position: "absolute",
     top: -4,
@@ -378,41 +390,36 @@ const oc = StyleSheet.create({
 })
 
 const hc = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingBottom: 10,
-    backgroundColor: "#0A0A0F",
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
   topBarLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  offlineTag: { fontSize: 11, fontWeight: "600", color: "#8888A0", textTransform: "uppercase", letterSpacing: 0.5 },
-  appTitle: { fontSize: 26, fontWeight: "800", color: "#E8E8F0", letterSpacing: -0.6 },
+  offlineTag: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  appTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.6 },
   topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#101016",
     justifyContent: "center",
     alignItems: "center",
   },
   content: { flex: 1 },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#0E0E14",
     borderTopWidth: 1,
-    borderTopColor: "#1A1A28",
     paddingBottom: Platform.OS === "ios" ? 28 : 8,
     paddingTop: 6,
   },
   tab: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4 },
-  tabLabel: { color: "#585870", fontSize: 10, marginTop: 3, fontWeight: "500" },
-  tabLabelActive: { color: "#6C8CFF", fontWeight: "600" },
+  tabLabel: { fontSize: 10, marginTop: 3, fontWeight: "500" },
+  tabLabelActive: { fontWeight: "600" },
 })
 
 const ms = StyleSheet.create({
@@ -422,7 +429,6 @@ const ms = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#101016",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "80%",
@@ -432,23 +438,20 @@ const ms = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#2A2A3C",
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 8,
   },
   userRow: { flexDirection: "row", alignItems: "center", padding: 20, gap: 14 },
   userInfo: { flex: 1 },
-  userName: { color: "#E8E8F0", fontSize: 17, fontWeight: "600" },
-  divider: { height: 1, backgroundColor: "#1A1A28" },
+  userName: { fontSize: 17, fontWeight: "600" },
+  divider: { height: 1 },
   items: { maxHeight: 300 },
   item: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 20 },
-  itemActive: { backgroundColor: "rgba(108,140,255,0.08)" },
   itemIconWrap: { width: 32, alignItems: "center", justifyContent: "center" },
   itemContent: { flex: 1, marginLeft: 14 },
-  itemLabel: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
-  itemLabelActive: { color: "#6C8CFF" },
-  itemDesc: { color: "#585870", fontSize: 12, marginTop: 1 },
+  itemLabel: { fontSize: 15, fontWeight: "500" },
+  itemDesc: { fontSize: 12, marginTop: 1 },
   logoutBtn: { flexDirection: "row", alignItems: "center", padding: 20, gap: 12 },
   logoutText: { color: "#EF4444", fontSize: 15, fontWeight: "500" },
 })

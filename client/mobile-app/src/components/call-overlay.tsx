@@ -1,6 +1,19 @@
-import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native"
-import { Phone, Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, User } from "lucide-react-native"
+import { useState, useEffect, useRef } from "react"
+import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from "react-native"
+import {
+  Phone,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  Volume2,
+  VolumeX,
+  PhoneIncoming,
+  PhoneOutgoing,
+  User,
+  X,
+} from "lucide-react-native"
 import { wsClient } from "../lib/ws"
 
 interface CallOverlayProps {
@@ -26,6 +39,7 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
   const [speakerOn, setSpeakerOn] = useState(true)
   const [duration, setDuration] = useState(0)
   const [connected, setConnected] = useState(!incoming)
+  const pulse = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     if (!incoming) {
@@ -42,6 +56,20 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
       clearInterval(timer)
     }
   }, [conversationId])
+
+  useEffect(() => {
+    if (!connected) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1, duration: 1100, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 0, duration: 1100, useNativeDriver: true }),
+        ]),
+      )
+      loop.start()
+      return () => loop.stop()
+    }
+    pulse.setValue(0)
+  }, [connected])
 
   const endCall = () => {
     wsClient.send("call:end", { sessionId: conversationId })
@@ -66,23 +94,67 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
   const displayName = name || "Call"
   const avatarBg = colorFor(displayName)
 
-  const statusText = incoming && !connected ? "Incoming call..." : connected ? formatDuration(duration) : "Ringing..."
+  const statusText = incoming && !connected ? "Incoming call" : connected ? formatDuration(duration) : "Ringing…"
+  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] })
+  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] })
 
   return (
-    <View style={s.container}>
-      <View style={s.avatarWrap}>
-        {avatar ? (
-          <Image source={{ uri: avatar }} style={s.avatarImage} />
-        ) : (
-          <View style={[s.avatar, { backgroundColor: avatarBg }]}>
-            <Text style={s.avatarText}>{(displayName[0] || "?").toUpperCase()}</Text>
-          </View>
-        )}
+    <View style={[s.container, type === "video" && s.containerVideo]}>
+      <View style={s.topRow}>
+        <View style={s.callTypeBadge}>
+          {type === "video" ? <Video size={14} color="#FFFFFF" /> : <Phone size={14} color="#FFFFFF" />}
+          <Text style={s.callTypeText}>{type === "video" ? "Video Call" : "Voice Call"}</Text>
+        </View>
+        <TouchableOpacity style={s.closeBtn} onPress={endCall}>
+          <X size={18} color="rgba(255,255,255,0.8)" />
+        </TouchableOpacity>
       </View>
-      <Text style={s.name}>{displayName}</Text>
-      <View style={s.statusRow}>
-        {type === "video" ? <Video size={16} color="#8696A0" /> : <Phone size={16} color="#8696A0" />}
-        <Text style={s.status}>{statusText}</Text>
+
+      <View style={s.avatarSection}>
+        <View style={s.avatarWrap}>
+          {!connected && (
+            <>
+              <Animated.View
+                style={[
+                  s.ring,
+                  {
+                    width: 168,
+                    height: 168,
+                    borderRadius: 84,
+                    transform: [{ scale: ringScale }],
+                    opacity: ringOpacity,
+                    borderColor: "rgba(108,140,255,0.5)",
+                  },
+                ]}
+              />
+              <Animated.View
+                style={[
+                  s.ring,
+                  {
+                    width: 168,
+                    height: 168,
+                    borderRadius: 84,
+                    transform: [{ scale: ringScale }],
+                    opacity: ringOpacity,
+                    borderColor: "rgba(34,197,94,0.4)",
+                  },
+                ]}
+              />
+            </>
+          )}
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={s.avatarImage} />
+          ) : (
+            <View style={[s.avatar, { backgroundColor: avatarBg }]}>
+              <Text style={s.avatarText}>{(displayName[0] || "?").toUpperCase()}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={s.name}>{displayName}</Text>
+        <View style={s.statusRow}>
+          <Text style={s.status}>{statusText}</Text>
+          <View style={s.statusDot} />
+        </View>
       </View>
 
       <View style={s.controls}>
@@ -90,13 +162,13 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
           <>
             <View style={s.controlCol}>
               <TouchableOpacity style={[s.btn, s.endBtn]} onPress={endCall}>
-                <PhoneOff size={26} color="#FFFFFF" />
+                <PhoneOff size={28} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={s.btnLabel}>Decline</Text>
             </View>
             <View style={s.controlCol}>
               <TouchableOpacity style={[s.btn, s.answerBtn]} onPress={answerCall}>
-                <Phone size={26} color="#FFFFFF" />
+                <Phone size={28} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={s.btnLabel}>Accept</Text>
             </View>
@@ -104,30 +176,42 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
         ) : (
           <>
             <View style={s.controlCol}>
-              <TouchableOpacity style={[s.btn, muted && s.activeBtn]} onPress={toggleMute}>
-                {muted ? <MicOff size={24} color="#E8E8F0" /> : <Mic size={24} color="#E8E8F0" />}
+              <TouchableOpacity
+                style={[s.btn, muted ? s.btnActive : s.btnSecondary]}
+                onPress={toggleMute}
+                activeOpacity={0.8}
+              >
+                {muted ? <MicOff size={26} color="#E8E8F0" /> : <Mic size={26} color="#E8E8F0" />}
               </TouchableOpacity>
               <Text style={s.btnLabel}>{muted ? "Unmute" : "Mute"}</Text>
             </View>
             {type === "video" && (
               <View style={s.controlCol}>
-                <TouchableOpacity style={[s.btn, !videoOn && s.activeBtn]} onPress={toggleVideo}>
-                  {videoOn ? <Video size={24} color="#E8E8F0" /> : <VideoOff size={24} color="#E8E8F0" />}
+                <TouchableOpacity
+                  style={[s.btn, !videoOn ? s.btnActive : s.btnSecondary]}
+                  onPress={toggleVideo}
+                  activeOpacity={0.8}
+                >
+                  {videoOn ? <Video size={26} color="#E8E8F0" /> : <VideoOff size={26} color="#E8E8F0" />}
                 </TouchableOpacity>
-                <Text style={s.btnLabel}>{videoOn ? "Video" : "Off"}</Text>
+                <Text style={s.btnLabel}>{videoOn ? "Video" : "Camera Off"}</Text>
               </View>
             )}
             <View style={s.controlCol}>
-              <TouchableOpacity style={[s.btn, s.endBtn]} onPress={endCall}>
-                <PhoneOff size={26} color="#FFFFFF" />
+              <TouchableOpacity style={[s.btn, s.endBtn]} onPress={endCall} activeOpacity={0.8}>
+                <PhoneOff size={28} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={s.btnLabel}>End</Text>
             </View>
             <View style={s.controlCol}>
-              <TouchableOpacity style={[s.btn, !speakerOn && s.activeBtn]} onPress={toggleSpeaker}>
-                {speakerOn ? <Volume2 size={24} color="#E8E8F0" /> : <VolumeX size={24} color="#E8E8F0" />}
+              <TouchableOpacity
+                style={[s.btn, !speakerOn ? s.btnActive : s.btnSecondary]}
+                onPress={toggleSpeaker}
+                activeOpacity={0.8}
+              >
+                {speakerOn ? <Volume2 size={26} color="#E8E8F0" /> : <VolumeX size={26} color="#E8E8F0" />}
               </TouchableOpacity>
-              <Text style={s.btnLabel}>{speakerOn ? "Speaker" : "Muted"}</Text>
+              <Text style={s.btnLabel}>{speakerOn ? "Speaker" : "Speaker Off"}</Text>
             </View>
           </>
         )}
@@ -143,38 +227,73 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(7,12,16,0.97)",
-    justifyContent: "center",
+    backgroundColor: "#0B1220",
+    justifyContent: "space-between",
     alignItems: "center",
     zIndex: 999,
+    paddingTop: 60,
+    paddingBottom: 48,
   },
-  avatarWrap: { marginBottom: 20 },
+  containerVideo: { backgroundColor: "#05070D" },
+  topRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  callTypeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  callTypeText: { color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: "600" },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarSection: { alignItems: "center", marginTop: 20 },
+  avatarWrap: { marginBottom: 24, alignItems: "center", justifyContent: "center" },
+  ring: { position: "absolute", borderWidth: 1.5 },
   avatar: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: 156,
+    height: 156,
+    borderRadius: 78,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.25)",
   },
-  avatarImage: { width: 112, height: 112, borderRadius: 56 },
-  avatarText: { color: "#FFFFFF", fontSize: 44, fontWeight: "700" },
-  name: { color: "#E9EDEF", fontSize: 22, fontWeight: "600", marginBottom: 10 },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 64 },
-  status: { color: "#8696A0", fontSize: 16 },
-  controls: { flexDirection: "row", gap: 28, alignItems: "center" },
+  avatarImage: { width: 156, height: 156, borderRadius: 78, borderWidth: 3, borderColor: "rgba(255,255,255,0.25)" },
+  avatarText: { color: "#FFFFFF", fontSize: 60, fontWeight: "700" },
+  name: { color: "#FFFFFF", fontSize: 24, fontWeight: "700", letterSpacing: -0.4 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
+  status: { color: "rgba(255,255,255,0.6)", fontSize: 15 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" },
+  controls: { flexDirection: "row", gap: 22, alignItems: "flex-start" },
   controlCol: { alignItems: "center", gap: 8 },
-  btnLabel: { color: "#8696A0", fontSize: 12 },
+  btnLabel: { color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "500" },
   btn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#1F2C34",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  activeBtn: { backgroundColor: "rgba(239,68,68,0.25)", borderColor: "#EF4444" },
-  endBtn: { backgroundColor: "#EF4444", borderColor: "#EF4444" },
-  answerBtn: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+  btnSecondary: { backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  btnActive: {
+    backgroundColor: "rgba(239,68,68,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.5)",
+  },
+  endBtn: { backgroundColor: "#EF4444", borderWidth: 1, borderColor: "#EF4444" },
+  answerBtn: { backgroundColor: "#22C55E", borderWidth: 1, borderColor: "#22C55E" },
 })

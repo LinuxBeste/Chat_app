@@ -15,6 +15,7 @@ import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Search, X } from "lucide-react-native"
+import { useTheme } from "../lib/theme-context"
 
 interface Stats {
   totalUsers: number
@@ -39,6 +40,7 @@ type AdminTab = "stats" | "users" | "reports" | "bans" | "activity" | "admins"
 export function AdminScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const [tab, setTab] = useState<AdminTab>("stats")
   const [stats, setStats] = useState<Stats | null>(null)
@@ -60,17 +62,17 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
   }, [tab])
 
   return (
-    <View style={s.container}>
-      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
+      <View style={[s.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>
+          <Text style={[s.back, { color: c.accent }]}>
             {"<"} {t("common.back")}
           </Text>
         </TouchableOpacity>
-        <Text style={s.title}>{t("admin.title")}</Text>
+        <Text style={[s.title, { color: c.text }]}>{t("admin.title")}</Text>
         <View style={{ width: 50 }} />
       </View>
-      <View style={s.tabsRow}>
+      <View style={[s.tabsRow, { borderBottomColor: c.borderLight }]}>
         <FlatList
           horizontal
           data={tabs}
@@ -78,8 +80,17 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.tabsContent}
           renderItem={({ item }) => (
-            <TouchableOpacity style={[s.tab, tab === item.key && s.tabActive]} onPress={() => setTab(item.key)}>
-              <Text style={[s.tabText, tab === item.key && s.tabTextActive]}>{item.label}</Text>
+            <TouchableOpacity
+              style={[
+                s.tab,
+                { backgroundColor: c.surfaceAlt },
+                tab === item.key && [s.tabActive, { backgroundColor: c.accent }],
+              ]}
+              onPress={() => setTab(item.key)}
+            >
+              <Text style={[s.tabText, { color: c.textSecondary }, tab === item.key && s.tabTextActive]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           )}
         />
@@ -94,9 +105,9 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
             { label: "Files", value: stats.totalFiles },
             { label: "Reports", value: stats.totalReports },
           ].map((stat) => (
-            <View key={stat.label} style={ss.statCard}>
-              <Text style={ss.statValue}>{stat.value}</Text>
-              <Text style={ss.statLabel}>{stat.label}</Text>
+            <View key={stat.label} style={[ss.statCard, { backgroundColor: c.cardBg, borderColor: c.border }]}>
+              <Text style={[ss.statValue, { color: c.text }]}>{stat.value}</Text>
+              <Text style={[ss.statLabel, { color: c.textMuted }]}>{stat.label}</Text>
             </View>
           ))}
         </View>
@@ -111,6 +122,7 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
 }
 
 function AdminActivity() {
+  const { c } = useTheme()
   const [logs, setLogs] = useState<any[]>([])
 
   useEffect(() => {
@@ -125,9 +137,9 @@ function AdminActivity() {
       keyExtractor={(_, i) => String(i)}
       contentContainerStyle={{ padding: 16 }}
       renderItem={({ item }) => (
-        <View style={ss.reportItem}>
-          <Text style={ss.reportTitle}>{item.action || item.type || "Activity"}</Text>
-          <Text style={ss.reportMeta}>
+        <View style={[ss.reportItem, { borderBottomColor: c.borderLight }]}>
+          <Text style={[ss.reportTitle, { color: c.text }]}>{item.action || item.type || "Activity"}</Text>
+          <Text style={[ss.reportMeta, { color: c.textMuted }]}>
             {item.userId ? `User: ${item.username || item.userId}` : ""}
             {item.details ? ` · ${item.details}` : ""}
             {item.timestamp ? ` · ${new Date(item.timestamp).toLocaleString()}` : ""}
@@ -135,13 +147,14 @@ function AdminActivity() {
         </View>
       )}
       ListEmptyComponent={
-        <Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No activity logs</Text>
+        <Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No activity logs</Text>
       }
     />
   )
 }
 
 function AdminManagement() {
+  const { c } = useTheme()
   const [admins, setAdmins] = useState<any[]>([])
   const [addAdminId, setAddAdminId] = useState("")
   const [adminMsg, setAdminMsg] = useState("")
@@ -183,35 +196,35 @@ function AdminManagement() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#1A1A28" }}>
-        <Text style={{ color: "#E8E8F0", fontSize: 15, fontWeight: "600", marginBottom: 8 }}>Add Admin</Text>
+      <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: c.borderLight }}>
+        <Text style={{ color: c.text, fontSize: 15, fontWeight: "600", marginBottom: 8 }}>Add Admin</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             style={{
               flex: 1,
-              backgroundColor: "#0A0A0F",
+              backgroundColor: c.inputBg,
               borderRadius: 10,
               padding: 12,
-              color: "#E8E8F0",
+              color: c.text,
               fontSize: 14,
               borderWidth: 1,
-              borderColor: "#1A1A28",
+              borderColor: c.border,
             }}
             placeholder="User ID"
-            placeholderTextColor="#585870"
+            placeholderTextColor={c.textMuted}
             value={addAdminId}
             onChangeText={setAddAdminId}
             autoCapitalize="none"
           />
           <TouchableOpacity
-            style={{ backgroundColor: "#6C8CFF", borderRadius: 10, paddingHorizontal: 16, justifyContent: "center" }}
+            style={{ backgroundColor: c.accent, borderRadius: 10, paddingHorizontal: 16, justifyContent: "center" }}
             onPress={addAdmin}
           >
             <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 14 }}>Add</Text>
           </TouchableOpacity>
         </View>
         {adminMsg ? (
-          <Text style={{ color: adminMsg.includes("success") ? "#22C55E" : "#EF4444", fontSize: 12, marginTop: 4 }}>
+          <Text style={{ color: adminMsg.includes("success") ? c.success : c.danger, fontSize: 12, marginTop: 4 }}>
             {adminMsg}
           </Text>
         ) : null}
@@ -221,25 +234,29 @@ function AdminManagement() {
         keyExtractor={(a) => a.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (
-          <View style={ss.userItem}>
+          <View style={[ss.userItem, { borderBottomColor: c.borderLight }]}>
             <View style={{ flex: 1 }}>
-              <Text style={ss.userName}>{item.username || item.id}</Text>
-              <Text style={ss.userMeta}>{item.isOwner ? "Owner" : "Admin"}</Text>
+              <Text style={[ss.userName, { color: c.text }]}>{item.username || item.id}</Text>
+              <Text style={[ss.userMeta, { color: c.textMuted }]}>{item.isOwner ? "Owner" : "Admin"}</Text>
             </View>
             {!item.isOwner && (
-              <TouchableOpacity style={[ss.smallBtn, ss.dangerBtn]} onPress={() => removeAdmin(item.id)}>
+              <TouchableOpacity
+                style={[ss.smallBtn, ss.dangerBtn, { backgroundColor: c.danger }]}
+                onPress={() => removeAdmin(item.id)}
+              >
                 <Text style={ss.smallBtnText}>Remove</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
-        ListEmptyComponent={<Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No admins</Text>}
+        ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No admins</Text>}
       />
     </View>
   )
 }
 
 function AdminUsers() {
+  const { c } = useTheme()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
@@ -298,9 +315,12 @@ function AdminUsers() {
     <View style={{ flex: 1, padding: 16 }}>
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         <TextInput
-          style={[ss.searchInput, { flex: 1, marginBottom: 0 }]}
+          style={[
+            ss.searchInput,
+            { flex: 1, marginBottom: 0, backgroundColor: c.inputBg, borderColor: c.border, color: c.text },
+          ]}
           placeholder="Search users..."
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
           value={search}
           onChangeText={(v) => {
             setSearch(v)
@@ -315,28 +335,37 @@ function AdminUsers() {
             }}
             style={{ padding: 8 }}
           >
-            <X size={16} color="#8888A0" />
+            <X size={16} color={c.textSecondary} />
           </TouchableOpacity>
         ) : null}
       </View>
-      {loading && <ActivityIndicator color="#6C8CFF" style={{ marginVertical: 20 }} />}
+      {loading && <ActivityIndicator color={c.accent} style={{ marginVertical: 20 }} />}
       <FlatList
         data={users}
         keyExtractor={(u) => u.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={ss.userItem} onPress={() => setDetailUser(item)}>
+          <TouchableOpacity
+            style={[ss.userItem, { borderBottomColor: c.borderLight }]}
+            onPress={() => setDetailUser(item)}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={ss.userName}>{item.username}</Text>
-              <Text style={ss.userEmail}>{item.email}</Text>
-              <Text style={ss.userMeta}>
+              <Text style={[ss.userName, { color: c.text }]}>{item.username}</Text>
+              <Text style={[ss.userEmail, { color: c.textSecondary }]}>{item.email}</Text>
+              <Text style={[ss.userMeta, { color: c.textMuted }]}>
                 {item.isAdmin === "true" ? "Admin" : "User"} · {item.isSuspended === "true" ? "Suspended" : "Active"}
               </Text>
             </View>
             <View style={{ gap: 4 }}>
-              <TouchableOpacity style={ss.smallBtn} onPress={() => suspendUser(item.id)}>
+              <TouchableOpacity
+                style={[ss.smallBtn, { backgroundColor: c.accent }]}
+                onPress={() => suspendUser(item.id)}
+              >
                 <Text style={ss.smallBtnText}>{item.isSuspended === "true" ? "Unsuspend" : "Suspend"}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[ss.smallBtn, ss.dangerBtn]} onPress={() => deleteUser(item.id)}>
+              <TouchableOpacity
+                style={[ss.smallBtn, ss.dangerBtn, { backgroundColor: c.danger }]}
+                onPress={() => deleteUser(item.id)}
+              >
                 <Text style={ss.smallBtnText}>Delete</Text>
               </TouchableOpacity>
             </View>
@@ -345,36 +374,36 @@ function AdminUsers() {
       />
       <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, padding: 12 }}>
         <TouchableOpacity disabled={page <= 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
-          <Text style={{ color: page <= 1 ? "#585870" : "#6C8CFF", fontSize: 14 }}>Previous</Text>
+          <Text style={{ color: page <= 1 ? c.textMuted : c.accent, fontSize: 14 }}>Previous</Text>
         </TouchableOpacity>
-        <Text style={{ color: "#8888A0", fontSize: 14 }}>Page {page}</Text>
+        <Text style={{ color: c.textSecondary, fontSize: 14 }}>Page {page}</Text>
         <TouchableOpacity disabled={users.length < 50} onPress={() => setPage((p) => p + 1)}>
-          <Text style={{ color: users.length < 50 ? "#585870" : "#6C8CFF", fontSize: 14 }}>Next</Text>
+          <Text style={{ color: users.length < 50 ? c.textMuted : c.accent, fontSize: 14 }}>Next</Text>
         </TouchableOpacity>
       </View>
       <Modal visible={!!detailUser} transparent animationType="fade" onRequestClose={() => setDetailUser(null)}>
         <View style={ss.overlay}>
-          <View style={ss.modal}>
-            <Text style={ss.modalTitle}>User Details</Text>
+          <View style={[ss.modal, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
+            <Text style={[ss.modalTitle, { color: c.text }]}>User Details</Text>
             {detailUser && (
               <>
-                <Text style={{ color: "#E8E8F0", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
+                <Text style={{ color: c.text, fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
                   {detailUser.username}
                 </Text>
-                <Text style={{ color: "#8888A0", marginBottom: 4 }}>ID: {detailUser.id}</Text>
-                <Text style={{ color: "#8888A0", marginBottom: 4 }}>Email: {detailUser.email}</Text>
-                <Text style={{ color: "#8888A0", marginBottom: 4 }}>
+                <Text style={{ color: c.textSecondary, marginBottom: 4 }}>ID: {detailUser.id}</Text>
+                <Text style={{ color: c.textSecondary, marginBottom: 4 }}>Email: {detailUser.email}</Text>
+                <Text style={{ color: c.textSecondary, marginBottom: 4 }}>
                   Joined: {new Date(detailUser.createdAt).toLocaleDateString()}
                 </Text>
-                <Text style={{ color: detailUser.isSuspended === "true" ? "#EF4444" : "#22C55E", marginBottom: 4 }}>
+                <Text style={{ color: detailUser.isSuspended === "true" ? c.danger : c.success, marginBottom: 4 }}>
                   Status: {detailUser.isSuspended === "true" ? "Suspended" : "Active"}
                 </Text>
-                <Text style={{ color: detailUser.isAdmin === "true" ? "#6C8CFF" : "#585870", marginBottom: 16 }}>
+                <Text style={{ color: detailUser.isAdmin === "true" ? c.accent : c.textMuted, marginBottom: 16 }}>
                   Role: {detailUser.isAdmin === "true" ? "Admin" : "User"}
                 </Text>
               </>
             )}
-            <TouchableOpacity style={ss.btn} onPress={() => setDetailUser(null)}>
+            <TouchableOpacity style={[ss.btn, { backgroundColor: c.accent }]} onPress={() => setDetailUser(null)}>
               <Text style={ss.btnText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -385,6 +414,7 @@ function AdminUsers() {
 }
 
 function AdminReports() {
+  const { c } = useTheme()
   const [reports, setReports] = useState<any[]>([])
   const [filter, setFilter] = useState<string>("all")
 
@@ -411,10 +441,14 @@ function AdminReports() {
         {["all", "open", "resolved", "dismissed"].map((f) => (
           <TouchableOpacity
             key={f}
-            style={[ss.filterChip, filter === f && ss.filterChipActive]}
+            style={[
+              ss.filterChip,
+              { backgroundColor: c.surfaceAlt },
+              filter === f && [ss.filterChipActive, { backgroundColor: c.accent }],
+            ]}
             onPress={() => setFilter(f)}
           >
-            <Text style={[ss.filterChipText, filter === f && ss.filterChipTextActive]}>
+            <Text style={[ss.filterChipText, { color: c.textSecondary }, filter === f && ss.filterChipTextActive]}>
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </Text>
           </TouchableOpacity>
@@ -425,18 +459,21 @@ function AdminReports() {
         keyExtractor={(r) => r.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (
-          <View style={ss.reportItem}>
-            <Text style={ss.reportTitle}>{item.reason || "Report"}</Text>
-            <Text style={ss.reportMeta}>
+          <View style={[ss.reportItem, { borderBottomColor: c.borderLight }]}>
+            <Text style={[ss.reportTitle, { color: c.text }]}>{item.reason || "Report"}</Text>
+            <Text style={[ss.reportMeta, { color: c.textMuted }]}>
               From: {item.reporterId || "unknown"} · Target: {item.targetUserId || "unknown"} ·{" "}
               {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
             </Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-              <TouchableOpacity style={ss.smallBtn} onPress={() => resolve(item.id, "resolved")}>
+              <TouchableOpacity
+                style={[ss.smallBtn, { backgroundColor: c.accent }]}
+                onPress={() => resolve(item.id, "resolved")}
+              >
                 <Text style={ss.smallBtnText}>Resolve</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[ss.smallBtn, { backgroundColor: "#8888A0" }]}
+                style={[ss.smallBtn, { backgroundColor: c.textSecondary }]}
                 onPress={() => resolve(item.id, "dismissed")}
               >
                 <Text style={ss.smallBtnText}>Dismiss</Text>
@@ -444,13 +481,14 @@ function AdminReports() {
             </View>
           </View>
         )}
-        ListEmptyComponent={<Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No reports</Text>}
+        ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No reports</Text>}
       />
     </View>
   )
 }
 
 function AdminBans() {
+  const { c } = useTheme()
   const [bans, setBans] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
@@ -470,9 +508,9 @@ function AdminBans() {
   return (
     <View style={{ flex: 1, padding: 16 }}>
       <TextInput
-        style={ss.searchInput}
+        style={[ss.searchInput, { backgroundColor: c.inputBg, borderColor: c.border, color: c.text }]}
         placeholder="Search bans..."
-        placeholderTextColor="#585870"
+        placeholderTextColor={c.textMuted}
         value={search}
         onChangeText={(v) => {
           setSearch(v)
@@ -483,26 +521,26 @@ function AdminBans() {
         data={bans}
         keyExtractor={(b) => b.id}
         renderItem={({ item }) => (
-          <View style={ss.reportItem}>
-            <Text style={ss.reportTitle}>{item.userId}</Text>
-            <Text style={ss.reportMeta}>
+          <View style={[ss.reportItem, { borderBottomColor: c.borderLight }]}>
+            <Text style={[ss.reportTitle, { color: c.text }]}>{item.userId}</Text>
+            <Text style={[ss.reportMeta, { color: c.textMuted }]}>
               {item.reason || "No reason"} ·{" "}
               {item.expiresAt ? `Expires: ${new Date(item.expiresAt).toLocaleDateString()}` : "Permanent"}
             </Text>
-            <TouchableOpacity style={ss.smallBtn} onPress={() => unban(item.id)}>
+            <TouchableOpacity style={[ss.smallBtn, { backgroundColor: c.accent }]} onPress={() => unban(item.id)}>
               <Text style={ss.smallBtnText}>Unban</Text>
             </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={<Text style={{ color: "#585870", textAlign: "center", marginTop: 40 }}>No bans</Text>}
+        ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No bans</Text>}
       />
       <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, padding: 12 }}>
         <TouchableOpacity disabled={page <= 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
-          <Text style={{ color: page <= 1 ? "#585870" : "#6C8CFF", fontSize: 14 }}>Previous</Text>
+          <Text style={{ color: page <= 1 ? c.textMuted : c.accent, fontSize: 14 }}>Previous</Text>
         </TouchableOpacity>
-        <Text style={{ color: "#8888A0", fontSize: 14 }}>Page {page}</Text>
+        <Text style={{ color: c.textSecondary, fontSize: 14 }}>Page {page}</Text>
         <TouchableOpacity disabled={bans.length < 50} onPress={() => setPage((p) => p + 1)}>
-          <Text style={{ color: bans.length < 50 ? "#585870" : "#6C8CFF", fontSize: 14 }}>Next</Text>
+          <Text style={{ color: bans.length < 50 ? c.textMuted : c.accent, fontSize: 14 }}>Next</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -513,60 +551,51 @@ const ss = StyleSheet.create({
   statsGrid: { flexDirection: "row", flexWrap: "wrap", padding: 16, gap: 12 },
   statCard: {
     width: "45%",
-    backgroundColor: "#101016",
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#1A1A28",
     alignItems: "center",
     flex: 1,
     minWidth: 140,
   },
-  statValue: { color: "#E8E8F0", fontSize: 28, fontWeight: "700" },
-  statLabel: { color: "#585870", fontSize: 12, marginTop: 4 },
+  statValue: { fontSize: 28, fontWeight: "700" },
+  statLabel: { fontSize: 12, marginTop: 4 },
   searchInput: {
-    backgroundColor: "#101016",
     borderRadius: 12,
     padding: 12,
-    color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#1A1A28",
     marginBottom: 12,
   },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825" },
-  filterChipActive: { backgroundColor: "#6C8CFF" },
-  filterChipText: { color: "#8888A0", fontSize: 13 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+  filterChipActive: {},
+  filterChipText: { fontSize: 13 },
   filterChipTextActive: { color: "#FFFFFF", fontWeight: "600" },
   userItem: {
     flexDirection: "row",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
     alignItems: "center",
   },
-  userName: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
-  userEmail: { color: "#8888A0", fontSize: 13 },
-  userMeta: { color: "#585870", fontSize: 11, marginTop: 2 },
-  smallBtn: { backgroundColor: "#6C8CFF", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  dangerBtn: { backgroundColor: "#EF4444" },
+  userName: { fontSize: 15, fontWeight: "500" },
+  userEmail: { fontSize: 13 },
+  userMeta: { fontSize: 11, marginTop: 2 },
+  smallBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  dangerBtn: {},
   smallBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
-  reportItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
-  reportTitle: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
-  reportMeta: { color: "#585870", fontSize: 12, marginTop: 4, marginBottom: 8 },
+  reportItem: { padding: 14, borderBottomWidth: 1 },
+  reportTitle: { fontSize: 15, fontWeight: "500" },
+  reportMeta: { fontSize: 12, marginTop: 4, marginBottom: 8 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
   modal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#101016",
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  modalTitle: { color: "#E8E8F0", fontSize: 18, fontWeight: "600", marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 16 },
   btn: {
-    backgroundColor: "#6C8CFF",
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -577,7 +606,7 @@ const ss = StyleSheet.create({
 })
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -585,16 +614,15 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
+  back: { fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "600", color: "#E8E8F0" },
-  tabsRow: { borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
+  title: { fontSize: 17, fontWeight: "600" },
+  tabsRow: { borderBottomWidth: 1 },
   tabsContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, backgroundColor: "#181825" },
-  tabActive: { backgroundColor: "#6C8CFF" },
-  tabText: { color: "#8888A0", fontSize: 13 },
+  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  tabActive: {},
+  tabText: { fontSize: 13 },
   tabTextActive: { color: "#FFFFFF", fontWeight: "600" },
   content: { flex: 1 },
 })

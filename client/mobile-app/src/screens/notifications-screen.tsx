@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } fr
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useTheme } from "../lib/theme-context"
 import { MessageSquare, Users, Globe, Calendar, Phone } from "lucide-react-native"
 
 interface Notification {
@@ -30,6 +31,7 @@ export function NotificationsScreen({
 }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -75,62 +77,82 @@ export function NotificationsScreen({
   const displayed = tab === "unread" ? unread : notifications
 
   return (
-    <View style={s.container}>
-      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={s.title}>{t("notifications.title")}</Text>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
+      <View style={[s.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
+        <Text style={[s.title, { color: c.text }]}>{t("notifications.title")}</Text>
         <View style={s.headerRight}>
-          <Text style={s.count}>
+          <Text style={[s.count, { color: c.accent }]}>
             {unread.length} {t("notifications.unread")}
           </Text>
           {unread.length > 0 && (
             <TouchableOpacity onPress={markAllRead} style={s.markAllBtn}>
-              <Text style={s.markAllText}>{t("notifications.markAllRead")}</Text>
+              <Text style={[s.markAllText, { color: c.accent }]}>{t("notifications.markAllRead")}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
-      <View style={s.filterRow}>
-        <TouchableOpacity style={[s.filterBtn, tab === "all" && s.filterActive]} onPress={() => setTab("all")}>
-          <Text style={[s.filterText, tab === "all" && s.filterTextActive]}>All</Text>
+      <View style={[s.filterRow, { borderBottomColor: c.borderLight }]}>
+        <TouchableOpacity
+          style={[
+            s.filterBtn,
+            { backgroundColor: c.surfaceAlt },
+            tab === "all" && [s.filterActive, { backgroundColor: c.accent }],
+          ]}
+          onPress={() => setTab("all")}
+        >
+          <Text style={[s.filterText, { color: c.textSecondary }, tab === "all" && s.filterTextActive]}>All</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.filterBtn, tab === "unread" && s.filterActive]} onPress={() => setTab("unread")}>
-          <Text style={[s.filterText, tab === "unread" && s.filterTextActive]}>Unread ({unread.length})</Text>
+        <TouchableOpacity
+          style={[
+            s.filterBtn,
+            { backgroundColor: c.surfaceAlt },
+            tab === "unread" && [s.filterActive, { backgroundColor: c.accent }],
+          ]}
+          onPress={() => setTab("unread")}
+        >
+          <Text style={[s.filterText, { color: c.textSecondary }, tab === "unread" && s.filterTextActive]}>
+            Unread ({unread.length})
+          </Text>
         </TouchableOpacity>
       </View>
       <FlatList
         data={displayed}
         keyExtractor={(n) => n.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C8CFF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
           const IconComp = NOTIFICATION_ICONS[item.type || ""] || MessageSquare
           return (
             <TouchableOpacity
-              style={[s.item, item.isRead === "false" && s.unread]}
+              style={[
+                s.item,
+                { borderBottomColor: c.borderLight },
+                item.isRead === "false" && [s.unread, { backgroundColor: c.accentLight }],
+              ]}
               onPress={() => {
                 markRead(item.id)
                 if (item.conversationId) onNavigateToConversation?.(item.conversationId)
               }}
             >
-              <View style={s.iconWrap}>
-                <IconComp size={16} color="#6C8CFF" />
+              <View style={[s.iconWrap, { backgroundColor: c.accentLight }]}>
+                <IconComp size={16} color={c.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.titleText}>{item.title}</Text>
-                {item.body && <Text style={s.body}>{item.body}</Text>}
-                <Text style={s.time}>{formatTime(item.createdAt)}</Text>
+                <Text style={[s.titleText, { color: c.text }]}>{item.title}</Text>
+                {item.body && <Text style={[s.body, { color: c.textSecondary }]}>{item.body}</Text>}
+                <Text style={[s.time, { color: c.textMuted }]}>{formatTime(item.createdAt)}</Text>
               </View>
-              {item.isRead === "false" && <View style={s.dot} />}
+              {item.isRead === "false" && <View style={[s.dot, { backgroundColor: c.accent }]} />}
             </TouchableOpacity>
           )
         }}
-        ListEmptyComponent={<Text style={s.empty}>{t("notifications.noNotifications")}</Text>}
+        ListEmptyComponent={<Text style={[s.empty, { color: c.textMuted }]}>{t("notifications.noNotifications")}</Text>}
       />
     </View>
   )
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -138,24 +160,22 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#E8E8F0" },
+  title: { fontSize: 24, fontWeight: "700" },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
-  count: { color: "#6C8CFF", fontSize: 13 },
+  count: { fontSize: 13 },
   markAllBtn: { paddingHorizontal: 8, paddingVertical: 4 },
-  markAllText: { color: "#6C8CFF", fontSize: 12, fontWeight: "500" },
-  item: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
-  unread: { backgroundColor: "rgba(108,140,255,0.05)" },
-  titleText: { color: "#E8E8F0", fontSize: 15, fontWeight: "500" },
-  body: { color: "#8888A0", fontSize: 13, marginTop: 2 },
-  time: { color: "#585870", fontSize: 11, marginTop: 4 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#6C8CFF", marginLeft: 12 },
+  markAllText: { fontSize: 12, fontWeight: "500" },
+  item: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1 },
+  unread: {},
+  titleText: { fontSize: 15, fontWeight: "500" },
+  body: { fontSize: 13, marginTop: 2 },
+  time: { fontSize: 11, marginTop: 4 },
+  dot: { width: 10, height: 10, borderRadius: 5, marginLeft: 12 },
   iconWrap: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(108,140,255,0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -166,11 +186,10 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  filterBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 16, backgroundColor: "#181825" },
-  filterActive: { backgroundColor: "#6C8CFF" },
-  filterText: { color: "#8888A0", fontSize: 13 },
+  filterBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 16 },
+  filterActive: {},
+  filterText: { fontSize: 13 },
   filterTextActive: { color: "#FFFFFF", fontWeight: "600" },
-  empty: { color: "#585870", textAlign: "center", marginTop: 60, fontSize: 15 },
+  empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
 })

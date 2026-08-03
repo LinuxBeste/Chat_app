@@ -3,6 +3,7 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from "r
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useTheme } from "../lib/theme-context"
 
 interface SearchResult {
   id: string
@@ -15,6 +16,7 @@ interface SearchResult {
 export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelect: (convId: string) => void }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
@@ -48,68 +50,69 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
   }
 
   return (
-    <View style={s.container}>
-      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
+      <View style={[s.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>
+          <Text style={[s.back, { color: c.accent }]}>
             {"<"} {t("common.back")}
           </Text>
         </TouchableOpacity>
         <TextInput
-          style={s.searchInput}
+          style={[s.searchInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
           placeholder={t("chat.searchPlaceholder")}
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
           value={query}
           onChangeText={handleChange}
           autoFocus
         />
       </View>
-      {searching && <Text style={s.status}>{t("common.loading")}</Text>}
+      {searching && <Text style={[s.status, { color: c.textMuted }]}>{t("common.loading")}</Text>}
       <FlatList
         data={results}
         keyExtractor={(r) => r.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={s.item} onPress={() => onSelect(item.conversationId)}>
-            <Text style={s.sender}>{item.senderUsername}</Text>
-            <Text style={s.content} numberOfLines={2}>
+          <TouchableOpacity
+            style={[s.item, { borderBottomColor: c.borderLight }]}
+            onPress={() => onSelect(item.conversationId)}
+          >
+            <Text style={[s.sender, { color: c.accent }]}>{item.senderUsername}</Text>
+            <Text style={[s.content, { color: c.text }]} numberOfLines={2}>
               {item.content}
             </Text>
-            <Text style={s.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+            <Text style={[s.date, { color: c.textMuted }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={query ? <Text style={s.empty}>{t("common.noResults")}</Text> : null}
+        ListEmptyComponent={
+          query ? <Text style={[s.empty, { color: c.textMuted }]}>{t("common.noResults")}</Text> : null
+        }
       />
     </View>
   )
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
     gap: 12,
   },
-  back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
+  back: { fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
   searchInput: {
     flex: 1,
-    backgroundColor: "#101016",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  status: { color: "#585870", textAlign: "center", padding: 12, fontSize: 13 },
-  item: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#1A1A28" },
-  sender: { color: "#6C8CFF", fontSize: 13, fontWeight: "500" },
-  content: { color: "#E8E8F0", fontSize: 15, marginTop: 2 },
-  date: { color: "#585870", fontSize: 11, marginTop: 4 },
-  empty: { color: "#585870", textAlign: "center", marginTop: 60, fontSize: 15 },
+  status: { textAlign: "center", padding: 12, fontSize: 13 },
+  item: { padding: 14, borderBottomWidth: 1 },
+  sender: { fontSize: 13, fontWeight: "500" },
+  content: { fontSize: 15, marginTop: 2 },
+  date: { fontSize: 11, marginTop: 4 },
+  empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
 })

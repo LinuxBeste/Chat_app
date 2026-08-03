@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as ImagePicker from "expo-image-picker"
 import * as Clipboard from "expo-clipboard"
 import { wsClient } from "../lib/ws"
+import { useTheme } from "../lib/theme-context"
 
 const STATUS_OPTIONS = [
   { key: "online", label: "Online", color: "#22C55E" },
@@ -18,6 +19,7 @@ const STATUS_OPTIONS = [
 export function ProfileScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useTheme()
 
   const { user, logout } = useAuth()
   const [displayName, setDisplayName] = useState(user?.displayName || "")
@@ -71,88 +73,99 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
+    <ScrollView style={[s.container, { backgroundColor: c.bg }]} contentContainerStyle={s.content}>
+      <View style={[s.header, { paddingTop: insets.top + 12, borderBottomColor: c.borderLight }]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={s.back}>
+          <Text style={[s.back, { color: c.accent }]}>
             {"<"} {t("common.back")}
           </Text>
         </TouchableOpacity>
-        <Text style={s.title}>{t("profile.title")}</Text>
+        <Text style={[s.title, { color: c.text }]}>{t("profile.title")}</Text>
         <View style={{ width: 50 }} />
       </View>
 
       <View style={s.avatarSection}>
-        <TouchableOpacity onPress={pickAvatar} style={s.avatar}>
-          <Text style={s.avatarText}>{(user?.displayName || user?.username || "U")[0].toUpperCase()}</Text>
+        <TouchableOpacity
+          onPress={pickAvatar}
+          style={[s.avatar, { backgroundColor: c.surfaceAlt, borderColor: c.accent }]}
+        >
+          <Text style={[s.avatarText, { color: c.text }]}>
+            {(user?.displayName || user?.username || "U")[0].toUpperCase()}
+          </Text>
         </TouchableOpacity>
-        <Text style={s.username}>@{user?.username}</Text>
-        <Text style={s.email}>{user?.email}</Text>
+        <Text style={[s.username, { color: c.text }]}>@{user?.username}</Text>
+        <Text style={[s.email, { color: c.textMuted }]}>{user?.email}</Text>
       </View>
 
       <View style={s.form}>
-        <Text style={s.label}>{t("profile.displayName")}</Text>
+        <Text style={[s.label, { color: c.textSecondary }]}>{t("profile.displayName")}</Text>
         <TextInput
-          style={s.input}
+          style={[s.input, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Display Name"
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
         />
 
-        <Text style={s.label}>{t("profile.bio")}</Text>
+        <Text style={[s.label, { color: c.textSecondary }]}>{t("profile.bio")}</Text>
         <TextInput
-          style={[s.input, s.bioInput]}
+          style={[s.input, s.bioInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
           value={bio}
           onChangeText={setBio}
           placeholder="About yourself..."
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
           multiline
           numberOfLines={3}
         />
 
-        <Text style={s.label}>Status</Text>
+        <Text style={[s.label, { color: c.textSecondary }]}>Status</Text>
         <View style={s.statusRow}>
           {STATUS_OPTIONS.map((opt) => (
             <TouchableOpacity
               key={opt.key}
-              style={[s.statusChip, status === opt.key && { backgroundColor: opt.color }]}
+              style={[
+                s.statusChip,
+                { backgroundColor: c.surfaceAlt, borderColor: c.border },
+                status === opt.key && { backgroundColor: opt.color },
+              ]}
               onPress={() => setStatus(opt.key)}
             >
-              <Text style={[s.statusChipText, status === opt.key && { color: "#FFFFFF" }]}>{opt.label}</Text>
+              <Text style={[s.statusChipText, { color: c.textSecondary }, status === opt.key && { color: "#FFFFFF" }]}>
+                {opt.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={s.label}>Custom Status</Text>
+        <Text style={[s.label, { color: c.textSecondary }]}>Custom Status</Text>
         <TextInput
-          style={s.input}
+          style={[s.input, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
           value={customStatus}
           onChangeText={setCustomStatus}
           placeholder="What's on your mind?"
-          placeholderTextColor="#585870"
+          placeholderTextColor={c.textMuted}
           maxLength={80}
         />
 
-        <TouchableOpacity style={s.saveBtn} onPress={saveProfile} disabled={saving}>
+        <TouchableOpacity style={[s.saveBtn, { backgroundColor: c.accent }]} onPress={saveProfile} disabled={saving}>
           <Text style={s.saveText}>{saving ? t("common.loading") : t("profile.save")}</Text>
         </TouchableOpacity>
 
         <View style={s.idSection}>
-          <Text style={s.label}>User ID</Text>
+          <Text style={[s.label, { color: c.textSecondary }]}>User ID</Text>
           <TouchableOpacity
-            style={s.idRow}
+            style={[s.idRow, { backgroundColor: c.inputBg, borderColor: c.border }]}
             onPress={() => {
               Clipboard.setStringAsync(user?.id || "")
               Alert.alert("Copied!")
             }}
           >
-            <Text style={s.idText}>{user?.id}</Text>
+            <Text style={[s.idText, { color: c.textSecondary }]}>{user?.id}</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={s.logoutBtn} onPress={logout}>
-          <Text style={s.logoutText}>{t("nav.logout")}</Text>
+          <Text style={[s.logoutText, { color: c.danger }]}>{t("nav.logout")}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -160,7 +173,7 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   content: { paddingBottom: 40 },
   header: {
     flexDirection: "row",
@@ -169,40 +182,33 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  back: { color: "#6C8CFF", fontSize: 15, fontWeight: "500" },
+  back: { fontSize: 15, fontWeight: "500" },
   backBtn: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "600", color: "#E8E8F0" },
+  title: { fontSize: 17, fontWeight: "600" },
   avatarSection: { alignItems: "center", paddingVertical: 32 },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#181825",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#6C8CFF",
     marginBottom: 12,
   },
-  avatarText: { color: "#E8E8F0", fontSize: 32, fontWeight: "700" },
-  username: { color: "#E8E8F0", fontSize: 20, fontWeight: "600" },
-  email: { color: "#585870", fontSize: 14, marginTop: 4 },
+  avatarText: { fontSize: 32, fontWeight: "700" },
+  username: { fontSize: 20, fontWeight: "600" },
+  email: { fontSize: 14, marginTop: 4 },
   form: { paddingHorizontal: 24 },
-  label: { color: "#8888A0", fontSize: 13, marginBottom: 8, marginTop: 16, fontWeight: "500" },
+  label: { fontSize: 13, marginBottom: 8, marginTop: 16, fontWeight: "500" },
   input: {
-    backgroundColor: "#101016",
     borderRadius: 14,
     padding: 14,
-    color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
   bioInput: { minHeight: 80, textAlignVertical: "top" },
   saveBtn: {
-    backgroundColor: "#6C8CFF",
     borderRadius: 16,
     height: 48,
     justifyContent: "center",
@@ -211,18 +217,16 @@ const s = StyleSheet.create({
   },
   saveText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
   idSection: { marginTop: 24 },
-  idRow: { backgroundColor: "#101016", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#1A1A28" },
-  idText: { color: "#8888A0", fontSize: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  idRow: { borderRadius: 12, padding: 14, borderWidth: 1 },
+  idText: { fontSize: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
   logoutBtn: { marginTop: 20, alignItems: "center", padding: 12 },
-  logoutText: { color: "#EF4444", fontSize: 15, fontWeight: "500" },
+  logoutText: { fontSize: 15, fontWeight: "500" },
   statusRow: { flexDirection: "row", gap: 8, marginTop: 4 },
   statusChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#181825",
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
-  statusChipText: { color: "#8888A0", fontSize: 13, fontWeight: "500" },
+  statusChipText: { fontSize: 13, fontWeight: "500" },
 })

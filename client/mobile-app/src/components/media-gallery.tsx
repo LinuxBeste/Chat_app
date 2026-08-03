@@ -1,4 +1,5 @@
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity } from "react-native"
+import { useTheme } from "../lib/theme-context"
 
 interface MediaItem {
   id: string
@@ -13,12 +14,13 @@ interface MediaGalleryProps {
 }
 
 export function MediaGallery({ media, onClose }: MediaGalleryProps) {
+  const { c } = useTheme()
   return (
-    <View style={s.container}>
-      <View style={s.header}>
-        <Text style={s.title}>Shared Media</Text>
+    <View style={[s.container, { backgroundColor: c.bg }]}>
+      <View style={[s.header, { borderBottomColor: c.borderLight }]}>
+        <Text style={[s.title, { color: c.text }]}>Shared Media</Text>
         <TouchableOpacity onPress={onClose}>
-          <Text style={s.close}>Close</Text>
+          <Text style={[s.close, { color: c.accent }]}>Close</Text>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -30,7 +32,7 @@ export function MediaGallery({ media, onClose }: MediaGalleryProps) {
             {item.type.startsWith("image/") ? (
               <Image source={{ uri: item.url }} style={s.image} />
             ) : (
-              <View style={s.filePlaceholder}>
+              <View style={[s.filePlaceholder, { backgroundColor: c.surface, borderColor: c.border }]}>
                 <Text style={s.fileIcon}>📄</Text>
               </View>
             )}
@@ -42,27 +44,24 @@ export function MediaGallery({ media, onClose }: MediaGalleryProps) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0F" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A28",
   },
-  title: { color: "#E8E8F0", fontSize: 18, fontWeight: "600" },
-  close: { color: "#6C8CFF", fontSize: 15 },
+  title: { fontSize: 18, fontWeight: "600" },
+  close: { fontSize: 15 },
   item: { flex: 1, aspectRatio: 1, padding: 2 },
   image: { flex: 1, borderRadius: 8 },
   filePlaceholder: {
     flex: 1,
-    backgroundColor: "#101016",
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
   fileIcon: { fontSize: 28 },
 })

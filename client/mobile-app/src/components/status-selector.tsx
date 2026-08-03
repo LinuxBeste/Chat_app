@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, Modal } from "reac
 import { wsClient } from "../lib/ws"
 import { api } from "../lib/api"
 import { useTranslation } from "react-i18next"
+import { useTheme } from "../lib/theme-context"
 
 const statuses = [
   { key: "online", emoji: "🟢", label: "status.online" },
@@ -13,6 +14,7 @@ const statuses = [
 
 export function StatusSelector() {
   const { t } = useTranslation()
+  const { c } = useTheme()
   const [visible, setVisible] = useState(false)
   const [current, setCurrent] = useState("online")
   const [customText, setCustomText] = useState("")
@@ -35,29 +37,32 @@ export function StatusSelector() {
   return (
     <View>
       <TouchableOpacity style={styles.trigger} onPress={() => setVisible(true)}>
-        <Text style={styles.triggerText}>
+        <Text style={[styles.triggerText, { color: c.textSecondary }]}>
           {statuses.find((st) => st.key === current)?.emoji}{" "}
           {t(statuses.find((st) => st.key === current)?.label || "status.online")}
         </Text>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade">
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setVisible(false)}>
-          <View style={styles.menu}>
+          <View style={[styles.menu, { backgroundColor: c.sheetBg, borderColor: c.border }]}>
             {statuses.map((st) => (
               <TouchableOpacity
                 key={st.key}
-                style={[styles.menuItem, current === st.key && styles.menuItemActive]}
+                style={[
+                  styles.menuItem,
+                  current === st.key && [styles.menuItemActive, { backgroundColor: c.accentLight }],
+                ]}
                 onPress={() => setStatus(st.key)}
               >
-                <Text style={styles.menuItemText}>
+                <Text style={[styles.menuItemText, { color: c.text }]}>
                   {st.emoji} {t(st.label)}
                 </Text>
               </TouchableOpacity>
             ))}
             <TextInput
-              style={styles.customInput}
+              style={[styles.customInput, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }]}
               placeholder={t("status.setCustom")}
-              placeholderTextColor="#585870"
+              placeholderTextColor={c.textMuted}
               value={customText}
               onChangeText={setCustomText}
               onSubmitEditing={() => setStatus(current)}
@@ -71,27 +76,22 @@ export function StatusSelector() {
 
 const styles = StyleSheet.create({
   trigger: { padding: 4 },
-  triggerText: { color: "#8888A0", fontSize: 12 },
+  triggerText: { fontSize: 12 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   menu: {
-    backgroundColor: "#101016",
     borderRadius: 20,
     padding: 8,
     minWidth: 200,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
   menuItem: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12 },
-  menuItemActive: { backgroundColor: "rgba(108,140,255,0.1)" },
-  menuItemText: { color: "#E8E8F0", fontSize: 15 },
+  menuItemActive: {},
+  menuItemText: { fontSize: 15 },
   customInput: {
-    backgroundColor: "#0A0A0F",
     borderRadius: 12,
     padding: 12,
-    color: "#E8E8F0",
     fontSize: 13,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
 })

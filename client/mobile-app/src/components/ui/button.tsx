@@ -1,4 +1,5 @@
 import { TouchableOpacity, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native"
+import { useTheme } from "../../lib/theme-context"
 
 interface ButtonProps {
   title: string
@@ -9,16 +10,22 @@ interface ButtonProps {
 }
 
 export function Button({ title, onPress, variant = "primary", disabled, style }: ButtonProps) {
+  const { c } = useTheme()
+  const bg =
+    variant === "primary"
+      ? { backgroundColor: c.accent }
+      : variant === "danger"
+        ? { backgroundColor: c.danger }
+        : { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }
+  const textColor = variant === "secondary" ? { color: c.text } : { color: "#FFFFFF" }
   return (
     <TouchableOpacity
       activeOpacity={0.85}
-      style={[s.btn, s[variant], disabled && s.disabled, style]}
+      style={[s.btn, bg, disabled && s.disabled, style]}
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[s.text, variant === "secondary" && s.textSecondary, variant === "danger" && s.textDanger]}>
-        {title}
-      </Text>
+      <Text style={[s.text, textColor]}>{title}</Text>
     </TouchableOpacity>
   )
 }
@@ -31,11 +38,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 22,
   },
-  primary: { backgroundColor: "#6C8CFF" },
-  secondary: { backgroundColor: "#181825", borderWidth: 1, borderColor: "#1A1A28" },
-  danger: { backgroundColor: "#EF4444" },
   disabled: { opacity: 0.4 },
-  text: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", letterSpacing: 0.2 },
-  textSecondary: { color: "#E8E8F0" },
-  textDanger: { color: "#FFFFFF" },
+  text: { fontSize: 15, fontWeight: "600", letterSpacing: 0.2 },
 })

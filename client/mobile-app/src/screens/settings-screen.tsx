@@ -55,6 +55,7 @@ import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { supportedLanguages } from "../lib/i18n/index"
 import i18n from "../lib/i18n"
+import { APP_VERSION, EXPO_SDK } from "../lib/version"
 
 type SettingsTab =
   | "account"
@@ -186,33 +187,21 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
           style={[st.catRow, { borderBottomColor: c.borderLight }]}
           contentContainerStyle={st.catContent}
         >
-          {tabGroups.map((group) => {
-            const hasActive = group.tabs.some((t) => t.key === tab)
+          {allTabs.map((tabItem) => {
+            const TabIcon = tabItem.icon
+            const isActive = tab === tabItem.key
             return (
-              <View key={group.label} style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={[st.catLabel, { color: c.textMuted }]}>{group.label}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 0 }}>
-                  {group.tabs.map((tabItem) => {
-                    const TabIcon = tabItem.icon
-                    const isActive = tab === tabItem.key
-                    return (
-                      <TouchableOpacity
-                        key={tabItem.key}
-                        style={[st.tab, { backgroundColor: isActive ? c.accent : c.surfaceAlt }]}
-                        onPress={() => {
-                          setTab(tabItem.key)
-                          setSearchQuery("")
-                        }}
-                      >
-                        <TabIcon size={12} color={isActive ? "#FFFFFF" : c.textSecondary} />
-                        <Text style={[st.tabText, { color: isActive ? "#FFFFFF" : c.textSecondary }]}>
-                          {tabItem.label}
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </ScrollView>
-              </View>
+              <TouchableOpacity
+                key={tabItem.key}
+                style={[st.tab, { backgroundColor: isActive ? c.accent : c.surfaceAlt }]}
+                onPress={() => {
+                  setTab(tabItem.key)
+                  setSearchQuery("")
+                }}
+              >
+                <TabIcon size={12} color={isActive ? "#FFFFFF" : c.textSecondary} />
+                <Text style={[st.tabText, { color: isActive ? "#FFFFFF" : c.textSecondary }]}>{tabItem.label}</Text>
+              </TouchableOpacity>
             )
           })}
         </ScrollView>
@@ -2266,7 +2255,7 @@ function AboutSection() {
     <View style={{ paddingBottom: 40 }}>
       <Section title="Application Info" icon={Info}>
         <SettingRow label="Version">
-          <Text style={[ss.value, { color: c.textMuted }]}>1.0.0</Text>
+          <Text style={[ss.value, { color: c.textMuted }]}>{APP_VERSION}</Text>
         </SettingRow>
         <SettingRow label="Platform">
           <Text style={[ss.value, { color: c.textMuted }]}>
@@ -2274,7 +2263,7 @@ function AboutSection() {
           </Text>
         </SettingRow>
         <SettingRow label="Expo SDK">
-          <Text style={[ss.value, { color: c.textMuted }]}>57</Text>
+          <Text style={[ss.value, { color: c.textMuted }]}>{EXPO_SDK}</Text>
         </SettingRow>
         <SettingRow label="Protocol">
           <Text style={[ss.value, { color: c.textMuted }]}>WebSocket + REST</Text>
@@ -2381,19 +2370,18 @@ const st = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   iconBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1 },
   title: { fontSize: 17, fontWeight: "600" },
-  catRow: { borderBottomWidth: 1, maxHeight: 56 },
-  catContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 12, alignItems: "center" },
+  catRow: { borderBottomWidth: 1, maxHeight: 60 },
+  catContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8, alignItems: "center" },
   catLabel: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.8, marginRight: 4 },
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 4,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 18,
   },
-  tabText: { fontSize: 12, fontWeight: "500" },
+  tabText: { fontSize: 12, fontWeight: "600" },
   content: { flex: 1 },
   searchBar: {
     flexDirection: "row",

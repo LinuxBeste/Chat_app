@@ -1,17 +1,22 @@
 import { TextInput, StyleSheet, type TextInputProps } from "react-native"
+import { useTheme } from "../../lib/theme-context"
 
 export function Input(props: TextInputProps) {
-  return <TextInput style={[s.input, props.style]} placeholderTextColor="#585870" {...props} />
+  const { c } = useTheme()
+  return (
+    <TextInput
+      style={[s.input, { backgroundColor: c.inputBg, color: c.text, borderColor: c.border }, props.style]}
+      placeholderTextColor={c.textMuted}
+      {...props}
+    />
+  )
 }
 
 const s = StyleSheet.create({
   input: {
-    backgroundColor: "#101016",
     borderRadius: 14,
     padding: 14,
-    color: "#E8E8F0",
     fontSize: 15,
     borderWidth: 1,
-    borderColor: "#1A1A28",
   },
 })
