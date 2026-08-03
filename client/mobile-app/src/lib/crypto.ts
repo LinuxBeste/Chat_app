@@ -5,8 +5,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const KEY_STORE_KEY = "e2ee:keypair"
 const CONVERSATION_KEYS_KEY = "e2ee:conv-keys"
+const MAX_CONVERSATION_KEYS = 3
 
 let cachedKeyPair: { publicKey: string; secretKey: string } | null = null
+
+interface ConvKeyEntry {
+  key: string
+  peer: string
+}
 
 export interface KeyPair {
   publicKey: string
@@ -69,20 +75,37 @@ export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8
   }
 }
 
-async function getConvKey(conversationId: string): Promise<Uint8Array | null> {
+async function getConvKeys(conversationId: string): Promise<ConvKeyEntry[]> {
   try {
     const raw = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
-    if (raw) return decodeBase64(raw)
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        return parsed.filter((e) => e && typeof e.key === "string" && typeof e.peer === "string")
+      }
+    } catch {}
+    return [{ key: raw, peer: "" }]
   } catch {
-    return null
+    return []
   }
-  return null
 }
 
-async function setConvKey(conversationId: string, key: Uint8Array) {
+async function setConvKeys(conversationId: string, entries: ConvKeyEntry[]) {
   try {
-    await AsyncStorage.setItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`, encodeBase64(key))
+    await AsyncStorage.setItem(
+      `${CONVERSATION_KEYS_KEY}:${conversationId}`,
+      JSON.stringify(entries.slice(0, MAX_CONVERSATION_KEYS)),
+    )
   } catch {}
+}
+
+async function deriveConvKey(conversationId: string, theirPublicKey: string): Promise<Uint8Array | null> {
+  const secret = await computeSharedSecret(theirPublicKey)
+  if (!secret) return null
+  const keys = (await getConvKeys(conversationId)).filter((k) => k.peer !== theirPublicKey)
+  await setConvKeys(conversationId, [{ key: encodeBase64(secret), peer: theirPublicKey }, ...keys])
+  return secret
 }
 
 export async function encryptMessage(
@@ -90,10 +113,13 @@ export async function encryptMessage(
   content: string,
   theirPublicKey?: string,
 ): Promise<string | null> {
-  let sharedKey = await getConvKey(conversationId)
-  if (!sharedKey && theirPublicKey) {
-    sharedKey = await computeSharedSecret(theirPublicKey)
-    if (sharedKey) await setConvKey(conversationId, sharedKey)
+  const keys = await getConvKeys(conversationId)
+  let sharedKey: Uint8Array | null = null
+  if (theirPublicKey) {
+    const match = keys.find((k) => k.peer === theirPublicKey)
+    sharedKey = match ? decodeBase64(match.key) : await deriveConvKey(conversationId, theirPublicKey)
+  } else if (keys.length > 0) {
+    sharedKey = decodeBase64(keys[0].key)
   }
   if (!sharedKey) return null
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength)
@@ -107,23 +133,32 @@ export async function decryptMessage(
   ciphertext: string,
   theirPublicKey?: string,
 ): Promise<string | null> {
-  let sharedKey = await getConvKey(conversationId)
-  if (!sharedKey && theirPublicKey) {
-    sharedKey = await computeSharedSecret(theirPublicKey)
-    if (sharedKey) await setConvKey(conversationId, sharedKey)
-  }
-  if (!sharedKey) return null
   const parts = ciphertext.split(".")
   if (parts.length !== 2) return null
-  try {
-    const nonce = decodeBase64(parts[0])
-    const encrypted = decodeBase64(parts[1])
-    const decrypted = nacl.secretbox.open(encrypted, nonce, sharedKey)
-    if (!decrypted) return null
-    return encodeUTF8(decrypted)
-  } catch {
-    return null
+  const tryKey = (key: string): string | null => {
+    try {
+      const nonce = decodeBase64(parts[0])
+      const encrypted = decodeBase64(parts[1])
+      const decrypted = nacl.secretbox.open(encrypted, nonce, decodeBase64(key))
+      if (!decrypted) return null
+      return encodeUTF8(decrypted)
+    } catch {
+      return null
+    }
   }
+  const keys = await getConvKeys(conversationId)
+  for (const entry of keys) {
+    const plain = tryKey(entry.key)
+    if (plain !== null) return plain
+  }
+  if (theirPublicKey) {
+    const fresh = await deriveConvKey(conversationId, theirPublicKey)
+    if (fresh) {
+      const plain = tryKey(encodeBase64(fresh))
+      if (plain !== null) return plain
+    }
+  }
+  return null
 }
 
 export function isEncrypted(content: string): boolean {

@@ -423,7 +423,7 @@ export function ChatScreen({
       wsClient.on("message:edited", (data: any) => {
         if (data.conversationId === conversationId) {
           setMessages((p) =>
-            p.map((m) => (m.id === data.messageId ? { ...m, content: data.content, editedAt: data.editedAt } : m)),
+            p.map((m) => (m.id === data.id ? { ...m, content: data.content, editedAt: data.editedAt } : m)),
           )
         }
       }),
@@ -431,7 +431,7 @@ export function ChatScreen({
         if (data.conversationId === conversationId) {
           setMessages((p) =>
             p.map((m) =>
-              m.id === data.messageId ? { ...m, content: "message deleted", deletedAt: new Date().toISOString() } : m,
+              m.id === data.id ? { ...m, content: "message deleted", deletedAt: new Date().toISOString() } : m,
             ),
           )
         }
@@ -479,7 +479,13 @@ export function ChatScreen({
         msgs.map(async (m) => {
           if (isEncrypted(m.content)) {
             const key = m.senderId !== user!.id ? await getTheirKey(m.senderId) : undefined
-            const plain = await decryptMessage(conversationId, stripEncryptionPrefix(m.content), key ?? undefined)
+            const cipher = stripEncryptionPrefix(m.content)
+            let plain = await decryptMessage(conversationId, cipher, key ?? undefined)
+            if (!plain && key) {
+              theirKeyRef.current = null
+              const fresh = await getTheirKey(m.senderId)
+              plain = await decryptMessage(conversationId, cipher, fresh ?? undefined)
+            }
             return [m.id, plain || m.content] as [string, string]
           }
           return [m.id, m.content] as [string, string]

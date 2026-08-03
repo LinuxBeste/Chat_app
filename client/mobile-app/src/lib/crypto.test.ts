@@ -1,4 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { encodeBase64 } from "tweetnacl-util"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import nacl from "tweetnacl"
 import {
   generateKeyPair,
   getOrCreateKeyPair,
@@ -108,6 +111,78 @@ describe("crypto", () => {
       await getOrCreateKeyPair()
       const plain = await decryptMessage("conv-unknown", "bm9uY2U=.Y2lwaGVydGV4dA==")
       expect(plain).toBeNull()
+    })
+  })
+
+  describe("key rotation self-healing", () => {
+    const before = vi.mocked(nacl.box.before)
+    const open = vi.mocked((nacl as any).secretbox.open as (...args: any[]) => Uint8Array | null)
+
+    const hello = new Uint8Array([104, 101, 108, 108, 111])
+
+    const cipherWith = (payload: Uint8Array = new Uint8Array([9, 9, 9])) =>
+      encodeBase64(new Uint8Array(24).fill(1)) + "." + encodeBase64(payload)
+
+    afterEach(() => {
+      open.mockImplementation(() => hello)
+    })
+
+    beforeEach(async () => {
+      await getOrCreateKeyPair()
+      await resetConversationKey("conv1")
+      before.mockImplementation((their: Uint8Array) => new Uint8Array(32).fill(their[0] || 7))
+    })
+
+    it("derives a fresh conversation key when the peer public key changes", async () => {
+      before.mockClear()
+      await encryptMessage("conv1", "hi", "YWFhYQ==")
+      expect(before).toHaveBeenCalledTimes(1)
+      await encryptMessage("conv1", "hi", "enp6eg==")
+      expect(before).toHaveBeenCalledTimes(2)
+      await encryptMessage("conv1", "hi", "enp6eg==")
+      expect(before).toHaveBeenCalledTimes(2)
+    })
+
+    it("keeps legacy conversation keys and falls back to them", async () => {
+      open.mockImplementation((enc: Uint8Array, nonce: Uint8Array, key: Uint8Array) => (key[0] === 122 ? hello : null))
+      await encryptMessage("conv1", "x", "YWFhYQ==")
+      const cipher = cipherWith()
+      expect(await decryptMessage("conv1", cipher, "enp6eg==")).toBe("hello")
+      before.mockClear()
+      expect(await decryptMessage("conv1", cipher, "enp6eg==")).toBe("hello")
+      expect(before).toHaveBeenCalledTimes(0)
+    })
+
+    it("re-derives from the current peer key when all cached keys fail", async () => {
+      open.mockImplementation((enc: Uint8Array, nonce: Uint8Array, key: Uint8Array) => (key[0] === 122 ? hello : null))
+      await encryptMessage("conv1", "x", "YWFhYQ==")
+      const plain = await decryptMessage("conv1", cipherWith(), "enp6eg==")
+      expect(plain).toBe("hello")
+      const stored = await AsyncStorage.getItem("e2ee:conv-keys:conv1")
+      expect(stored).not.toBeNull()
+      expect(JSON.parse(stored!)[0].peer).toBe("enp6eg==")
+    })
+
+    it("returns null when re-derivation still fails to decrypt", async () => {
+      open.mockImplementation(() => null)
+      await encryptMessage("conv1", "x", "YWFhYQ==")
+      expect(await decryptMessage("conv1", cipherWith(), "enp6eg==")).toBeNull()
+    })
+
+    it("supports the legacy single-key storage format", async () => {
+      open.mockImplementation((enc: Uint8Array, nonce: Uint8Array, key: Uint8Array) => (key[0] === 7 ? hello : null))
+      await AsyncStorage.setItem("e2ee:conv-keys:conv1", encodeBase64(new Uint8Array(32).fill(7)))
+      expect(await decryptMessage("conv1", cipherWith())).toBe("hello")
+    })
+
+    it("caps stored conversation keys at 3 entries, newest first", async () => {
+      await encryptMessage("conv1", "1", "YWFhYQ==")
+      await encryptMessage("conv1", "2", "YmJiYg==")
+      await encryptMessage("conv1", "3", "Y2NjYw==")
+      await encryptMessage("conv1", "4", "ZGRkZA==")
+      const stored = JSON.parse((await AsyncStorage.getItem("e2ee:conv-keys:conv1"))!)
+      expect(stored.length).toBe(3)
+      expect(stored[0].peer).toBe("ZGRkZA==")
     })
   })
 
