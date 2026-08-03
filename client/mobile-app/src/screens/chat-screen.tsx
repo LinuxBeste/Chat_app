@@ -182,9 +182,19 @@ export function ChatScreen({
     const cacheKey = `${userId}:${keyId ?? ""}`
     if (!force && keyCacheRef.current.has(cacheKey)) return keyCacheRef.current.get(cacheKey)!
     try {
-      const res = keyId
-        ? await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/${keyId}`)
-        : await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
+      if (keyId) {
+        const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/${keyId}`)
+        if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey)
+        return res.publicKey
+      }
+      // Legacy messages (no keyId) were always encrypted with the sender's
+      // legacy device key; fall back to their latest key if it is gone.
+      const legacy = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/legacy`)
+      if (legacy.publicKey) {
+        keyCacheRef.current.set(cacheKey, legacy.publicKey)
+        return legacy.publicKey
+      }
+      const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
       if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey)
       return res.publicKey
     } catch {
