@@ -4,10 +4,13 @@ import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const KEY_STORE_KEY = "e2ee:keypair"
+const DEVICE_ID_KEY = "e2ee:deviceId"
 const CONVERSATION_KEYS_KEY = "e2ee:conv-keys"
-const MAX_CONVERSATION_KEYS = 3
+const MAX_CONVERSATION_KEYS = 100
+const LEGACY_USER = "default"
 
 let cachedKeyPair: { publicKey: string; secretKey: string } | null = null
+let cachedDeviceId: string | null = null
 
 interface ConvKeyEntry {
   key: string
@@ -19,6 +22,22 @@ export interface KeyPair {
   secretKey: string
 }
 
+function userScope(userId?: string): string {
+  return userId && userId.length > 0 ? userId : LEGACY_USER
+}
+
+function keypairStoreKey(userId?: string): string {
+  return `${KEY_STORE_KEY}:${userScope(userId)}`
+}
+
+function deviceIdStoreKey(userId?: string): string {
+  return `${DEVICE_ID_KEY}:${userScope(userId)}`
+}
+
+function convKeyStorageKey(conversationId: string, userId?: string): string {
+  return `${CONVERSATION_KEYS_KEY}:${userScope(userId)}:${conversationId}`
+}
+
 export function generateKeyPair(): KeyPair {
   const kp = nacl.box.keyPair()
   return {
@@ -27,19 +46,28 @@ export function generateKeyPair(): KeyPair {
   }
 }
 
-async function storeKeypair(kp: KeyPair): Promise<void> {
+async function storeKeypair(kp: KeyPair, userId?: string): Promise<void> {
   try {
-    await SecureStore.setItemAsync(KEY_STORE_KEY, JSON.stringify(kp))
+    await SecureStore.setItemAsync(keypairStoreKey(userId), JSON.stringify(kp))
   } catch {}
   cachedKeyPair = kp
 }
 
-async function loadKeypair(): Promise<KeyPair | null> {
+async function loadKeypair(userId?: string): Promise<KeyPair | null> {
   if (cachedKeyPair) return cachedKeyPair
   try {
-    const json = await SecureStore.getItemAsync(KEY_STORE_KEY)
+    const json = await SecureStore.getItemAsync(keypairStoreKey(userId))
     if (json) {
       cachedKeyPair = JSON.parse(json)
+      return cachedKeyPair
+    }
+    // Legacy migration: keypair stored without user scoping by older clients.
+    const legacy = await SecureStore.getItemAsync(KEY_STORE_KEY)
+    if (legacy) {
+      try {
+        await SecureStore.setItemAsync(keypairStoreKey(userId), legacy)
+      } catch {}
+      cachedKeyPair = JSON.parse(legacy)
       return cachedKeyPair
     }
   } catch {
@@ -48,25 +76,49 @@ async function loadKeypair(): Promise<KeyPair | null> {
   return null
 }
 
-async function removeKeypair(): Promise<void> {
-  cachedKeyPair = null
-  await SecureStore.deleteItemAsync(KEY_STORE_KEY)
-}
-
-export async function getOrCreateKeyPair(): Promise<KeyPair> {
-  const existing = await loadKeypair()
+export async function getOrCreateKeyPair(userId?: string): Promise<KeyPair> {
+  const existing = await loadKeypair(userId)
   if (existing) return existing
   const kp = generateKeyPair()
-  await storeKeypair(kp)
+  await storeKeypair(kp, userId)
   return kp
 }
 
-export async function getLocalKeyPair(): Promise<KeyPair | null> {
-  return loadKeypair()
+export async function getLocalKeyPair(userId?: string): Promise<KeyPair | null> {
+  return loadKeypair(userId)
 }
 
-export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8Array | null> {
-  const pair = await getLocalKeyPair()
+// Stable per-user device identifier, used as the e2ee message keyId.
+// Persists across logouts so re-login keeps old messages decryptable.
+export async function getOrCreateDeviceId(userId?: string): Promise<string> {
+  if (cachedDeviceId) return cachedDeviceId
+  try {
+    const scoped = await SecureStore.getItemAsync(deviceIdStoreKey(userId))
+    if (scoped) {
+      cachedDeviceId = scoped
+      return scoped
+    }
+    const legacy = await SecureStore.getItemAsync(DEVICE_ID_KEY)
+    if (legacy) {
+      try {
+        await SecureStore.setItemAsync(deviceIdStoreKey(userId), legacy)
+      } catch {}
+      cachedDeviceId = legacy
+      return legacy
+    }
+  } catch {}
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}-${Math.random()
+    .toString(36)
+    .slice(2, 12)}`
+  try {
+    await SecureStore.setItemAsync(deviceIdStoreKey(userId), id)
+  } catch {}
+  cachedDeviceId = id
+  return id
+}
+
+export async function computeSharedSecret(theirPublicKey: string, userId?: string): Promise<Uint8Array | null> {
+  const pair = await getLocalKeyPair(userId)
   if (!pair) return null
   try {
     return nacl.box.before(decodeBase64(theirPublicKey), decodeBase64(pair.secretKey))
@@ -75,36 +127,54 @@ export async function computeSharedSecret(theirPublicKey: string): Promise<Uint8
   }
 }
 
-async function getConvKeys(conversationId: string): Promise<ConvKeyEntry[]> {
+async function getConvKeys(conversationId: string, userId?: string): Promise<ConvKeyEntry[]> {
   try {
-    const raw = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
-    if (!raw) return []
-    try {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) {
-        return parsed.filter((e) => e && typeof e.key === "string" && typeof e.peer === "string")
+    const scoped = await AsyncStorage.getItem(convKeyStorageKey(conversationId, userId))
+    if (scoped !== null) {
+      try {
+        const parsed = JSON.parse(scoped)
+        if (Array.isArray(parsed)) {
+          return parsed.filter((e) => e && typeof e.key === "string" && typeof e.peer === "string")
+        }
+      } catch {}
+      return [{ key: scoped, peer: "" }]
+    }
+    // Legacy migration: conversation keys stored without user scoping.
+    const legacy = await AsyncStorage.getItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
+    if (legacy !== null) {
+      let entries: ConvKeyEntry[]
+      try {
+        const parsed = JSON.parse(legacy)
+        entries = Array.isArray(parsed)
+          ? parsed.filter((e) => e && typeof e.key === "string" && typeof e.peer === "string")
+          : [{ key: legacy, peer: "" }]
+      } catch {
+        entries = [{ key: legacy, peer: "" }]
       }
-    } catch {}
-    return [{ key: raw, peer: "" }]
+      if (entries.length > 0) {
+        try {
+          await AsyncStorage.setItem(convKeyStorageKey(conversationId, userId), JSON.stringify(entries))
+        } catch {}
+      }
+      return entries
+    }
+    return []
   } catch {
     return []
   }
 }
 
-async function setConvKeys(conversationId: string, entries: ConvKeyEntry[]) {
+async function setConvKeys(conversationId: string, entries: ConvKeyEntry[], userId?: string) {
   try {
-    await AsyncStorage.setItem(
-      `${CONVERSATION_KEYS_KEY}:${conversationId}`,
-      JSON.stringify(entries.slice(0, MAX_CONVERSATION_KEYS)),
-    )
+    await AsyncStorage.setItem(convKeyStorageKey(conversationId, userId), JSON.stringify(entries.slice(0, MAX_CONVERSATION_KEYS)))
   } catch {}
 }
 
-async function deriveConvKey(conversationId: string, theirPublicKey: string): Promise<Uint8Array | null> {
-  const secret = await computeSharedSecret(theirPublicKey)
+async function deriveConvKey(conversationId: string, theirPublicKey: string, userId?: string): Promise<Uint8Array | null> {
+  const secret = await computeSharedSecret(theirPublicKey, userId)
   if (!secret) return null
-  const keys = (await getConvKeys(conversationId)).filter((k) => k.peer !== theirPublicKey)
-  await setConvKeys(conversationId, [{ key: encodeBase64(secret), peer: theirPublicKey }, ...keys])
+  const keys = (await getConvKeys(conversationId, userId)).filter((k) => k.peer !== theirPublicKey)
+  await setConvKeys(conversationId, [{ key: encodeBase64(secret), peer: theirPublicKey }, ...keys], userId)
   return secret
 }
 
@@ -112,15 +182,14 @@ export async function encryptMessage(
   conversationId: string,
   content: string,
   theirPublicKey?: string,
+  userId?: string,
 ): Promise<string | null> {
-  const keys = await getConvKeys(conversationId)
-  let sharedKey: Uint8Array | null = null
-  if (theirPublicKey) {
-    const match = keys.find((k) => k.peer === theirPublicKey)
-    sharedKey = match ? decodeBase64(match.key) : await deriveConvKey(conversationId, theirPublicKey)
-  } else if (keys.length > 0) {
-    sharedKey = decodeBase64(keys[0].key)
-  }
+  if (!theirPublicKey) return null
+  const keys = await getConvKeys(conversationId, userId)
+  const match = keys.find((k) => k.peer === theirPublicKey)
+  const sharedKey: Uint8Array | null = match
+    ? decodeBase64(match.key)
+    : await deriveConvKey(conversationId, theirPublicKey, userId)
   if (!sharedKey) return null
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength)
   const encrypted = nacl.secretbox(decodeUTF8(content), nonce, sharedKey)
@@ -132,6 +201,7 @@ export async function decryptMessage(
   conversationId: string,
   ciphertext: string,
   theirPublicKey?: string,
+  userId?: string,
 ): Promise<string | null> {
   const parts = ciphertext.split(".")
   if (parts.length !== 2) return null
@@ -146,13 +216,13 @@ export async function decryptMessage(
       return null
     }
   }
-  const keys = await getConvKeys(conversationId)
+  const keys = await getConvKeys(conversationId, userId)
   for (const entry of keys) {
     const plain = tryKey(entry.key)
     if (plain !== null) return plain
   }
   if (theirPublicKey) {
-    const fresh = await deriveConvKey(conversationId, theirPublicKey)
+    const fresh = await deriveConvKey(conversationId, theirPublicKey, userId)
     if (fresh) {
       const plain = tryKey(encodeBase64(fresh))
       if (plain !== null) return plain
@@ -169,13 +239,17 @@ export function stripEncryptionPrefix(content: string): string {
   return content.startsWith("e2ee:") ? content.slice(5) : content
 }
 
-export async function resetConversationKey(conversationId: string) {
-  await AsyncStorage.removeItem(`${CONVERSATION_KEYS_KEY}:${conversationId}`)
+export async function resetConversationKey(conversationId: string, userId?: string) {
+  await AsyncStorage.removeItem(convKeyStorageKey(conversationId, userId))
 }
 
-export async function deleteKeyPair() {
-  await removeKeypair()
+export async function deleteKeyPair(userId?: string) {
+  cachedKeyPair = null
+  cachedDeviceId = null
+  await SecureStore.deleteItemAsync(keypairStoreKey(userId))
+  await SecureStore.deleteItemAsync(deviceIdStoreKey(userId))
   const allKeys = await AsyncStorage.getAllKeys()
-  const keysToRemove = allKeys.filter((k) => k.startsWith(CONVERSATION_KEYS_KEY))
-  await AsyncStorage.multiRemove(keysToRemove)
+  const prefix = `${CONVERSATION_KEYS_KEY}:${userScope(userId)}:`
+  const keysToRemove = allKeys.filter((k) => k.startsWith(prefix))
+  await Promise.all(keysToRemove.map((k) => AsyncStorage.removeItem(k)))
 }

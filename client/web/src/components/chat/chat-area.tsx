@@ -40,7 +40,7 @@ import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
 import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db"
 import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline"
-import { encryptMessage, decryptMessage, stripEncryptionPrefix, isEncrypted } from "../../lib/crypto"
+import { encryptMessage, decryptMessage, stripEncryptionPrefix, isEncrypted, getOrCreateDeviceId } from "../../lib/crypto"
 
 interface Attachment {
   id: string
@@ -60,6 +60,7 @@ interface Message {
   editedAt: string | null
   deletedAt?: string | null
   encrypted?: string
+  keyId?: string
   sender: {
     username: string
     displayName: string | null
@@ -144,28 +145,17 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       api<ConversationInfo>(`/api/conversations/${conversationId}`),
     ])
       .then(async ([msgs, info]) => {
-        const isDmConv = info.type === "dm"
-        let theirKey: string | null = null
-        if (isDmConv) {
-          const other = info.members.find((m: any) => m.id !== currentUserId)
-          if (other) {
-            try {
-              const res = await api<{ publicKey: string }>(`/api/e2ee/key/${other.id}`)
-              theirKey = res.publicKey
-            } catch {
-              /* Ignored */
-            }
-          }
-        }
         const decrypted = await Promise.all(
           msgs.map(async (m) => {
             if (m.encrypted === "true" && isEncrypted(m.content)) {
-              const decrypted = await decryptMessage(
+              const senderKey = await getSenderKey(m.senderId, m.keyId)
+              const plain = await decryptMessage(
                 conversationId,
                 stripEncryptionPrefix(m.content),
-                theirKey ?? undefined,
+                senderKey ?? undefined,
+                currentUserId,
               )
-              if (decrypted) return { ...m, content: decrypted, encrypted: "true" }
+              if (plain) return { ...m, content: plain, encrypted: "true" }
             }
             return m
           }),
@@ -193,14 +183,31 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const isDm = convInfo?.type === "dm" || (!convInfo?.type && conversationId.length > 0)
   const otherUserId = isDm ? convInfo?.members.find((m) => m.id !== currentUserId)?.id : null
 
-  const theirPublicKeyCache = useRef<string | null>(null)
+  const senderKeyCache = useRef<Map<string, string>>(new Map())
+
+  // Fetch the exact key that encrypted a message (by the sender's device keyId),
+  // falling back to the sender's latest key for legacy messages without a keyId.
+  const getSenderKey = useCallback(
+    async (userId: string, keyId?: string, force = false): Promise<string | null> => {
+      const cacheKey = `${userId}:${keyId ?? ""}`
+      if (!force && senderKeyCache.current.has(cacheKey)) return senderKeyCache.current.get(cacheKey)!
+      try {
+        const res = keyId
+          ? await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/${keyId}`)
+          : await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`)
+        if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
+        return res.publicKey
+      } catch {
+        return null
+      }
+    },
+    [],
+  )
 
   const getTheirPublicKey = useCallback(async (): Promise<string | null> => {
     if (!otherUserId) return null
-    if (theirPublicKeyCache.current) return theirPublicKeyCache.current
     try {
       const res = await api<{ publicKey: string }>(`/api/e2ee/key/${otherUserId}`)
-      theirPublicKeyCache.current = res.publicKey
       return res.publicKey
     } catch {
       return null
@@ -208,8 +215,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   }, [otherUserId])
 
   useEffect(() => {
-    theirPublicKeyCache.current = null
-  }, [otherUserId])
+    senderKeyCache.current = new Map()
+  }, [conversationId])
 
   const { setActiveConversationId, setView } = useNav()
   const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
@@ -252,13 +259,17 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       if (data.conversationId === conversationId) {
         let content = data.content
         if (data.encrypted === "true" && isEncrypted(content)) {
-          let decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content))
-          if (!decrypted && isDm && data.senderId !== currentUserId) {
-            try {
-              const res = await api<{ publicKey: string }>(`/api/e2ee/key/${data.senderId}`)
-              decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), res.publicKey)
-            } catch {
-              /* Ignored */
+          const senderKey = await getSenderKey(data.senderId, data.keyId)
+          let decrypted = await decryptMessage(
+            conversationId,
+            stripEncryptionPrefix(content),
+            senderKey ?? undefined,
+            currentUserId,
+          )
+          if (!decrypted) {
+            const fresh = await getSenderKey(data.senderId, data.keyId, true)
+            if (fresh) {
+              decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, currentUserId)
             }
           }
           if (decrypted) content = decrypted
@@ -401,20 +412,25 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
       let encrypted = false
       if (otherUserId && isDm) {
         getTheirPublicKey().then(async (theirKey) => {
-          if (theirKey) {
-            const ciphertext = await encryptMessage(conversationId, content, theirKey)
-            if (ciphertext) {
-              finalContent = "e2ee:" + ciphertext
-              encrypted = true
+          try {
+            if (theirKey) {
+              const ciphertext = await encryptMessage(conversationId, content, theirKey, currentUserId)
+              if (ciphertext) {
+                finalContent = "e2ee:" + ciphertext
+                encrypted = true
+              }
             }
+          } catch {
+            // Fall back to plaintext rather than silently dropping the message.
           }
-          wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
+          const keyId = encrypted ? await getOrCreateDeviceId(currentUserId) : undefined
+          wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted, keyId })
         })
       } else {
         wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
       }
     },
-    [conversationId, otherUserId, isDm, getTheirPublicKey],
+    [conversationId, otherUserId, isDm, getTheirPublicKey, currentUserId],
   )
 
   const handleEdit = useCallback((msg: Message) => {

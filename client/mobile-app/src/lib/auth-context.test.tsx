@@ -29,6 +29,7 @@ vi.mock("./ws", () => ({
 
 vi.mock("./crypto", () => ({
   getOrCreateKeyPair: vi.fn(() => Promise.resolve({ publicKey: "pk", secretKey: "sk" })),
+  getOrCreateDeviceId: vi.fn(() => Promise.resolve("dev-1")),
   deleteKeyPair: vi.fn(() => Promise.resolve()),
 }))
 

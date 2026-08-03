@@ -20,12 +20,14 @@ interface ElectronAPI {
   getUserDataPath: () => Promise<string>
   e2ee: {
     isAvailable: () => Promise<boolean>
-    storeKeypair: (json: string) => Promise<boolean>
-    getKeypair: () => Promise<string | null>
-    deleteKeypair: () => Promise<void>
-    storeConvKeys: (json: string) => Promise<boolean>
-    getConvKeys: () => Promise<string | null>
-    deleteConvKeys: () => Promise<void>
+    storeKeypair: (json: string, id?: string) => Promise<boolean>
+    getKeypair: (id?: string) => Promise<string | null>
+    deleteKeypair: (id?: string) => Promise<void>
+    storeDeviceId: (id: string, deviceId: string) => Promise<boolean>
+    getDeviceId: (id?: string) => Promise<string | null>
+    storeConvKeys: (json: string, id?: string) => Promise<boolean>
+    getConvKeys: (id?: string) => Promise<string | null>
+    deleteConvKeys: (id?: string) => Promise<void>
   }
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
 }

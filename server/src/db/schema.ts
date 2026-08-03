@@ -70,6 +70,7 @@ export const messages = pgTable(
     content: text("content").notNull(),
     type: messageTypeEnum("type").default("text").notNull(),
     encrypted: text("encrypted").default("false").notNull(),
+    keyId: text("key_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),
@@ -105,6 +106,7 @@ export const attachments = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     messageId: uuid("message_id").references(() => messages.id),
+    conversationId: uuid("conversation_id").references(() => conversations.id),
     url: text("url").notNull(),
     mimeType: text("mime_type").notNull(),
     size: integer("size").notNull(),
@@ -114,18 +116,26 @@ export const attachments = pgTable(
   },
   (table) => ({
     messageIdIdx: index("attachments_message_id_idx").on(table.messageId),
+    conversationIdIdx: index("attachments_conversation_id_idx").on(table.conversationId),
   }),
 )
 
-export const publicKeys = pgTable("public_keys", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .references(() => users.id)
-    .notNull(),
-  key: text("key").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+export const publicKeys = pgTable(
+  "public_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    deviceId: text("device_id").default("legacy").notNull(),
+    key: text("key").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userDeviceUnique: uniqueIndex("public_keys_user_device_idx").on(table.userId, table.deviceId),
+  }),
+)
 
 export const refreshTokens = pgTable(
   "refresh_tokens",

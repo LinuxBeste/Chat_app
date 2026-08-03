@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express"
 import { AppError } from "../lib/app-error.js"
 import { logger } from "../lib/logger.js"
+import multer from "multer"
 
 type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>
 
@@ -11,6 +12,12 @@ export function catchAsync(fn: AsyncHandler) {
 }
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+  if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+    logger.warn({ err }, "File too large")
+    res.status(413).json({ error: "FILE_TOO_LARGE", message: "File exceeds the maximum allowed size" })
+    return
+  }
+
   if (err instanceof AppError) {
     logger.warn({ statusCode: err.statusCode, code: err.code, message: err.message }, "AppError")
     res.status(err.statusCode).json({

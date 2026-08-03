@@ -22,6 +22,7 @@ interface SendMessagePayload {
   content: string
   messageType?: "text" | "image" | "file"
   encrypted?: boolean | "true" | "false"
+  keyId?: string
   attachment?: AttachmentPayload
   clientMessageId?: string
 }
@@ -65,16 +66,21 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
         content: payload.content,
         type: payload.messageType ?? "text",
         encrypted: payload.encrypted === true || payload.encrypted === "true" ? "true" : "false",
+        keyId: payload.keyId ?? null,
       })
       .returning()
 
     const attachment = payload.attachment
     if (attachment) {
       if (attachment.id) {
-        await db.update(attachments).set({ messageId: msg.id }).where(eq(attachments.id, attachment.id))
+        await db
+          .update(attachments)
+          .set({ messageId: msg.id, conversationId: payload.conversationId })
+          .where(eq(attachments.id, attachment.id))
       } else {
         await db.insert(attachments).values({
           messageId: msg.id,
+          conversationId: payload.conversationId,
           url: attachment.url,
           filename: attachment.filename,
           mimeType: attachment.mimeType,
@@ -98,6 +104,7 @@ export async function handleSendMessage(ws: WebSocket, payload: SendMessagePaylo
       content: msg.content,
       messageType: msg.type,
       encrypted: msg.encrypted,
+      keyId: msg.keyId ?? undefined,
       createdAt: msg.createdAt,
     }
     if (payload.clientMessageId) {

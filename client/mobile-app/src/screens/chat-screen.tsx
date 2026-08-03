@@ -52,7 +52,7 @@ import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
 import { useToast } from "../lib/toast-context"
 import { resolveFileUrl } from "../lib/file-url"
-import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix } from "../lib/crypto"
+import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix, getOrCreateDeviceId } from "../lib/crypto"
 import { useTranslation } from "react-i18next"
 import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
@@ -73,6 +73,7 @@ interface Reaction {
 interface Msg {
   id: string
   content: string
+  conversationId?: string
   senderId: string
   createdAt: string
   editedAt?: string
@@ -83,6 +84,7 @@ interface Msg {
   fileType?: string
   replyTo?: { id: string; content: string; sender: { username: string; displayName?: string } }
   encrypted?: boolean | string
+  keyId?: string
   messageType?: string
   attachment?: { url: string; filename: string; mimeType: string; size: number }
   reactions?: Reaction[]
@@ -139,7 +141,6 @@ export function ChatScreen({
   const [msgStatus, setMsgStatus] = useState<Record<string, "sending" | "sent" | "failed">>({})
   const flatRef = useRef<FlatList>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const theirKeyRef = useRef<string | null>(null)
   const sendingRef = useRef(false)
 
   const [showInfo, setShowInfo] = useState(false)
@@ -175,11 +176,16 @@ export function ChatScreen({
 
   const COMMON_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
 
-  const getTheirKey = useCallback(async (userId: string): Promise<string | null> => {
-    if (theirKeyRef.current) return theirKeyRef.current
+  const keyCacheRef = useRef<Map<string, string>>(new Map())
+
+  const getSenderKey = useCallback(async (userId: string, keyId?: string, force = false): Promise<string | null> => {
+    const cacheKey = `${userId}:${keyId ?? ""}`
+    if (!force && keyCacheRef.current.has(cacheKey)) return keyCacheRef.current.get(cacheKey)!
     try {
-      const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
-      theirKeyRef.current = res.publicKey
+      const res = keyId
+        ? await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/${keyId}`)
+        : await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
+      if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey)
       return res.publicKey
     } catch {
       return null
@@ -237,7 +243,7 @@ export function ChatScreen({
   }
 
   useEffect(() => {
-    theirKeyRef.current = null
+    keyCacheRef.current = new Map()
   }, [conversationId])
 
   useEffect(() => {
@@ -260,7 +266,7 @@ export function ChatScreen({
         cacheSet(offlineKeys.convInfo(conversationId), info)
         if (info.type === "dm") {
           const other = info.members.find((m) => m.id !== user!.id)
-          if (other) getTheirKey(other.id)
+          if (other) getSenderKey(other.id)
         }
       })
       .catch(() => {})
@@ -404,8 +410,12 @@ export function ChatScreen({
         if (data.conversationId === conversationId) {
           let content = data.content
           if ((data.encrypted === "true" || data.encrypted === true) && isEncrypted(content)) {
-            const key = data.senderId !== user!.id ? await getTheirKey(data.senderId) : undefined
-            const dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), key ?? undefined)
+            const key = await getSenderKey(data.senderId, data.keyId)
+            let dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), key ?? undefined, user?.id)
+            if (!dec) {
+              const fresh = await getSenderKey(data.senderId, data.keyId, true)
+              if (fresh) dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, user?.id)
+            }
             if (dec) content = dec
           }
           setMessages((p) => {
@@ -475,16 +485,17 @@ export function ChatScreen({
 
   const decryptMessages = useCallback(
     async (msgs: Msg[]) => {
+      if (!user) return
+      const uid = user.id
       const entries = await Promise.all(
         msgs.map(async (m) => {
           if (isEncrypted(m.content)) {
-            const key = m.senderId !== user!.id ? await getTheirKey(m.senderId) : undefined
+            const key = await getSenderKey(m.senderId, m.keyId)
             const cipher = stripEncryptionPrefix(m.content)
-            let plain = await decryptMessage(conversationId, cipher, key ?? undefined)
-            if (!plain && key) {
-              theirKeyRef.current = null
-              const fresh = await getTheirKey(m.senderId)
-              plain = await decryptMessage(conversationId, cipher, fresh ?? undefined)
+            let plain = await decryptMessage(conversationId, cipher, key ?? undefined, uid)
+            if (!plain) {
+              const fresh = await getSenderKey(m.senderId, m.keyId, true)
+              if (fresh) plain = await decryptMessage(conversationId, cipher, fresh, uid)
             }
             return [m.id, plain || m.content] as [string, string]
           }
@@ -493,7 +504,7 @@ export function ChatScreen({
       )
       setDecrypted((p) => ({ ...p, ...Object.fromEntries(entries) }))
     },
-    [conversationId],
+    [conversationId, user],
   )
 
   const send = async () => {
@@ -519,14 +530,16 @@ export function ChatScreen({
 
     let finalContent = text
     let encrypted = false
-    if (isDm && otherMember?.id) {
+    let keyId: string | undefined
+    if (isDm && otherMember?.id && user) {
       try {
-        const theirKey = await getTheirKey(otherMember.id)
+        const theirKey = await getSenderKey(otherMember.id, undefined, true)
         if (theirKey) {
-          const ciphertext = await encryptMessage(conversationId, text, theirKey)
+          const ciphertext = await encryptMessage(conversationId, text, theirKey, user.id)
           if (ciphertext) {
             finalContent = "e2ee:" + ciphertext
             encrypted = true
+            keyId = await getOrCreateDeviceId(user.id)
           }
         }
       } catch {
@@ -541,6 +554,7 @@ export function ChatScreen({
       messageType: "text",
       clientMessageId: tempId,
     }
+    if (keyId) payload.keyId = keyId
     if (replyingTo) payload.replyToId = replyingTo.id
     wsClient.send("message:send", payload)
     setMsgStatus((p) => ({ ...p, [tempId]: "sent" }))
@@ -616,8 +630,9 @@ export function ChatScreen({
         encrypted: "false",
         clientMessageId: tempId,
       })
-    } catch {
-      showToast(t("chat.uploadFailed", "Upload failed"))
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : ""
+      showToast(`${t("chat.uploadFailed", "Upload failed")}${detail}`)
     }
     setUploading(false)
   }
@@ -633,7 +648,7 @@ export function ChatScreen({
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
     } catch {
       const pending = await ImagePicker.getPendingResultAsync()
-      if (!pending || pending.canceled || !pending.assets || pending.assets.length === 0) {
+      if (!pending || !("canceled" in pending) || pending.canceled || !pending.assets || pending.assets.length === 0) {
         showToast(t("chat.pickerFailed", "Could not open photo picker"))
         return
       }

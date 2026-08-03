@@ -424,6 +424,7 @@ router.get(
         editedAt: messages.editedAt,
         deletedAt: messages.deletedAt,
         encrypted: messages.encrypted,
+        keyId: messages.keyId,
         sender: {
           username: users.username,
           displayName: users.displayName,

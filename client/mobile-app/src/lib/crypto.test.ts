@@ -158,7 +158,7 @@ describe("crypto", () => {
       await encryptMessage("conv1", "x", "YWFhYQ==")
       const plain = await decryptMessage("conv1", cipherWith(), "enp6eg==")
       expect(plain).toBe("hello")
-      const stored = await AsyncStorage.getItem("e2ee:conv-keys:conv1")
+      const stored = await AsyncStorage.getItem("e2ee:conv-keys:default:conv1")
       expect(stored).not.toBeNull()
       expect(JSON.parse(stored!)[0].peer).toBe("enp6eg==")
     })
@@ -175,14 +175,14 @@ describe("crypto", () => {
       expect(await decryptMessage("conv1", cipherWith())).toBe("hello")
     })
 
-    it("caps stored conversation keys at 3 entries, newest first", async () => {
-      await encryptMessage("conv1", "1", "YWFhYQ==")
-      await encryptMessage("conv1", "2", "YmJiYg==")
-      await encryptMessage("conv1", "3", "Y2NjYw==")
-      await encryptMessage("conv1", "4", "ZGRkZA==")
-      const stored = JSON.parse((await AsyncStorage.getItem("e2ee:conv-keys:conv1"))!)
-      expect(stored.length).toBe(3)
-      expect(stored[0].peer).toBe("ZGRkZA==")
+    it("caps stored conversation keys at 100 entries, newest first", async () => {
+      for (let i = 1; i <= 101; i++) {
+        const peer = encodeBase64(new Uint8Array([i]))
+        await encryptMessage("conv1", String(i), peer)
+      }
+      const stored = JSON.parse((await AsyncStorage.getItem("e2ee:conv-keys:default:conv1"))!)
+      expect(stored.length).toBe(100)
+      expect(stored[0].peer).toBe(encodeBase64(new Uint8Array([101])))
     })
   })
 

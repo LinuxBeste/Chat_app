@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import * as FileSystem from "expo-file-system"
 import { getServerUrl } from "./server-config"
 
 const KEYS = { accessToken: "@accessToken", refreshToken: "@refreshToken" }
@@ -109,31 +108,50 @@ export interface UploadFileResult {
   size: number
 }
 
+// Multipart upload via React Native's built-in XHR (OkHttp-backed). This avoids
+// expo-file-system's native uploadAsync entirely, which is broken in some
+// release builds when the prebuilt AAR and expo-modules-core disagree.
+function xhrUpload(url: string, formData: FormData, headers: Record<string, string>): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", url)
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value)
+    }
+    xhr.timeout = 120000
+    xhr.onload = () => resolve({ status: xhr.status, body: xhr.responseText || "" })
+    xhr.onerror = () => reject(new NetworkError())
+    xhr.ontimeout = () => reject(new Error("Upload timed out"))
+    xhr.send(formData)
+  })
+}
+
 export async function uploadFile<T = UploadFileResult>(input: UploadFileInput): Promise<T> {
-  let uri = input.uri
-  if (!uri.startsWith("file://") && !uri.startsWith("/")) {
-    const ext = (input.name.split(".").pop() || "bin").replace(/[^a-z0-9]/gi, "")
-    const dir = `${FileSystem.cacheDirectory}attachments/`
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {})
-    const dest = `${dir}${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`
-    await FileSystem.copyAsync({ from: uri, to: dest })
-    uri = dest
-  }
   const { accessToken } = await getTokens()
+  const formData = new FormData()
+  if (input.conversationId) formData.append("conversationId", input.conversationId)
+  formData.append(input.fieldName ?? "file", {
+    uri: input.uri,
+    name: input.name,
+    type: input.type || "application/octet-stream",
+  } as any)
   const headers: Record<string, string> = {}
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
-  const parameters: Record<string, string> = {}
-  if (input.conversationId) parameters["conversationId"] = input.conversationId
-  const res = await FileSystem.uploadAsync(`${await getServerUrl()}${input.path ?? "/api/uploads"}`, uri, {
-    httpMethod: "POST",
-    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-    fieldName: input.fieldName ?? "file",
-    mimeType: input.type,
-    parameters,
-    headers,
-  })
-  if (res.status < 200 || res.status >= 300) throw new Error(`Upload failed: ${res.status}`)
-  return JSON.parse(res.body) as T
+
+  const res = await xhrUpload(`${await getServerUrl()}${input.path ?? "/api/uploads"}`, formData, headers)
+  if (res.status < 200 || res.status >= 300) {
+    let detail = `Upload failed: ${res.status}`
+    try {
+      const body = JSON.parse(res.body)
+      if (body?.error) detail = `${detail} (${body.error})`
+    } catch {}
+    throw new Error(detail)
+  }
+  try {
+    return JSON.parse(res.body) as T
+  } catch {
+    throw new Error(`Upload failed: invalid server response (${res.status})`)
+  }
 }
 
 export { setTokens, clearTokens, getTokens }

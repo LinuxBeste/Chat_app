@@ -22,12 +22,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getUserDataPath: () => ipcRenderer.invoke("get-user-data-path"),
   e2ee: {
     isAvailable: () => ipcRenderer.invoke("e2ee:is-available"),
-    storeKeypair: (json: string) => ipcRenderer.invoke("e2ee:store-keypair", json),
-    getKeypair: () => ipcRenderer.invoke("e2ee:get-keypair"),
-    deleteKeypair: () => ipcRenderer.invoke("e2ee:delete-keypair"),
-    storeConvKeys: (json: string) => ipcRenderer.invoke("e2ee:store-conv-keys", json),
-    getConvKeys: () => ipcRenderer.invoke("e2ee:get-conv-keys"),
-    deleteConvKeys: () => ipcRenderer.invoke("e2ee:delete-conv-keys"),
+    storeKeypair: (json: string, id?: string) => ipcRenderer.invoke("e2ee:store-keypair", json, id),
+    getKeypair: (id?: string) => ipcRenderer.invoke("e2ee:get-keypair", id),
+    deleteKeypair: (id?: string) => ipcRenderer.invoke("e2ee:delete-keypair", id),
+    storeDeviceId: (id: string, deviceId: string) => ipcRenderer.invoke("e2ee:store-device-id", id, deviceId),
+    getDeviceId: (id?: string) => ipcRenderer.invoke("e2ee:get-device-id", id),
+    storeConvKeys: (json: string, id?: string) => ipcRenderer.invoke("e2ee:store-conv-keys", json, id),
+    getConvKeys: (id?: string) => ipcRenderer.invoke("e2ee:get-conv-keys", id),
+    deleteConvKeys: (id?: string) => ipcRenderer.invoke("e2ee:delete-conv-keys", id),
   },
   onMenuAction: (callback: (action: MenuAction) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action)

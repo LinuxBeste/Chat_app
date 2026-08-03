@@ -86,8 +86,6 @@ jobs:
   android:
     needs: prepare
     runs-on: ubuntu-latest
-    env:
-      EXPO_PUBLIC_USE_RN_FETCH: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +125,29 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Bake API URL into release build (optional)
+        run: |
+          if [ -n "${{ vars.EXPO_PUBLIC_API_URL }}" ]; then
+            echo "EXPO_PUBLIC_API_URL=${{ vars.EXPO_PUBLIC_API_URL }}" >> client/mobile-app/.env
+          fi
+
+      - name: Source-compile expo-file-system (AAR core 57 API mismatch workaround)
+        run: |
+          python3 << 'PYEOF'
+          import json, os
+
+          for root, dirs, files in os.walk('node_modules/expo-file-system'):
+              if 'expo-module.config.json' in files:
+                  p = os.path.join(root, 'expo-module.config.json')
+                  with open(p) as f:
+                      cfg = json.load(f)
+                  if 'publication' in cfg:
+                      cfg.pop('publication')
+                      with open(p, 'w') as f:
+                          json.dump(cfg, f, indent=2)
+                      print(f'Removed publication from {p}')
+          PYEOF
 
       - name: Patch Expo Promise.kt for RN 0.79 Promise interface compat
         run: |

@@ -6,6 +6,7 @@ describe("api", () => {
   beforeEach(async () => {
     await AsyncStorage.clear()
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   afterEach(() => {
@@ -173,64 +174,101 @@ describe("uploadFile", () => {
     await AsyncStorage.clear()
   })
 
-  it("uploads a file via native multipart with auth header", async () => {
+  function stubXhr(response: { status: number; body: string } | { error: true }) {
+    function FakeFormData(this: any) {
+      const appends: { key: string; value: unknown }[] = []
+      this.append = (key: string, value: unknown) => {
+        appends.push({ key, value })
+      }
+      this.getAppends = () => appends
+    }
+    vi.stubGlobal("FormData", FakeFormData)
+    class FakeXhr {
+      status = 0
+      responseText = ""
+      timeout = 0
+      private headers: Record<string, string> = {}
+      private formParts: { key: string; value: unknown }[] = []
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      ontimeout: (() => void) | null = null
+      open = vi.fn((_method: string, _url: string) => {})
+      setRequestHeader = vi.fn((key: string, value: string) => {
+        this.headers[key] = value
+      })
+      send = vi.fn((formData: any) => {
+        this.formParts = formData?.getAppends?.() ?? []
+        if ("error" in response) {
+          this.onerror?.()
+        } else {
+          this.status = response.status
+          this.responseText = response.body
+          this.onload?.()
+        }
+      })
+      getHeaders = () => this.headers
+      getParts = () => this.formParts
+    }
+    const instance = new FakeXhr()
+    function FakeXhrCtor() {
+      return instance
+    }
+    vi.stubGlobal("XMLHttpRequest", FakeXhrCtor)
+    return instance as unknown as FakeXhr & {
+      getHeaders: () => Record<string, string>
+      getParts: () => { key: string; value: unknown }[]
+    }
+  }
+
+  it("uploads a file via XHR multipart with auth header", async () => {
     await setTokens("token-123", "refresh-456")
-    const { uploadAsync } = await import("expo-file-system")
-    vi.mocked(uploadAsync).mockResolvedValue({
-      status: 201,
-      body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }),
-    } as any)
+    const xhr = stubXhr({ status: 201, body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }) })
 
     const result = await uploadFile({ uri: "file:///a.png", name: "a.png", type: "image/png" })
 
     expect(result).toEqual({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 })
-    expect(uploadAsync).toHaveBeenCalledWith(
-      expect.stringContaining("/api/uploads"),
-      "file:///a.png",
-      expect.objectContaining({
-        httpMethod: "POST",
-        fieldName: "file",
-        headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
-      }),
-    )
+    expect(xhr.open).toHaveBeenCalledWith("POST", expect.stringContaining("/api/uploads"))
+    expect(xhr.getHeaders()).toEqual(expect.objectContaining({ Authorization: "Bearer token-123" }))
+    expect(xhr.getParts()).toEqual([
+      { key: "file", value: expect.objectContaining({ uri: "file:///a.png", name: "a.png", type: "image/png" }) },
+    ])
   })
 
-  it("copies content uris to cache before uploading", async () => {
-    const { uploadAsync, copyAsync, makeDirectoryAsync, cacheDirectory } = await import("expo-file-system")
-    vi.mocked(uploadAsync).mockResolvedValue({ status: 201, body: JSON.stringify({}) } as any)
-
-    await uploadFile({ uri: "content://media/x.jpg", name: "x.jpg", type: "image/jpeg" })
-
-    expect(makeDirectoryAsync).toHaveBeenCalled()
-    expect(copyAsync).toHaveBeenCalledWith({
-      from: "content://media/x.jpg",
-      to: expect.stringContaining(`${cacheDirectory}attachments/`),
-    })
-    expect(uploadAsync).toHaveBeenCalledWith(
-      expect.stringContaining("/api/uploads"),
-      expect.stringContaining(`${cacheDirectory}attachments/`),
-      expect.any(Object),
-    )
-  })
-
-  it("sends the conversation id as a form parameter", async () => {
-    const { uploadAsync } = await import("expo-file-system")
-    vi.mocked(uploadAsync).mockResolvedValue({ status: 201, body: JSON.stringify({}) } as any)
+  it("sends the conversation id as a form field", async () => {
+    await setTokens("token-123", "refresh-456")
+    const xhr = stubXhr({ status: 201, body: JSON.stringify({}) })
 
     await uploadFile({ uri: "file:///a.png", name: "a.png", type: "image/png", conversationId: "c1" })
 
-    expect(uploadAsync).toHaveBeenCalledWith(
-      expect.stringContaining("/api/uploads"),
-      "file:///a.png",
-      expect.objectContaining({ parameters: { conversationId: "c1" } }),
+    expect(xhr.getParts()).toEqual([
+      { key: "conversationId", value: "c1" },
+      { key: "file", value: expect.objectContaining({ uri: "file:///a.png", name: "a.png", type: "image/png" }) },
+    ])
+  })
+
+  it("throws with status on upload failure", async () => {
+    await setTokens("token-123", "refresh-456")
+    stubXhr({ status: 500, body: JSON.stringify({ error: "FILE_TOO_LARGE" }) })
+
+    await expect(uploadFile({ uri: "file:///a.png", name: "a.png" })).rejects.toThrow(
+      "Upload failed: 500 (FILE_TOO_LARGE)",
     )
   })
 
-  it("throws on upload failure", async () => {
-    const { uploadAsync } = await import("expo-file-system")
-    vi.mocked(uploadAsync).mockResolvedValue({ status: 500, body: "" } as any)
+  it("throws a network error when the request fails", async () => {
+    await setTokens("token-123", "refresh-456")
+    stubXhr({ error: true })
 
-    await expect(uploadFile({ uri: "file:///a.png", name: "a.png" })).rejects.toThrow("Upload failed: 500")
+    await expect(uploadFile({ uri: "file:///a.png", name: "a.png" })).rejects.toThrow()
+  })
+
+  it("throws when the server returns invalid json", async () => {
+    await setTokens("token-123", "refresh-456")
+    stubXhr({ status: 201, body: "not json" })
+
+    await expect(uploadFile({ uri: "file:///a.png", name: "a.png" })).rejects.toThrow(
+      "Upload failed: invalid server response (201)",
+    )
   })
 })
 

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { api, setTokens, clearTokens, getTokens, NetworkError } from "./api"
 import { wsClient } from "./ws"
-import { getOrCreateKeyPair, deleteKeyPair } from "./crypto"
+import { getOrCreateKeyPair, getOrCreateDeviceId } from "./crypto"
 import { cacheGet, cacheSet, cacheRemove, offlineKeys } from "./offline-cache"
 
 interface User {
@@ -36,13 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [offline, setOffline] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
 
-  const syncKey = useCallback(async () => {
+  const syncKey = useCallback(async (userId?: string) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const kp = await getOrCreateKeyPair()
+        const [kp, deviceId] = await Promise.all([getOrCreateKeyPair(userId), getOrCreateDeviceId(userId)])
         await api("/api/e2ee/key", {
           method: "PUT",
-          body: JSON.stringify({ key: kp.publicKey }),
+          body: JSON.stringify({ key: kp.publicKey, deviceId }),
         })
         return
       } catch {
@@ -58,15 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOffline(false)
       cacheSet(offlineKeys.user, me)
       wsClient.connect()
-      await syncKey()
+      await syncKey(me.id)
     } catch (err) {
+      if (err instanceof NetworkError) {
+        setOffline(true)
+      }
       const cached = await cacheGet<User>(offlineKeys.user)
       if (cached) {
         setUser(cached)
         wsClient.connect()
-      }
-      if (err instanceof NetworkError) {
-        setOffline(true)
+        await syncKey(cached.id)
       }
     }
   }, [syncKey])
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user)
       cacheSet(offlineKeys.user, data.user)
       wsClient.connect()
-      await syncKey()
+      await syncKey(data.user.id)
     },
     [syncKey],
   )
@@ -119,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setTokens(data.accessToken, data.refreshToken)
       setUser(data.user)
       wsClient.connect()
-      await syncKey()
+      await syncKey(data.user.id)
       if (data.needsSetup) setNeedsSetup(true)
     },
     [syncKey],
@@ -132,9 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await cacheRemove(offlineKeys.user)
     wsClient.disconnect()
     setUser(null)
-    try {
-      await deleteKeyPair()
-    } catch {}
   }, [])
 
   return (

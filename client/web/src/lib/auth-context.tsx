@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { api, setTokens, clearTokens, getTokens, NetworkError } from "./api"
 import { wsClient } from "./ws"
-import { getOrCreateKeyPair } from "./crypto"
+import { getOrCreateKeyPair, getOrCreateDeviceId } from "./crypto"
 import { cacheCurrentUser, getCachedCurrentUser, clearCachedCurrentUser } from "./offline"
 import { isDesktop } from "./utils"
 
@@ -37,13 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [offline, setOffline] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
 
-  const syncKey = useCallback(async () => {
+  const syncKey = useCallback(async (userId?: string) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const kp = await getOrCreateKeyPair()
+        const [kp, deviceId] = await Promise.all([getOrCreateKeyPair(userId), getOrCreateDeviceId(userId)])
         await api("/api/e2ee/key", {
           method: "PUT",
-          body: JSON.stringify({ key: kp.publicKey }),
+          body: JSON.stringify({ key: kp.publicKey, deviceId }),
         })
         return
       } catch {
@@ -59,16 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOffline(false)
       if (isDesktop()) cacheCurrentUser(me)
       wsClient.connect()
-      await syncKey()
+      await syncKey(me.id)
     } catch (err) {
       if (isDesktop()) {
         const cached = getCachedCurrentUser() as User | null
+        if (err instanceof NetworkError) {
+          setOffline(true)
+        }
         if (cached) {
           setUser(cached)
           wsClient.connect()
-        }
-        if (err instanceof NetworkError) {
-          setOffline(true)
+          await syncKey(cached.id)
         }
       }
     }
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user)
       if (isDesktop()) cacheCurrentUser(data.user)
       wsClient.connect()
-      await syncKey()
+      await syncKey(data.user.id)
     },
     [syncKey],
   )
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user)
       if (isDesktop()) cacheCurrentUser(data.user)
       wsClient.connect()
-      await syncKey()
+      await syncKey(data.user.id)
       if (data.needsSetup) setNeedsSetup(true)
     },
     [syncKey],
@@ -134,22 +135,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsSetup(false)
   }, [])
 
+  // Keep the device keypair on logout so messages stay decryptable after re-login.
   const logout = useCallback(() => {
     clearTokens()
     clearCachedCurrentUser()
     wsClient.disconnect()
     setUser(null)
-    try {
-      localStorage.removeItem("e2ee:keypair")
-      const keysToRemove = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key?.startsWith("e2ee:conv-keys:")) keysToRemove.push(key)
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k))
-    } catch {
-      /* Ignored */
-    }
   }, [])
 
   return (
