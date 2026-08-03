@@ -112,3 +112,9 @@ export function apiFormData<T = unknown>(path: string, formData: FormData): Prom
 }
 
 export { setTokens, clearTokens, getTokens, BASE_URL }
+
+export function resolveAssetUrl(src?: string): string | undefined {
+  if (!src) return undefined
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) return src
+  return `${BASE_URL}${src}`
+}

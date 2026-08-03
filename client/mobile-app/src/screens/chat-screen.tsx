@@ -63,6 +63,7 @@ import { CallOverlay } from "../components/call-overlay"
 import { AddParticipantsModal } from "../components/add-participants-modal"
 import * as Clipboard from "expo-clipboard"
 import { MediaGallery } from "../components/media-gallery"
+import { AvatarImage } from "../components/ui/avatar-image"
 
 interface Reaction {
   emoji: string
@@ -884,7 +885,7 @@ export function ChatScreen({
             {isDm && otherMember && (
               <>
                 {otherMember.avatar ? (
-                  <Image source={{ uri: otherMember.avatar }} style={s.infoAvatarImage} />
+                  <AvatarImage uri={otherMember.avatar} style={s.infoAvatarImage} />
                 ) : (
                   <View style={s.infoAvatar}>
                     <Text style={s.infoAvatarText}>
@@ -938,7 +939,7 @@ export function ChatScreen({
               <>
                 {convInfo.avatar ? (
                   <TouchableOpacity onPress={handleAvatarUpload} style={s.infoAvatar}>
-                    <Image source={{ uri: convInfo.avatar }} style={s.infoAvatarImage} />
+                    <AvatarImage uri={convInfo.avatar} style={s.infoAvatarImage} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={handleAvatarUpload} style={s.infoAvatar}>
@@ -978,7 +979,7 @@ export function ChatScreen({
                 {convInfo.members.map((m) => (
                   <TouchableOpacity key={m.id} style={s.memberRow} onPress={() => navigateToDm(m.id)}>
                     {m.avatar ? (
-                      <Image source={{ uri: m.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                      <AvatarImage uri={m.avatar} style={{ width: 36, height: 36, borderRadius: 18 }} />
                     ) : (
                       <View style={s.memberAvatar}>
                         <Text style={s.memberAvatarText}>{m.username[0].toUpperCase()}</Text>

@@ -28,7 +28,7 @@ import {
   Flag,
   Camera,
 } from "lucide-react"
-import { api, apiFormData, BASE_URL } from "../../lib/api"
+import { api, apiFormData, BASE_URL, resolveAssetUrl } from "../../lib/api"
 
 function displayName(url: string, attachment?: Attachment): string {
   if (attachment?.filename) return attachment.filename
@@ -788,7 +788,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             <div className="relative w-20 h-20 mb-4">
               <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center text-accent text-3xl font-bold overflow-hidden">
                 {convInfo?.avatar ? (
-                  <img src={convInfo.avatar} alt="" className="h-full w-full object-cover" />
+                  <img src={resolveAssetUrl(convInfo.avatar)} alt="" className="h-full w-full object-cover" />
                 ) : isGroup ? (
                   (convInfo?.name?.[0] ?? "G")
                 ) : (

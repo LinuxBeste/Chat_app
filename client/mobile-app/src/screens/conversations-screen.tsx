@@ -9,7 +9,6 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Image,
 } from "react-native"
 import { api } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
@@ -18,6 +17,7 @@ import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTheme } from "../lib/theme-context"
+import { AvatarImage } from "../components/ui/avatar-image"
 import { Search, Plus, X } from "lucide-react-native"
 
 interface Conv {
@@ -205,7 +205,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
           >
             <View style={s.avatarWrap}>
               {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={s.avatar} />
+                <AvatarImage uri={item.avatar} style={s.avatar} />
               ) : (
                 <View
                   style={[s.avatar, { backgroundColor: avatarColor(item.name || item.otherUser?.username || "?") }]}

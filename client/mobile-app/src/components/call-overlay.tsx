@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native"
 import {
   Phone,
   Mic,
@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react-native"
 import { wsClient } from "../lib/ws"
+import { AvatarImage } from "./ui/avatar-image"
 
 interface CallOverlayProps {
   conversationId: string
@@ -143,7 +144,7 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
             </>
           )}
           {avatar ? (
-            <Image source={{ uri: avatar }} style={s.avatarImage} />
+            <AvatarImage uri={avatar} style={s.avatarImage} />
           ) : (
             <View style={[s.avatar, { backgroundColor: avatarBg }]}>
               <Text style={s.avatarText}>{(displayName[0] || "?").toUpperCase()}</Text>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { api, apiFormData } from "../../lib/api"
+import { api, apiFormData, resolveAssetUrl } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { useTranslation } from "react-i18next"
 import { useToast } from "../../lib/toast-context"
@@ -66,7 +66,7 @@ export function ProfilePage() {
           <div className="relative group">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white text-xl font-bold shrink-0 overflow-hidden">
               {avatar ? (
-                <img src={avatar} alt="" className="h-full w-full object-cover" />
+                <img src={resolveAssetUrl(avatar)} alt="" className="h-full w-full object-cover" />
               ) : (
                 ((displayName || user?.username)?.[0]?.toUpperCase() ?? "?")
               )}

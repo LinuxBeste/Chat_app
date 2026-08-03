@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { api } from "../../lib/api"
+import { api, resolveAssetUrl } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import { ChatArea } from "../chat/chat-area"
 import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare } from "lucide-react"
@@ -110,7 +110,7 @@ export function GroupsPage() {
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0 overflow-hidden">
                 {g.avatar ? (
-                  <img src={g.avatar} alt="" className="h-full w-full object-cover" />
+                  <img src={resolveAssetUrl(g.avatar)} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <Users className="h-4 w-4" />
                 )}
