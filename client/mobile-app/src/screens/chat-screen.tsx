@@ -1030,7 +1030,7 @@ export function ChatScreen({
         <TouchableOpacity style={s.moreBtn} onPress={() => setInCall("video")}>
           <Video size={18} color="#8888A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={s.moreBtn} onPress={() => setShowMedia(true)}>
+        <TouchableOpacity style={s.moreBtn} onPress={() => setShowMedia(true)} testID="openMedia">
           <ImageIcon size={18} color="#8888A0" />
         </TouchableOpacity>
       </View>

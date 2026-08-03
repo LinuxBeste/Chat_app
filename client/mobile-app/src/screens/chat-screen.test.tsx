@@ -199,3 +199,115 @@ describe("ChatScreen attachments", () => {
     await waitFor(() => expect(img).toHaveAttribute("src", "http://localhost:3000/uploads/x.png"))
   })
 })
+
+describe("ChatScreen media sheet", () => {
+  it("opens the media sheet with an empty state when there are no media items", async () => {
+    renderChat()
+    await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId("openMedia"))
+    await waitFor(() => expect(screen.getByText("Shared Media")).toBeInTheDocument())
+    expect(screen.getByText("No shared media yet")).toBeInTheDocument()
+    expect(screen.getByText("Attach a photo")).toBeInTheDocument()
+  })
+
+  it("attaches a photo from the media sheet empty state", async () => {
+    const { launchImageLibraryAsync } = await import("expo-image-picker")
+    vi.mocked(launchImageLibraryAsync).mockImplementation(() => Promise.resolve({ canceled: true, assets: [] }))
+    renderChat()
+    await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId("openMedia"))
+    await waitFor(() => expect(screen.getByText("Attach a photo")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Attach a photo"))
+    await waitFor(() => expect(launchImageLibraryAsync).toHaveBeenCalledWith({ quality: 0.8 }))
+  })
+})
+
+describe("ChatScreen long-press context menu", () => {
+  const withMessage = () => {
+    mockApi.mockImplementation((path: string) => {
+      if (path === "/api/conversations/c1") return Promise.resolve(convInfo(false))
+      if (path === "/api/conversations/c1/messages")
+        return Promise.resolve([
+          {
+            id: "m1",
+            content: "hello",
+            senderId: "other",
+            createdAt: new Date().toISOString(),
+            sender: { id: "other", username: "Other" },
+          },
+        ])
+      return Promise.resolve([])
+    })
+  }
+
+  it("long-pressing a message opens the themed action sheet", async () => {
+    const { setStringAsync } = await import("expo-clipboard")
+    withMessage()
+    renderChat()
+    await waitFor(() => expect(screen.getByText("hello")).toBeInTheDocument())
+    fireEvent.doubleClick(screen.getByText("hello").closest("button")!)
+    await waitFor(() => expect(screen.getByText("Copy")).toBeInTheDocument())
+    expect(screen.getByText("Reply")).toBeInTheDocument()
+    expect(screen.getByText("Add Reaction")).toBeInTheDocument()
+    fireEvent.click(screen.getByText("Copy"))
+    await waitFor(() => expect(setStringAsync).toHaveBeenCalledWith("hello"))
+  })
+
+  it("cancel closes the action sheet", async () => {
+    withMessage()
+    renderChat()
+    await waitFor(() => expect(screen.getByText("hello")).toBeInTheDocument())
+    fireEvent.doubleClick(screen.getByText("hello").closest("button")!)
+    await waitFor(() => expect(screen.getByText("Cancel")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Cancel"))
+    await waitFor(() => expect(screen.queryByText("Cancel")).not.toBeInTheDocument())
+  })
+})
+
+describe("ChatScreen member -> DM navigation", () => {
+  const groupWithMember = (memberId: string) => ({
+    id: "c1",
+    type: "group",
+    name: "Test Group",
+    members: [
+      { id: "me", username: "me", role: "owner" },
+      { id: memberId, username: memberId, role: "member" },
+    ],
+    muted: false,
+  })
+
+  it("opens an existing DM when a member is tapped", async () => {
+    const onOpenConversation = vi.fn()
+    mockApi.mockImplementation((path: string) => {
+      if (path === "/api/conversations/c1") return Promise.resolve(groupWithMember("u2"))
+      if (path === "/api/conversations/dm/u2") return Promise.resolve({ id: "dm-u2" })
+      return Promise.resolve([])
+    })
+    renderChat({ onOpenConversation })
+    await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Test Group"))
+    await waitFor(() => expect(screen.getByText("u2")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("u2"))
+    await waitFor(() => expect(onOpenConversation).toHaveBeenCalledWith("dm-u2"))
+  })
+
+  it("creates a DM when no existing conversation is found", async () => {
+    const onOpenConversation = vi.fn()
+    mockApi.mockImplementation((path: string, opts?: any) => {
+      if (path === "/api/conversations/c1") return Promise.resolve(groupWithMember("u2"))
+      if (path === "/api/conversations/dm/u2") return Promise.resolve(null)
+      if (path === "/api/conversations") return Promise.resolve({ id: "dm-new" })
+      return Promise.resolve([])
+    })
+    renderChat({ onOpenConversation })
+    await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Test Group"))
+    await waitFor(() => expect(screen.getByText("u2")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("u2"))
+    await waitFor(() => expect(onOpenConversation).toHaveBeenCalledWith("dm-new"))
+    expect(mockApi).toHaveBeenCalledWith("/api/conversations", {
+      method: "POST",
+      body: JSON.stringify({ type: "dm", participantIds: ["u2"] }),
+    })
+  })
+})

@@ -59,19 +59,22 @@ const Image = React.forwardRef<any, any>(({ source, ...props }, ref) => {
 Image.displayName = "Image"
 const ActivityIndicator = render("div", { "aria-label": "Loading" })
 const KeyboardAvoidingView = render("div")
-const TouchableOpacity = React.forwardRef<any, any>(({ children, onPress, disabled, style, testID, ...props }, ref) => {
-  return React.createElement(
-    "button",
-    {
-      ...props,
-      "data-testid": testID,
-      onClick: disabled ? undefined : onPress,
-      ref,
-      style: style ? flattenStyle(style) : undefined,
-    },
-    children,
-  )
-})
+const TouchableOpacity = React.forwardRef<any, any>(
+  ({ children, onPress, disabled, style, testID, onLongPress, ...props }, ref) => {
+    return React.createElement(
+      "button",
+      {
+        ...props,
+        "data-testid": testID,
+        onClick: disabled ? undefined : onPress,
+        onDoubleClick: disabled ? undefined : onLongPress,
+        ref,
+        style: style ? flattenStyle(style) : undefined,
+      },
+      children,
+    )
+  },
+)
 TouchableOpacity.displayName = "TouchableOpacity"
 
 const Modal = ({ children, visible, testID, ...props }: any) => {
@@ -108,6 +111,7 @@ const Animated = {
   spring: () => ({ start: (cb?: () => void) => cb?.() }),
   sequence: () => ({ start: (cb?: () => void) => cb?.() }),
   parallel: () => ({ start: (cb?: () => void) => cb?.() }),
+  loop: () => ({ start: (cb?: () => void) => cb?.(), stop: () => {} }),
 }
 
 const Dimensions = { get: () => ({ width: 390, height: 844 }) }
