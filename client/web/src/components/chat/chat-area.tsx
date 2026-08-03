@@ -35,6 +35,17 @@ function displayName(url: string, attachment?: Attachment): string {
   const name = url.split("/").pop() || "file"
   return name.replace(/^\d+-\d+-/, "")
 }
+
+const TEXT_PREVIEW_EXT = new Set([
+  "txt", "log", "md", "markdown", "csv", "json", "xml", "yml", "yaml", "ini", "conf", "cfg",
+  "ts", "tsx", "js", "jsx", "css", "html", "htm", "sh", "py", "rb", "go", "rs", "java", "c", "h",
+])
+
+function isTextPreview(content: string, attachment?: Attachment): boolean {
+  if (attachment?.mimeType?.startsWith("text/")) return true
+  const ext = displayName(content, attachment).split(".").pop()?.toLowerCase() ?? ""
+  return TEXT_PREVIEW_EXT.has(ext)
+}
 import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
@@ -244,7 +255,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (filePreview?.attachment?.mimeType?.startsWith("text/")) {
+    if (filePreview && isTextPreview(filePreview.content, filePreview.attachment)) {
       fetch(`${BASE_URL}${filePreview.content}`)
         .then((r) => r.text())
         .then(setPreviewText)
@@ -420,7 +431,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     (content: string, messageType?: string, attachment?: AttachmentData) => {
       let finalContent = content
       let encrypted = false
-      if (otherUserId && isDm) {
+      const isMediaMessage = messageType === "image" || messageType === "file"
+      if (otherUserId && isDm && !isMediaMessage) {
         getTheirPublicKey().then(async (theirKey) => {
           try {
             if (theirKey) {
@@ -1193,7 +1205,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       alt={filePreview.attachment?.filename || ""}
                       className="max-w-full rounded-2xl"
                     />
-                  ) : filePreview.attachment?.mimeType?.startsWith("text/") ? (
+                  ) : isTextPreview(filePreview.content, filePreview.attachment) ? (
                     <pre className="text-sm text-text-primary bg-bg-primary rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap font-mono">
                       {previewText ?? t("common.loading")}
                     </pre>

@@ -419,6 +419,7 @@ router.get(
         id: messages.id,
         content: messages.content,
         type: messages.type,
+        messageType: messages.type,
         senderId: messages.senderId,
         createdAt: messages.createdAt,
         editedAt: messages.editedAt,
