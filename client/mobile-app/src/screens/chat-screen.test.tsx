@@ -4,10 +4,10 @@ import { ChatScreen } from "./chat-screen"
 import { ToastProvider } from "../lib/toast-context"
 import { cacheClear } from "../lib/offline-cache"
 
-const { wsHandlers, wsSend, mockApiFormData } = vi.hoisted(() => ({
+const { wsHandlers, wsSend, mockUploadFile } = vi.hoisted(() => ({
   wsHandlers: {} as Record<string, ((data?: any) => void)[]>,
   wsSend: vi.fn(),
-  mockApiFormData: vi.fn(),
+  mockUploadFile: vi.fn(),
 }))
 
 const mockApi = vi.fn()
@@ -18,7 +18,7 @@ vi.mock("../lib/api", () => ({
   clearTokens: vi.fn(async () => {}),
   getTokens: vi.fn(() => Promise.resolve({ accessToken: null, refreshToken: null })),
   refreshAccess: vi.fn(() => Promise.resolve(null)),
-  apiFormData: mockApiFormData,
+  uploadFile: mockUploadFile,
   BASE_URL: "http://localhost:3000",
 }))
 
@@ -73,7 +73,7 @@ beforeEach(async () => {
   Object.keys(wsHandlers).forEach((k) => delete wsHandlers[k])
   await cacheClear()
   defaultMock(false)
-  mockApiFormData.mockImplementation(() =>
+  mockUploadFile.mockImplementation(() =>
     Promise.resolve({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }),
   )
 })
@@ -132,7 +132,7 @@ describe("ChatScreen attachments", () => {
     renderChat()
     await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
     fireEvent.click(screen.getByTestId("attachImage"))
-    await waitFor(() => expect(mockApiFormData).toHaveBeenCalled())
+    await waitFor(() => expect(mockUploadFile).toHaveBeenCalled())
     await waitFor(() =>
       expect(wsSend).toHaveBeenCalledWith(
         "message:send",

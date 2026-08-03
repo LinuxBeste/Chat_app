@@ -15,7 +15,7 @@ vi.mock("./api", () => ({
   clearTokens: vi.fn(async () => {}),
   getTokens: vi.fn(() => Promise.resolve({ accessToken: null, refreshToken: null })),
   refreshAccess: vi.fn(() => Promise.resolve(null)),
-  apiFormData: vi.fn(),
+  uploadFile: vi.fn(),
   NetworkError: class NetworkError extends Error {},
   BASE_URL: "http://localhost:3000",
 }))

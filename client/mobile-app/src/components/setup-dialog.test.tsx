@@ -12,7 +12,7 @@ vi.mock("../lib/api", () => ({
   clearTokens: vi.fn(async () => {}),
   getTokens: vi.fn(() => Promise.resolve({ accessToken: null, refreshToken: null })),
   refreshAccess: vi.fn(() => Promise.resolve(null)),
-  apiFormData: vi.fn(),
+  uploadFile: vi.fn(),
   BASE_URL: "http://localhost:3000",
 }))
 

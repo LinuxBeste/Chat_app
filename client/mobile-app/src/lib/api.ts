@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import * as FileSystem from "expo-file-system"
 import { getServerUrl } from "./server-config"
 
 const KEYS = { accessToken: "@accessToken", refreshToken: "@refreshToken" }
@@ -92,13 +93,47 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
   return res.json()
 }
 
-export async function apiFormData<T = unknown>(path: string, formData: FormData): Promise<T> {
+export interface UploadFileInput {
+  uri: string
+  name: string
+  type?: string
+  conversationId?: string
+  path?: string
+  fieldName?: string
+}
+
+export interface UploadFileResult {
+  url: string
+  filename: string
+  mimeType: string
+  size: number
+}
+
+export async function uploadFile<T = UploadFileResult>(input: UploadFileInput): Promise<T> {
+  let uri = input.uri
+  if (!uri.startsWith("file://") && !uri.startsWith("/")) {
+    const ext = (input.name.split(".").pop() || "bin").replace(/[^a-z0-9]/gi, "")
+    const dir = `${FileSystem.cacheDirectory}attachments/`
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {})
+    const dest = `${dir}${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`
+    await FileSystem.copyAsync({ from: uri, to: dest })
+    uri = dest
+  }
   const { accessToken } = await getTokens()
   const headers: Record<string, string> = {}
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
-  const res = await fetch(`${await getServerUrl()}${path}`, { method: "POST", headers, body: formData })
-  if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
-  return res.json()
+  const parameters: Record<string, string> = {}
+  if (input.conversationId) parameters["conversationId"] = input.conversationId
+  const res = await FileSystem.uploadAsync(`${await getServerUrl()}${input.path ?? "/api/uploads"}`, uri, {
+    httpMethod: "POST",
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: input.fieldName ?? "file",
+    mimeType: input.type,
+    parameters,
+    headers,
+  })
+  if (res.status < 200 || res.status >= 300) throw new Error(`Upload failed: ${res.status}`)
+  return JSON.parse(res.body) as T
 }
 
 export { setTokens, clearTokens, getTokens }

@@ -63,8 +63,18 @@ vi.mock("expo-file-system", () => {
   return {
     default: { documentDirectory: "/mock/documents/", readAsStringAsync: vi.fn(), writeAsStringAsync: vi.fn() },
     documentDirectory: "/mock/documents/",
+    cacheDirectory: "/mock/cache/",
     readAsStringAsync: vi.fn(() => Promise.resolve("")),
     writeAsStringAsync: vi.fn(() => Promise.resolve()),
+    makeDirectoryAsync: vi.fn(() => Promise.resolve()),
+    copyAsync: vi.fn(() => Promise.resolve()),
+    uploadAsync: vi.fn(() =>
+      Promise.resolve({
+        status: 201,
+        body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }),
+      }),
+    ),
+    FileSystemUploadType: { BINARY_CONTENT: 0, MULTIPART: 1 },
   }
 })
 

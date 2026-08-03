@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform } from "react-native"
-import { api, apiFormData } from "../lib/api"
+import { api, uploadFile } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -65,9 +65,13 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
       const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: false })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
-        const formData = new FormData()
-        formData.append("avatar", { uri: file.uri, name: "avatar.jpg", type: file.mimeType } as any)
-        await apiFormData("/api/users/avatar", formData)
+        await uploadFile({
+          uri: file.uri,
+          name: "avatar.jpg",
+          type: file.mimeType || "image/jpeg",
+          path: "/api/users/avatar",
+          fieldName: "avatar",
+        })
       }
     } catch {}
   }

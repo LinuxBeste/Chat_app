@@ -13,7 +13,7 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native"
-import { api, apiFormData } from "../lib/api"
+import { api, uploadFile as uploadToServer } from "../lib/api"
 import * as DocumentPicker from "expo-document-picker"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -110,9 +110,7 @@ export function FilesScreen() {
       const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
-        const formData = new FormData()
-        formData.append("file", { uri: file.uri, name: file.name, type: file.mimeType } as any)
-        await apiFormData("/api/uploads", formData)
+        await uploadToServer({ uri: file.uri, name: file.name, type: file.mimeType || undefined })
         load()
       }
     } catch {}

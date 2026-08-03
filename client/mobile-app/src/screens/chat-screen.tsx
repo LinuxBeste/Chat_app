@@ -45,7 +45,7 @@ import {
   BellOff,
   Search,
 } from "lucide-react-native"
-import { api, apiFormData } from "../lib/api"
+import { api, uploadFile } from "../lib/api"
 import { wsClient } from "../lib/ws"
 import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
 import { useAuth } from "../lib/auth-context"
@@ -56,7 +56,6 @@ import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix } fr
 import { useTranslation } from "react-i18next"
 import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
-import * as FileSystem from "expo-file-system"
 import type { ImagePickerAsset } from "expo-image-picker"
 import { EmojiPicker } from "../components/emoji-picker"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -192,9 +191,13 @@ export function ChatScreen({
       const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
-        const formData = new FormData()
-        formData.append("avatar", { uri: file.uri, name: "avatar.jpg", type: file.mimeType } as any)
-        const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData)
+        const res = await uploadFile<{ avatar: string }>({
+          uri: file.uri,
+          name: "avatar.jpg",
+          type: file.mimeType || "image/jpeg",
+          path: `/api/conversations/${conversationId}/avatar`,
+          fieldName: "avatar",
+        })
         setConvInfo((p) => (p ? { ...p, avatar: res.avatar } : p))
       }
     } catch {}
@@ -577,22 +580,12 @@ export function ChatScreen({
     setUploading(true)
     const tempId = "temp_" + Date.now()
     try {
-      let uri = file.uri
-      if (!uri.startsWith("file://") && !uri.startsWith("/")) {
-        const ext = (file.name.split(".").pop() || "bin").replace(/[^a-z0-9]/gi, "")
-        const dir = `${FileSystem.cacheDirectory}attachments/`
-        await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {})
-        const dest = `${dir}${Date.now()}-${tempId}.${ext}`
-        await FileSystem.copyAsync({ from: uri, to: dest })
-        uri = dest
-      }
-      const formData = new FormData()
-      formData.append("file", { uri, name: file.name, type: file.type } as any)
-      formData.append("conversationId", conversationId)
-      const result = await apiFormData<{ url: string; filename: string; mimeType: string; size: number }>(
-        "/api/uploads",
-        formData,
-      )
+      const result = await uploadFile({
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+        conversationId,
+      })
       const messageType = file.type.startsWith("image/") ? "image" : "file"
       const attachment = { url: result.url, filename: result.filename, mimeType: result.mimeType, size: result.size }
       setMessages((p) => [

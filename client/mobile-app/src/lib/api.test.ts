@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { api, setTokens, clearTokens, getTokens, refreshAccess, apiFormData } from "./api"
+import { api, setTokens, clearTokens, getTokens, refreshAccess, uploadFile } from "./api"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 describe("api", () => {
@@ -168,46 +168,69 @@ describe("api", () => {
   })
 })
 
-describe("apiFormData", () => {
+describe("uploadFile", () => {
   beforeEach(async () => {
     await AsyncStorage.clear()
   })
 
-  it("uploads form data with auth header", async () => {
+  it("uploads a file via native multipart with auth header", async () => {
     await setTokens("token-123", "refresh-456")
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ url: "http://example.com/file" }),
-    })
-    vi.stubGlobal("fetch", fetchMock)
+    const { uploadAsync } = await import("expo-file-system")
+    vi.mocked(uploadAsync).mockResolvedValue({
+      status: 201,
+      body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }),
+    } as any)
 
-    const form = new FormData()
-    form.append("file", "test")
-    const result = await apiFormData("/api/uploads", form)
+    const result = await uploadFile({ uri: "file:///a.png", name: "a.png", type: "image/png" })
 
-    expect(result).toEqual({ url: "http://example.com/file" })
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(result).toEqual({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 })
+    expect(uploadAsync).toHaveBeenCalledWith(
       expect.stringContaining("/api/uploads"),
+      "file:///a.png",
       expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer token-123",
-        }),
+        httpMethod: "POST",
+        fieldName: "file",
+        headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
       }),
     )
   })
 
-  it("throws on upload failure", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-      }),
-    )
+  it("copies content uris to cache before uploading", async () => {
+    const { uploadAsync, copyAsync, makeDirectoryAsync, cacheDirectory } = await import("expo-file-system")
+    vi.mocked(uploadAsync).mockResolvedValue({ status: 201, body: JSON.stringify({}) } as any)
 
-    await expect(apiFormData("/api/upload", new FormData())).rejects.toThrow("Upload failed: 500")
+    await uploadFile({ uri: "content://media/x.jpg", name: "x.jpg", type: "image/jpeg" })
+
+    expect(makeDirectoryAsync).toHaveBeenCalled()
+    expect(copyAsync).toHaveBeenCalledWith({
+      from: "content://media/x.jpg",
+      to: expect.stringContaining(`${cacheDirectory}attachments/`),
+    })
+    expect(uploadAsync).toHaveBeenCalledWith(
+      expect.stringContaining("/api/uploads"),
+      expect.stringContaining(`${cacheDirectory}attachments/`),
+      expect.any(Object),
+    )
+  })
+
+  it("sends the conversation id as a form parameter", async () => {
+    const { uploadAsync } = await import("expo-file-system")
+    vi.mocked(uploadAsync).mockResolvedValue({ status: 201, body: JSON.stringify({}) } as any)
+
+    await uploadFile({ uri: "file:///a.png", name: "a.png", type: "image/png", conversationId: "c1" })
+
+    expect(uploadAsync).toHaveBeenCalledWith(
+      expect.stringContaining("/api/uploads"),
+      "file:///a.png",
+      expect.objectContaining({ parameters: { conversationId: "c1" } }),
+    )
+  })
+
+  it("throws on upload failure", async () => {
+    const { uploadAsync } = await import("expo-file-system")
+    vi.mocked(uploadAsync).mockResolvedValue({ status: 500, body: "" } as any)
+
+    await expect(uploadFile({ uri: "file:///a.png", name: "a.png" })).rejects.toThrow("Upload failed: 500")
   })
 })
 
