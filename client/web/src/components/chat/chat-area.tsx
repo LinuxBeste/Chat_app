@@ -28,7 +28,7 @@ import {
   Flag,
   Camera,
 } from "lucide-react"
-import { api, apiFormData, BASE_URL, resolveAssetUrl } from "../../lib/api"
+import { api, apiFormData, resolveAssetUrl } from "../../lib/api"
 
 function displayName(url: string, attachment?: Attachment): string {
   if (attachment?.filename) return attachment.filename
@@ -73,7 +73,7 @@ function isTextPreview(content: string, attachment?: Attachment): boolean {
 }
 
 async function downloadAttachment(msg: Message): Promise<void> {
-  const res = await fetch(`${BASE_URL}${msg.content}`)
+  const res = await fetch(resolveAssetUrl(msg.content)!)
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -320,7 +320,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
 
   useEffect(() => {
     if (filePreview && isTextPreview(filePreview.content, filePreview.attachment)) {
-      fetch(`${BASE_URL}${filePreview.content}`)
+      fetch(resolveAssetUrl(filePreview.content)!)
         .then((r) => r.text())
         .then(setPreviewText)
         .catch(() => setPreviewText(null))
@@ -1138,7 +1138,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       </div>
                     ) : msg.type === "image" ? (
                       <img
-                        src={`${BASE_URL}${msg.content}`}
+                        src={resolveAssetUrl(msg.content)}
                         alt={t("chat.sharedImage")}
                         className="max-w-full rounded-2xl cursor-pointer"
                         onClick={() => setFilePreview(msg)}
@@ -1338,7 +1338,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                 <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
                   {filePreview.type === "image" ? (
                     <img
-                      src={`${BASE_URL}${filePreview.content}`}
+                      src={resolveAssetUrl(filePreview.content)}
                       alt={filePreview.attachment?.filename || ""}
                       className="max-w-full rounded-2xl"
                     />
@@ -1348,7 +1348,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                     </pre>
                   ) : filePreview.attachment?.mimeType === "application/pdf" ? (
                     <iframe
-                      src={`${BASE_URL}${filePreview.content}`}
+                      src={resolveAssetUrl(filePreview.content)}
                       className="w-full h-[60vh] rounded-2xl"
                       title={filePreview.attachment?.filename || ""}
                     />
@@ -1359,7 +1359,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       <button
                         onClick={async () => {
                           try {
-                            const res = await fetch(`${BASE_URL}${filePreview.content}`)
+                            const res = await fetch(resolveAssetUrl(filePreview.content)!)
                             const blob = await res.blob()
                             const url = URL.createObjectURL(blob)
                             const a = document.createElement("a")

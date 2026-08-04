@@ -257,7 +257,7 @@ function HomeContent() {
       case "groups":
         return <GroupsScreen onSelectChat={(id) => setActiveConversationId(id)} />
       case "communities":
-        return <CommunitiesScreen onSelectChat={(id) => setActiveConversationId(id)} />
+        return <CommunitiesScreen />
       case "files":
         return <FilesScreen />
       case "notifications":

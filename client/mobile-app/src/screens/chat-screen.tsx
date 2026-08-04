@@ -61,6 +61,43 @@ import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
 import type { ImagePickerAsset } from "expo-image-picker"
 import { EmojiPicker } from "../components/emoji-picker"
+
+const TEXT_PREVIEW_EXT = new Set([
+  "txt",
+  "log",
+  "md",
+  "markdown",
+  "csv",
+  "json",
+  "xml",
+  "yml",
+  "yaml",
+  "ini",
+  "conf",
+  "cfg",
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "css",
+  "html",
+  "htm",
+  "sh",
+  "py",
+  "rb",
+  "go",
+  "rs",
+  "java",
+  "c",
+  "h",
+])
+
+function isTextFileMsg(item: Msg): boolean {
+  if (item.fileType?.startsWith("text/") || item.attachment?.mimeType?.startsWith("text/")) return true
+  const name = item.fileName || item.attachment?.filename || ""
+  const ext = name.split(".").pop()?.toLowerCase() ?? ""
+  return TEXT_PREVIEW_EXT.has(ext)
+}
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { CallOverlay } from "../components/call-overlay"
 import { AddParticipantsModal } from "../components/add-participants-modal"
@@ -165,6 +202,39 @@ export function ChatScreen({
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Msg[]>([])
+  const [previewText, setPreviewText] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!previewFile) {
+      setPreviewText(null)
+      return
+    }
+    if (!isTextFileMsg(previewFile)) {
+      setPreviewText(null)
+      return
+    }
+    const url = msgImageUrl(previewFile)
+    if (!url) {
+      setPreviewText(null)
+      return
+    }
+    let cancelled = false
+    resolveFileUrl(url)
+      .then((resolved) => {
+        if (!resolved || cancelled) return
+        return fetch(resolved)
+          .then((r) => r.text())
+          .then((text) => {
+            if (!cancelled) setPreviewText(text)
+          })
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewText(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [previewFile])
 
   const isDm = convInfo?.type === "dm"
   const otherMember = isDm ? convInfo?.members?.find((m) => m.id !== user!.id) : undefined
@@ -1217,6 +1287,14 @@ export function ChatScreen({
                     </TouchableOpacity>
                   )}
                 </>
+              ) : isTextFileMsg(previewFile) ? (
+                <View style={s.previewTextWrap}>
+                  {previewText !== null ? (
+                    <Text style={s.previewText}>{previewText}</Text>
+                  ) : (
+                    <Text style={s.previewFileText}>Loading...</Text>
+                  )}
+                </View>
               ) : (
                 <View style={s.previewFile}>
                   <FileText size={48} color="#E8E8F0" />
@@ -1680,6 +1758,18 @@ const s = StyleSheet.create({
   previewScrollContent: { alignItems: "center", paddingVertical: 40 },
   previewFile: { padding: 40, backgroundColor: "#181825", borderRadius: 20, alignItems: "center" },
   previewFileText: { color: "#E8E8F0", fontSize: 16 },
+  previewTextWrap: {
+    width: "100%",
+    padding: 16,
+    backgroundColor: "#181825",
+    borderRadius: 20,
+  },
+  previewText: {
+    color: "#E8E8F0",
+    fontSize: 13,
+    fontFamily: "monospace",
+    lineHeight: 20,
+  },
   mediaOverlay: { flex: 1, backgroundColor: "#0A0A0F" },
   mediaHeader: {
     flexDirection: "row",

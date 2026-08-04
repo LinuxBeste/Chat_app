@@ -4,7 +4,7 @@ import { ProfileScreen } from "./profile-screen"
 import { AuthProvider } from "../lib/auth-context"
 import type { ReactNode } from "react"
 
-const mockApi = vi.fn(() => Promise.resolve({}))
+const mockApi = vi.fn((..._args: any[]) => Promise.resolve({}))
 
 vi.mock("../lib/api", () => ({
   api: (...args: any[]) => mockApi(...args),

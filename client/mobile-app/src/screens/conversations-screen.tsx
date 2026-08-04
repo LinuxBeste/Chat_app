@@ -236,7 +236,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
             <View style={s.itemContent}>
               <View style={s.itemTop}>
                 <Text
-                  style={[s.name, { color: c.text }, item.unreadCount && item.unreadCount > 0 && s.nameUnread]}
+                  style={[s.name, { color: c.text }, (item.unreadCount ?? 0) > 0 && s.nameUnread]}
                   numberOfLines={1}
                 >
                   {item.name ||
@@ -254,7 +254,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                 style={[
                   s.lastMsg,
                   { color: c.textSecondary },
-                  item.unreadCount && item.unreadCount > 0 && [s.lastMsgUnread, { color: c.text }],
+                  (item.unreadCount ?? 0) > 0 && [s.lastMsgUnread, { color: c.text }],
                 ]}
                 numberOfLines={1}
               >

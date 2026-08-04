@@ -3,7 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "expo-file-system/next": ["./node_modules/expo-file-system/build/next/index.d.ts"]
     }
   }
 }

@@ -20,7 +20,7 @@ export async function getServerUrl(): Promise<string> {
   if (cached) return cached
   const stored = await AsyncStorage.getItem(KEY)
   cached = stored ? normalize(stored) : DEFAULT_HTTP
-  return cached
+  return cached ?? DEFAULT_HTTP
 }
 
 export async function getServerWsUrl(): Promise<string> {

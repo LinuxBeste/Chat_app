@@ -249,12 +249,12 @@ export function FilesScreen() {
   }
 
   const handleFileLongPress = (item: FileEntry) => {
-    Alert.alert(item.name, "", [
+    Alert.alert(item.name ?? item.filename ?? "File", "", [
       {
         text: "Rename",
         onPress: () => {
           setRenameTarget(item)
-          setRenameName(item.name)
+          setRenameName(item.name ?? item.filename ?? "File")
         },
       },
       {

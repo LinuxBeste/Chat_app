@@ -1,4 +1,4 @@
-import { File, Paths } from "expo-file-system"
+import { File, Paths } from "expo-file-system/next"
 import { Share } from "react-native"
 
 export async function downloadAndShare(url: string, filename: string): Promise<void> {

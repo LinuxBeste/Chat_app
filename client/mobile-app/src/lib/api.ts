@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { File, Paths } from "expo-file-system"
+import { File, Paths } from "expo-file-system/next"
 import { getServerUrl } from "./server-config"
 
 const KEYS = { accessToken: "@accessToken", refreshToken: "@refreshToken" }

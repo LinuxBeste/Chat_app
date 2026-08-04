@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { api, setTokens, clearTokens, getTokens, refreshAccess, uploadFile } from "./api"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
+vi.mock("expo-file-system/next", () => {
+  class MockFile {
+    uri: string
+    constructor(first: string, name?: string) {
+      this.uri = name ? `${first.replace(/\/+$/, "")}/${name}` : first
+    }
+    copy() {}
+  }
+  return {
+    File: MockFile,
+    Paths: { cache: "/mock/cache" },
+    default: {},
+  }
+})
+
 describe("api", () => {
   beforeEach(async () => {
     await AsyncStorage.clear()

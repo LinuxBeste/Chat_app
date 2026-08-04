@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Share } from "react-native"
 import { downloadAndShare } from "./download"
 
-vi.mock("expo-file-system", () => {
+vi.mock("expo-file-system/next", () => {
   class MockFile {
     uri: string
     static downloadFileAsync = vi.fn((_url: string, to: MockFile) => Promise.resolve(to))
@@ -18,7 +18,7 @@ vi.mock("expo-file-system", () => {
   }
 })
 
-const File = (await import("expo-file-system")).File as any
+const File = (await import("expo-file-system/next")).File as any
 
 describe("downloadAndShare", () => {
   beforeEach(() => {

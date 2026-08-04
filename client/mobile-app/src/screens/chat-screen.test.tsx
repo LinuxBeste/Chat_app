@@ -22,6 +22,19 @@ vi.mock("../lib/api", () => ({
   BASE_URL: "http://localhost:3000",
 }))
 
+vi.mock("expo-file-system/next", () => ({
+  File: class {
+    uri: string
+    constructor(first: string, name?: string) {
+      this.uri = name ? `${first.replace(/\/+$/, "")}/${name}` : first
+    }
+    static downloadFileAsync = vi.fn((_url: string, to: { uri: string }) => Promise.resolve(to))
+    copy() {}
+  },
+  Paths: { cache: "/mock/cache" },
+  default: {},
+}))
+
 vi.mock("../lib/ws", () => ({
   wsClient: {
     on: vi.fn((type: string, cb: (data?: any) => void) => {
@@ -126,7 +139,7 @@ describe("ChatScreen attachments", () => {
     vi.mocked(launchImageLibraryAsync).mockImplementation(() =>
       Promise.resolve({
         canceled: false,
-        assets: [{ uri: "file:///a.jpg", fileName: "a.jpg", mimeType: "image/jpeg" }],
+        assets: [{ uri: "file:///a.jpg", fileName: "a.jpg", mimeType: "image/jpeg", width: 800, height: 600 }],
       }),
     )
     renderChat()
@@ -212,7 +225,7 @@ describe("ChatScreen media sheet", () => {
 
   it("attaches a photo from the media sheet empty state", async () => {
     const { launchImageLibraryAsync } = await import("expo-image-picker")
-    vi.mocked(launchImageLibraryAsync).mockImplementation(() => Promise.resolve({ canceled: true, assets: [] }))
+    vi.mocked(launchImageLibraryAsync).mockImplementation(() => Promise.resolve({ canceled: true, assets: null }))
     renderChat()
     await waitFor(() => expect(screen.getByText("Test Group")).toBeInTheDocument())
     fireEvent.click(screen.getByTestId("openMedia"))
