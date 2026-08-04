@@ -818,7 +818,10 @@ export function ChatScreen({
           onPress: () => {
             resolveFileUrl(fileUrl)
               .then((url) => (url ? downloadAndShare(url, name) : Promise.reject(new Error("no url"))))
-              .catch(() => showToast(t("chat.downloadFailed", "Download failed")))
+              .catch((err: any) => {
+                const detail = err instanceof Error && err.message ? `: ${err.message}` : ""
+                showToast(`${t("chat.downloadFailed", "Download failed")}${detail}`)
+              })
           },
         })
       }
