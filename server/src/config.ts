@@ -49,7 +49,7 @@ export const config = {
 
   uploads: {
     dir: process.env.UPLOAD_DIR ?? resolve(__dirname, "..", "data", "uploads"),
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE ?? "10485760", 10),
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE ?? "26214400", 10),
   },
 
   admin: {

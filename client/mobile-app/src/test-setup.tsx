@@ -60,6 +60,14 @@ vi.mock("expo-image-picker", () => {
 })
 
 vi.mock("expo-file-system", () => {
+  class MockFile {
+    uri: string
+    static downloadFileAsync = vi.fn((_url: string, to: MockFile) => Promise.resolve(to))
+    constructor(first: string, name?: string) {
+      this.uri = name ? `${first.replace(/\/+$/, "")}/${name}` : first
+    }
+    copy() {}
+  }
   return {
     default: { documentDirectory: "/mock/documents/", readAsStringAsync: vi.fn(), writeAsStringAsync: vi.fn() },
     documentDirectory: "/mock/documents/",
@@ -75,6 +83,9 @@ vi.mock("expo-file-system", () => {
       }),
     ),
     FileSystemUploadType: { BINARY_CONTENT: 0, MULTIPART: 1 },
+    File: MockFile,
+    Directory: class {},
+    Paths: { cache: "/mock/cache/", document: "/mock/documents/" },
   }
 })
 

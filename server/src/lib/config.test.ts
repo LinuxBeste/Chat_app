@@ -36,6 +36,6 @@ describe("config defaults", () => {
   })
 
   it("has default upload max file size", () => {
-    expect(config.uploads.maxFileSize).toBe(10485760)
+    expect(config.uploads.maxFileSize).toBe(26214400)
   })
 })

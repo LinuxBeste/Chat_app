@@ -188,7 +188,11 @@ function setConvKeys(conversationId: string, entries: ConvKeyEntry[], userId?: s
   )
 }
 
-async function deriveConvKey(conversationId: string, theirPublicKey: string, userId?: string): Promise<Uint8Array | null> {
+async function deriveConvKey(
+  conversationId: string,
+  theirPublicKey: string,
+  userId?: string,
+): Promise<Uint8Array | null> {
   const secret = await computeSharedSecret(theirPublicKey, userId)
   if (!secret) return null
   const keys = getConvKeys(conversationId, userId).filter((k) => k.peer !== theirPublicKey)

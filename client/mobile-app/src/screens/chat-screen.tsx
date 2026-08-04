@@ -13,6 +13,7 @@ import {
   Modal,
   ActivityIndicator,
   ScrollView,
+  BackHandler,
 } from "react-native"
 import {
   Image as ImageIcon,
@@ -44,6 +45,7 @@ import {
   Bell,
   BellOff,
   Search,
+  Download,
 } from "lucide-react-native"
 import { api, uploadFile } from "../lib/api"
 import { wsClient } from "../lib/ws"
@@ -52,6 +54,7 @@ import { useAuth } from "../lib/auth-context"
 import { useTheme } from "../lib/theme-context"
 import { useToast } from "../lib/toast-context"
 import { resolveFileUrl } from "../lib/file-url"
+import { downloadAndShare } from "../lib/download"
 import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix, getOrCreateDeviceId } from "../lib/crypto"
 import { useTranslation } from "react-i18next"
 import * as DocumentPicker from "expo-document-picker"
@@ -143,6 +146,11 @@ export function ChatScreen({
   const flatRef = useRef<FlatList>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const sendingRef = useRef(false)
+  const stickToBottom = useRef(true)
+
+  useEffect(() => {
+    stickToBottom.current = true
+  }, [conversationId])
 
   const [showInfo, setShowInfo] = useState(false)
   const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "accepted" | "self">("none")
@@ -521,6 +529,7 @@ export function ChatScreen({
   const send = async () => {
     if (!input.trim() || sendingRef.current) return
     sendingRef.current = true
+    stickToBottom.current = true
     const tempId = "temp_" + Date.now()
     const text = input.trim()
     setMsgStatus((p) => ({ ...p, [tempId]: "sending" }))
@@ -607,7 +616,14 @@ export function ChatScreen({
     wsClient.send("typing:indicator", { conversationId })
   }
 
-  const uploadAndSend = async (file: { uri: string; name: string; type: string }) => {
+  const MAX_FILE_BYTES = 25 * 1024 * 1024
+
+  const uploadAndSend = async (file: { uri: string; name: string; type: string; size?: number }) => {
+    if (file.size && file.size > MAX_FILE_BYTES) {
+      showToast(t("chat.fileTooLarge", "File exceeds the 25 MB upload limit"))
+      return
+    }
+    stickToBottom.current = true
     setUploading(true)
     const tempId = "temp_" + Date.now()
     try {
@@ -676,7 +692,12 @@ export function ChatScreen({
       const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0]
-        await uploadAndSend({ uri: file.uri, name: file.name, type: file.mimeType || "application/octet-stream" })
+        await uploadAndSend({
+          uri: file.uri,
+          name: file.name,
+          type: file.mimeType || "application/octet-stream",
+          size: file.size,
+        })
       }
     } catch {
       setUploading(false)
@@ -686,6 +707,60 @@ export function ChatScreen({
 
   const [contextMenu, setContextMenu] = useState<Msg | null>(null)
   const showContextMenu = (item: Msg) => setContextMenu(item)
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (contextMenu) {
+        setContextMenu(null)
+        return true
+      }
+      if (showReactionPicker) {
+        setShowReactionPicker(null)
+        return true
+      }
+      if (showEmoji) {
+        setShowEmoji(false)
+        return true
+      }
+      if (showSearch) {
+        setShowSearch(false)
+        return true
+      }
+      if (showPinned) {
+        setShowPinned(false)
+        return true
+      }
+      if (showMedia) {
+        setShowMedia(false)
+        return true
+      }
+      if (previewFile) {
+        setPreviewFile(null)
+        return true
+      }
+      if (showAddPeople) {
+        setShowAddPeople(false)
+        return true
+      }
+      if (showInfo) {
+        setShowInfo(false)
+        return true
+      }
+      return false
+    })
+    return () => sub.remove()
+  }, [
+    contextMenu,
+    showReactionPicker,
+    showEmoji,
+    showSearch,
+    showPinned,
+    showMedia,
+    previewFile,
+    showAddPeople,
+    showInfo,
+  ])
 
   const contextMenuActions = (item: Msg) => {
     const me = item.senderId === user!.id
@@ -731,6 +806,22 @@ export function ChatScreen({
         onPress: () => setShowReactionPicker(item.id),
       })
       if (!me) actions.push({ key: "pin", icon: Pin, label: "Pin", onPress: () => pinMessage(item.id) })
+    }
+    if (item.messageType === "image" || item.messageType === "file" || item.fileUrl || item.attachment?.url) {
+      const fileUrl = item.fileUrl || item.attachment?.url
+      const name = item.fileName || item.attachment?.filename || "file"
+      if (fileUrl) {
+        actions.push({
+          key: "download",
+          icon: Download,
+          label: "Download",
+          onPress: () => {
+            resolveFileUrl(fileUrl)
+              .then((url) => (url ? downloadAndShare(url, name) : Promise.reject(new Error("no url"))))
+              .catch(() => showToast(t("chat.downloadFailed", "Download failed")))
+          },
+        })
+      }
     }
     if (item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/"))) {
       actions.push({ key: "view", icon: ImageIcon, label: "View Image", onPress: () => setPreviewFile(item) })
@@ -1083,7 +1174,15 @@ export function ChatScreen({
         data={messagesWithDates(messages)}
         keyExtractor={(m: any) => m.id || m._key}
         contentContainerStyle={s.msgList}
-        onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: false })}
+        onContentSizeChange={() => {
+          if (stickToBottom.current) flatRef.current?.scrollToEnd({ animated: false })
+        }}
+        onScroll={(e) => {
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+          const distance = contentSize.height - (contentOffset.y + layoutMeasurement.height)
+          stickToBottom.current = distance < 120
+        }}
+        scrollEventThrottle={16}
         renderItem={({ item }: any) =>
           item._isDate ? (
             <View style={mb.dateSep}>

@@ -222,7 +222,10 @@ describe("uploadFile", () => {
 
   it("uploads a file via XHR multipart with auth header", async () => {
     await setTokens("token-123", "refresh-456")
-    const xhr = stubXhr({ status: 201, body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }) })
+    const xhr = stubXhr({
+      status: 201,
+      body: JSON.stringify({ url: "/uploads/x.png", filename: "x.png", mimeType: "image/png", size: 100 }),
+    })
 
     const result = await uploadFile({ uri: "file:///a.png", name: "a.png", type: "image/png" })
 
@@ -244,6 +247,33 @@ describe("uploadFile", () => {
       { key: "conversationId", value: "c1" },
       { key: "file", value: expect.objectContaining({ uri: "file:///a.png", name: "a.png", type: "image/png" }) },
     ])
+  })
+
+  it("copies content:// URIs into the cache before uploading", async () => {
+    await setTokens("token-123", "refresh-456")
+    const xhr = stubXhr({ status: 201, body: JSON.stringify({}) })
+
+    await uploadFile({ uri: "content://downloads/42", name: "report.pdf", type: "application/pdf" })
+
+    expect(xhr.getParts()).toEqual([
+      {
+        key: "file",
+        value: expect.objectContaining({
+          uri: expect.stringMatching(/^\/mock\/cache\/pending-\d+-report\.pdf$/),
+          name: "report.pdf",
+          type: "application/pdf",
+        }),
+      },
+    ])
+  })
+
+  it("infers an extension when the file name has none", async () => {
+    await setTokens("token-123", "refresh-456")
+    const xhr = stubXhr({ status: 201, body: JSON.stringify({}) })
+
+    await uploadFile({ uri: "content://downloads/42", name: "report", type: "application/pdf" })
+
+    expect(xhr.getParts()).toEqual([{ key: "file", value: expect.objectContaining({ name: "report.pdf" }) }])
   })
 
   it("throws with status on upload failure", async () => {

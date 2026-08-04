@@ -23,9 +23,7 @@ export function MediaGallery() {
         const results = await Promise.all(
           convs.map((conv) => api<MediaItem[]>(`/api/conversations/${conv.id}/messages?limit=50`)),
         )
-        const all = results
-          .flat()
-          .filter((m) => m.type === "image" && m.encrypted !== "true")
+        const all = results.flat().filter((m) => m.type === "image" && m.encrypted !== "true")
         setItems(all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
       })
       .catch(() => {})

@@ -48,7 +48,12 @@
     "newConversation": "New Conversation",
     "noMessages": "No messages yet",
     "noConversations": "No conversations yet",
-    "today": "Today"
+    "today": "Today",
+    "fileTooLarge": "File exceeds the 25 MB upload limit",
+    "uploadFailed": "Upload failed",
+    "mediaPermission": "Photo permission needed to attach images",
+    "pickerFailed": "Could not open photo picker",
+    "downloadFailed": "Download failed"
   },
   "groups": {
     "title": "Groups",
@@ -233,7 +238,18 @@
       "badgeStyle": "Badge Style",
       "badgeStyleDesc": "Notification badge appearance",
       "notificationDotSize": "Notification Dot Size",
-      "notificationDotSizeDesc": "Size of online status dots"
+      "notificationDotSizeDesc": "Size of online status dots",
+      "chatAppearance": "Chat Appearance",
+      "showBubbleTails": "Bubble Tails",
+      "showBubbleTailsDesc": "Show the little tail on message bubbles",
+      "outgoingBubbleColor": "Outgoing Bubble Color",
+      "outgoingBubbleColorDesc": "Color of your message bubbles",
+      "incomingBubbleColor": "Incoming Bubble Color",
+      "incomingBubbleColorDesc": "Color of incoming message bubbles",
+      "coloredSenderNames": "Colored Sender Names",
+      "coloredSenderNamesDesc": "Show sender names in different colors in groups",
+      "chatBackground": "Chat Background",
+      "chatBackgroundDesc": "Background color of the chat screen"
     },
     "status": {
       "oneliner": "One-Liner Status",
@@ -245,7 +261,10 @@
       "statusEmoji": "Status Emoji",
       "statusEmojiDesc": "Replace presence dot with an emoji",
       "statusEmojiPlaceholder": "😀"
-    }
+    },
+    "light": "settings.light",
+    "dark": "settings.dark",
+    "language": "settings.language"
   },
   "events": {
     "title": "Events",
@@ -287,6 +306,7 @@
     "search": "Search",
     "noResults": "No results",
     "required": "is required",
-    "back": "Back"
+    "back": "Back",
+    "create": "common.create"
   }
 }

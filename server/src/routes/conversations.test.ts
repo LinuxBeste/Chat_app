@@ -239,6 +239,18 @@ describe("DELETE /api/conversations/:id/messages/:msgId", () => {
     expect(res.body).toHaveProperty("message", "Message deleted")
   })
 
+  it("deletes own message and its attachment", async () => {
+    queryQueue.push(
+      [{ id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", deletedAt: null }],
+      [{ id: "a1", messageId: "m1", url: "/uploads/x.txt", filename: "x.txt", mimeType: "text/plain", size: 5 }],
+      [],
+      [],
+    )
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("message", "Message deleted")
+  })
+
   it("returns 404 for unknown message", async () => {
     mockData.current = []
     const res = await request(app).delete("/api/conversations/c1/messages/unknown").set("Authorization", "Bearer token")

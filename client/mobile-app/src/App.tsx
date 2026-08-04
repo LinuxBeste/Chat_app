@@ -11,6 +11,7 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  BackHandler,
 } from "react-native"
 import {
   MessageSquare,
@@ -194,6 +195,26 @@ function HomeContent() {
     })
     return unsub
   }, [])
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (moreOpen) {
+        setMoreOpen(false)
+        return true
+      }
+      if (view !== "chats") {
+        setView("chats")
+        return true
+      }
+      if (activeConversationId) {
+        setActiveConversationId(null)
+        return true
+      }
+      return false
+    })
+    return () => sub.remove()
+  }, [moreOpen, view, activeConversationId, setView, setActiveConversationId])
 
   if (view === "profile") return <ProfileScreen onBack={() => setView("chats")} />
   if (view === "settings") return <SettingsScreen onBack={() => setView("chats")} />

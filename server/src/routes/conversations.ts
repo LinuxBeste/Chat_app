@@ -11,6 +11,7 @@ import { eq, and, desc, sql } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 import { clients, sendToConversation } from "../ws/clients.js"
 import { saveAvatar } from "../lib/image.js"
+import { deleteMessageWithAttachments } from "../lib/message-cleanup.js"
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -503,7 +504,7 @@ router.delete(
       res.status(403).json({ error: "Not your message" })
       return
     }
-    await db.delete(messages).where(eq(messages.id, msg.id))
+    await deleteMessageWithAttachments(msg.id)
 
     const event = { type: "message:deleted", id: msg.id, conversationId: req.params.id }
     sendToConversation(req.params.id as string, event, req.user!.userId)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { api } from "../../lib/api"
 import { Search, MessageSquare, X } from "lucide-react"
 
@@ -10,14 +10,14 @@ interface SearchResult {
   conversationId: string
 }
 
-export function SearchPanel({ onClose }: { onClose: () => void }) {
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SearchResult[]>([])
-  const inputRef = useRef<HTMLInputElement>(null)
+interface SearchPanelProps {
+  query: string
+  onChange: (query: string) => void
+  onClose: () => void
+}
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+export function SearchPanel({ query, onChange, onClose }: SearchPanelProps) {
+  const [results, setResults] = useState<SearchResult[]>([])
 
   useEffect(() => {
     if (query.length < 2) {
@@ -37,14 +37,15 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
       <div className="rounded-2xl border border-border bg-surface shadow-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <Search className="h-4 w-4 text-text-muted shrink-0" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search messages..."
-            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
-          />
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary cursor-pointer">
+          <p className="flex-1 text-sm text-text-primary truncate">{query}</p>
+          <button
+            onClick={() => {
+              onChange("")
+              onClose()
+            }}
+            className="text-text-muted hover:text-text-primary cursor-pointer"
+            aria-label="Close search"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -42,7 +42,9 @@
     "failed": "失敗",
     "none": "なし",
     "default": "デフォルト",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "prev": "Previous",
+    "next": "Next"
   },
   "profile": {
     "title": "プロフィール",
@@ -52,7 +54,11 @@
     "bio": "自己紹介",
     "bioPlaceholder": "自分について教えてください...",
     "saveChanges": "変更を保存",
-    "userId": "ユーザーID"
+    "userId": "ユーザーID",
+    "saveSuccess": "profile.saveSuccess",
+    "saveError": "profile.saveError",
+    "avatarSuccess": "profile.avatarSuccess",
+    "avatarError": "profile.avatarError"
   },
   "auth": {
     "welcomeBack": "おかえりなさい",
@@ -164,7 +170,17 @@
     "loadError": "データの読み込みに失敗しました",
     "uploadError": "ファイルのアップロードに失敗しました",
     "couldNotDecrypt": "メッセージを復号化できませんでした",
-    "deleteError": "メッセージの削除に失敗しました"
+    "deleteError": "メッセージの削除に失敗しました",
+    "report": "報告",
+    "reportSent": "報告が送信されました",
+    "reportFailed": "報告の送信に失敗しました",
+    "copyFailed": "メッセージをコピーできませんでした",
+    "downloadFailed": "ダウンロードに失敗しました",
+    "avatarUpdated": "Group photo updated",
+    "avatarError": "Failed to update group photo",
+    "offline": "Offline",
+    "copied": "chat.copied",
+    "copy": "chat.copy"
   },
   "calls": {
     "callControls": "通話コントロール",
@@ -198,7 +214,8 @@
     "groupNamePlaceholder": "グループ名",
     "searchUsers": "ユーザーを検索...",
     "noUsersFound": "ユーザーが見つかりません",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "noGroups": "groups.noGroups"
   },
   "communities": {
     "title": "コミュニティ",
@@ -224,7 +241,10 @@
     "create": "作成",
     "joinTitle": "コミュニティに参加",
     "enterInviteCode": "招待コードを入力",
-    "join": "参加"
+    "join": "参加",
+    "voiceChannels": "Voice Channels",
+    "delete": "communities.delete",
+    "newVoiceChannelName": "New voice channel name"
   },
   "admin": {
     "title": "管理",
@@ -267,7 +287,24 @@
     "adminAdded": "管理者を追加しました",
     "adminRemoved": "管理者を削除しました",
     "removeAdminConfirm": "この管理者を削除しますか？",
-    "failed": "失敗しました"
+    "failed": "失敗しました",
+    "activity": "Activity",
+    "onlineUsers": "Online Users",
+    "today": "Today",
+    "registrationsToday": "Registrations Today",
+    "messagesToday": "Messages Today",
+    "searchUsers": "Search by username, email or ID...",
+    "allStatuses": "All statuses",
+    "viewDetails": "View details",
+    "unsuspend": "Unsuspend",
+    "suspend": "Suspend",
+    "searchBans": "Search bans...",
+    "expires": "Expires",
+    "userDetails": "User Details",
+    "role": "Role",
+    "admin": "admin.admin",
+    "member": "Member",
+    "memberSince": "Member since"
   },
   "settings": {
     "title": "設定",
@@ -572,7 +609,9 @@
         "bouncingDots": "跳ねるドット",
         "textOnly": "テキストのみ",
         "dot": "ドット",
-        "number": "数字"
+        "number": "数字",
+        "spinner": "Spinner",
+        "skeleton": "Skeleton"
       },
       "fonts": {
         "system": "システム",
@@ -594,7 +633,14 @@
         "dots": "ドット",
         "grid": "グリッド",
         "waves": "ウェーブ"
-      }
+      },
+      "lightMode": "settings.appearance.lightMode",
+      "avatarStyle": "settings.appearance.avatarStyle",
+      "avatarSize": "settings.appearance.avatarSize",
+      "loadingStyle": "Loading Style",
+      "notificationDotSize": "Notification Dot Size",
+      "loadingStyleDesc": "Loading spinner or skeleton style",
+      "notificationDotSizeDesc": "Size of online status dots"
     },
     "notifications": {
       "title": "通知",
@@ -640,7 +686,8 @@
         "chime": "チャイム",
         "pop": "ポップ",
         "bell": "ベル"
-      }
+      },
+      "dnd": "settings.notifications.dnd"
     },
     "privacy": {
       "title": "プライバシーと安全",
@@ -698,7 +745,9 @@
       "spellCheck": "スペルチェック",
       "spellCheckDesc": "メッセージ入力のスペルチェックを有効化",
       "autoCorrect": "自動修正",
-      "autoCorrectDesc": "入力ミスを自動修正"
+      "autoCorrectDesc": "入力ミスを自動修正",
+      "showTypingIndicators": "settings.chat.showTypingIndicators",
+      "autoPlayMedia": "settings.chat.autoPlayMedia"
     },
     "calls": {
       "title": "通話",
@@ -744,6 +793,14 @@
         "default": "デフォルト",
         "classic": "クラシック",
         "digital": "デジタル"
+      },
+      "audioInput": "settings.calls.audioInput",
+      "audioOutput": "settings.calls.audioOutput",
+      "videoInput": "settings.calls.videoInput",
+      "videoQualityOptions": {
+        "480p": "480p",
+        "720p": "720p",
+        "1080p": "1080p"
       }
     },
     "media": {
@@ -773,6 +830,13 @@
         "low": "低",
         "medium": "中",
         "high": "高"
+      },
+      "stickerSuggestions": "settings.media.stickerSuggestions",
+      "fileSizeOptions": {
+        "10": "10 MB",
+        "25": "25 MB",
+        "50": "50 MB",
+        "100": "100 MB"
       }
     },
     "audioVideo": {
@@ -791,7 +855,22 @@
       "resolution": "解像度",
       "resolutionDesc": "ビデオキャプチャ解像度",
       "frameRate": "フレームレート",
-      "frameRateDesc": "ビデオキャプチャフレームレート（fps）"
+      "frameRateDesc": "ビデオキャプチャフレームレート（fps）",
+      "deviceOptions": {
+        "builtinMic": "Built-in Mic",
+        "externalMic": "External Mic"
+      },
+      "resolutionOptions": {
+        "640x480": "640x480",
+        "1280x720": "1280x720",
+        "1920x1080": "1920x1080"
+      },
+      "framerateOptions": {
+        "15": "15 fps",
+        "24": "24 fps",
+        "30": "30 fps",
+        "60": "60 fps"
+      }
     },
     "accessibility": {
       "title": "アクセシビリティ",
@@ -828,7 +907,8 @@
         "auto": "自動",
         "left": "左",
         "right": "右"
-      }
+      },
+      "reduceTransparency": "settings.accessibility.reduceTransparency"
     },
     "reader": {
       "title": "リーダー",
@@ -838,7 +918,17 @@
       "fontSize": "フォントサイズ",
       "fontSizeDesc": "リーダーモードのテキストサイズ",
       "lineSpacing": "行間",
-      "lineSpacingDesc": "リーダーモードの行間"
+      "lineSpacingDesc": "リーダーモードの行間",
+      "lineHeight": "settings.reader.lineHeight",
+      "columnWidth": "settings.reader.columnWidth",
+      "theme": "settings.reader.theme",
+      "fontSizeOptions": {
+        "14": "14px",
+        "16": "16px",
+        "18": "18px",
+        "20": "20px",
+        "24": "24px"
+      }
     },
     "shortcuts": {
       "title": "ショートカットキー",
@@ -888,7 +978,30 @@
       "temperature": "温度",
       "temperatureDesc": "摂氏または華氏",
       "measurement": "測定単位",
-      "measurementDesc": "メートル法またはヤードポンド法"
+      "measurementDesc": "メートル法またはヤードポンド法",
+      "interface": "settings.language.interface",
+      "translation": "settings.language.translation",
+      "timeFormatOptions": {
+        "12h": "12-hour",
+        "24h": "24-hour"
+      },
+      "dateFormatOptions": {
+        "MDY": "MM/DD/YYYY",
+        "DMY": "DD/MM/YYYY",
+        "YMD": "YYYY/MM/DD"
+      },
+      "dayOptions": {
+        "sun": "Sunday",
+        "mon": "Monday"
+      },
+      "temperatureOptions": {
+        "c": "Celsius (°C)",
+        "f": "Fahrenheit (°F)"
+      },
+      "measurementOptions": {
+        "metric": "Metric",
+        "imperial": "Imperial"
+      }
     },
     "advanced": {
       "title": "詳細設定",
@@ -916,7 +1029,8 @@
         "warnings": "警告",
         "info": "情報",
         "debug": "デバッグ"
-      }
+      },
+      "cache": "settings.advanced.cache"
     },
     "about": {
       "title": "情報",
@@ -930,11 +1044,30 @@
       "database": "データベース",
       "nodeJs": "Node.js",
       "license": "ライセンス",
-      "repository": "リポジトリ"
+      "repository": "リポジトリ",
+      "privacyPolicy": "settings.about.privacyPolicy",
+      "termsOfService": "settings.about.termsOfService",
+      "credits": "settings.about.credits"
     },
     "search": "設定を検索...",
     "searchResults": "検索結果",
-    "noResults": "設定が見つかりません"
+    "noResults": "設定が見つかりません",
+    "offline": {
+      "queueCleared": "Pending message queue cleared",
+      "cacheCleared": "Cached messages cleared",
+      "pendingQueue": "Pending Messages",
+      "pendingQueueDesc": "Messages waiting to be sent",
+      "refresh": "Refresh",
+      "clearQueue": "Clear Queue",
+      "clearCache": "Clear Cached Messages",
+      "title": "Offline"
+    },
+    "audio-video": {
+      "noiseSuppression": "settings.audio-video.noiseSuppression",
+      "echoCancellation": "settings.audio-video.echoCancellation",
+      "backgroundBlur": "settings.audio-video.backgroundBlur",
+      "virtualBackground": "settings.audio-video.virtualBackground"
+    }
   },
   "themeEditor": {
     "customThemes": "カスタムテーマ",
@@ -968,7 +1101,12 @@
       "compact": "コンパクト",
       "cozy": "コージー",
       "alternating": "交互"
-    }
+    },
+    "defaults": "Defaults",
+    "defaultDark": "Default Dark",
+    "defaultLight": "Default Light",
+    "darkPresets": "Dark Presets",
+    "lightPresets": "Light Presets"
   },
   "files": {
     "title": "ファイル",
@@ -989,7 +1127,15 @@
     "rename": "名前を変更",
     "moveTo": "移動先...",
     "rootFolder": "ルートフォルダ",
-    "moveToFolder": "フォルダに移動"
+    "moveToFolder": "フォルダに移動",
+    "uploadSuccess": "files.uploadSuccess",
+    "uploadError": "files.uploadError",
+    "folderCreateError": "files.folderCreateError",
+    "folderDeleteError": "files.folderDeleteError",
+    "membersLoadError": "files.membersLoadError",
+    "memberAddError": "files.memberAddError",
+    "memberRemoveError": "files.memberRemoveError",
+    "moveError": "files.moveError"
   },
   "setup": {
     "welcome": "ようこそ！",
@@ -1005,5 +1151,13 @@
     "next": "次へ",
     "skip": "スキップ",
     "finish": "セットアップ完了"
+  },
+  "voice": {
+    "connected": "Connected",
+    "join": "Join",
+    "participants": "participants",
+    "unmute": "Unmute",
+    "mute": "Mute",
+    "leave": "Leave"
   }
 }

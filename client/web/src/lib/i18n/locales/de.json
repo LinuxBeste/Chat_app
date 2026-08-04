@@ -54,7 +54,11 @@
     "bio": "Bio",
     "bioPlaceholder": "Erzähl uns etwas über dich...",
     "saveChanges": "Änderungen speichern",
-    "userId": "Benutzer-ID"
+    "userId": "Benutzer-ID",
+    "saveSuccess": "profile.saveSuccess",
+    "saveError": "profile.saveError",
+    "avatarSuccess": "profile.avatarSuccess",
+    "avatarError": "profile.avatarError"
   },
   "auth": {
     "welcomeBack": "Willkommen zurück",
@@ -168,7 +172,15 @@
     "loadError": "Daten konnten nicht geladen werden",
     "uploadError": "Datei-Upload fehlgeschlagen",
     "couldNotDecrypt": "Nachricht konnte nicht entschlüsselt werden",
-    "deleteError": "Nachricht konnte nicht gelöscht werden"
+    "deleteError": "Nachricht konnte nicht gelöscht werden",
+    "report": "Melden",
+    "reportSent": "Meldung übermittelt",
+    "reportFailed": "Meldung fehlgeschlagen",
+    "copyFailed": "Nachricht konnte nicht kopiert werden",
+    "downloadFailed": "Download fehlgeschlagen",
+    "offline": "Offline",
+    "copied": "chat.copied",
+    "copy": "chat.copy"
   },
   "calls": {
     "callControls": "Anrufsteuerung",
@@ -202,7 +214,8 @@
     "groupNamePlaceholder": "Gruppenname",
     "searchUsers": "Benutzer suchen...",
     "noUsersFound": "Keine Benutzer gefunden",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "noGroups": "groups.noGroups"
   },
   "communities": {
     "title": "Communitys",
@@ -230,7 +243,8 @@
     "enterInviteCode": "Einladungscode eingeben",
     "join": "Beitreten",
     "voiceChannels": "Sprachkanäle",
-    "newVoiceChannelName": "Neuer Sprachkanalname"
+    "newVoiceChannelName": "Neuer Sprachkanalname",
+    "delete": "communities.delete"
   },
   "voice": {
     "join": "Beitreten",
@@ -297,9 +311,8 @@
     "memberSince": "Mitglied seit",
     "role": "Rolle",
     "member": "Mitglied",
-    "reportBy": "Gemeldet von",
-    "target": "Ziel",
-    "expires": "Läuft ab"
+    "expires": "Läuft ab",
+    "admin": "admin.admin"
   },
   "settings": {
     "title": "Einstellungen",
@@ -604,7 +617,9 @@
         "bouncingDots": "Springende Punkte",
         "textOnly": "Nur Text",
         "dot": "Punkt",
-        "number": "Zahl"
+        "number": "Zahl",
+        "spinner": "Spinner",
+        "skeleton": "Skeleton"
       },
       "fonts": {
         "system": "System",
@@ -626,7 +641,14 @@
         "dots": "Punkte",
         "grid": "Raster",
         "waves": "Wellen"
-      }
+      },
+      "lightMode": "settings.appearance.lightMode",
+      "avatarStyle": "settings.appearance.avatarStyle",
+      "avatarSize": "settings.appearance.avatarSize",
+      "loadingStyle": "Loading Style",
+      "notificationDotSize": "Notification Dot Size",
+      "loadingStyleDesc": "Loading spinner or skeleton style",
+      "notificationDotSizeDesc": "Size of online status dots"
     },
     "notifications": {
       "title": "Benachrichtigungen",
@@ -672,7 +694,8 @@
         "chime": "Klingelton",
         "pop": "Plopp",
         "bell": "Glocke"
-      }
+      },
+      "dnd": "settings.notifications.dnd"
     },
     "privacy": {
       "title": "Privatsphäre & Sicherheit",
@@ -730,7 +753,9 @@
       "spellCheck": "Rechtschreibprüfung",
       "spellCheckDesc": "Rechtschreibprüfung im Nachrichteneingabefeld",
       "autoCorrect": "Autokorrektur",
-      "autoCorrectDesc": "Tippfehler automatisch korrigieren"
+      "autoCorrectDesc": "Tippfehler automatisch korrigieren",
+      "showTypingIndicators": "settings.chat.showTypingIndicators",
+      "autoPlayMedia": "settings.chat.autoPlayMedia"
     },
     "calls": {
       "title": "Anrufe",
@@ -781,7 +806,10 @@
         "default": "Standard",
         "classic": "Klassisch",
         "digital": "Digital"
-      }
+      },
+      "audioInput": "settings.calls.audioInput",
+      "audioOutput": "settings.calls.audioOutput",
+      "videoInput": "settings.calls.videoInput"
     },
     "media": {
       "title": "Medien",
@@ -816,7 +844,8 @@
         "low": "Niedrig",
         "medium": "Mittel",
         "high": "Hoch"
-      }
+      },
+      "stickerSuggestions": "settings.media.stickerSuggestions"
     },
     "audioVideo": {
       "title": "Audio & Video",
@@ -886,7 +915,8 @@
         "auto": "Auto",
         "left": "Links",
         "right": "Rechts"
-      }
+      },
+      "reduceTransparency": "settings.accessibility.reduceTransparency"
     },
     "reader": {
       "title": "Lesemodus",
@@ -903,7 +933,10 @@
         "24": "24px"
       },
       "lineSpacing": "Zeilenabstand",
-      "lineSpacingDesc": "Abstand zwischen Zeilen im Lesemodus"
+      "lineSpacingDesc": "Abstand zwischen Zeilen im Lesemodus",
+      "lineHeight": "settings.reader.lineHeight",
+      "columnWidth": "settings.reader.columnWidth",
+      "theme": "settings.reader.theme"
     },
     "shortcuts": {
       "title": "Tastenkürzel",
@@ -974,7 +1007,9 @@
       "measurementOptions": {
         "metric": "Metrisch",
         "imperial": "Imperial"
-      }
+      },
+      "interface": "settings.language.interface",
+      "translation": "settings.language.translation"
     },
     "advanced": {
       "title": "Erweitert",
@@ -1002,7 +1037,8 @@
         "warnings": "Warnungen",
         "info": "Info",
         "debug": "Debug"
-      }
+      },
+      "cache": "settings.advanced.cache"
     },
     "about": {
       "title": "Info",
@@ -1016,11 +1052,30 @@
       "database": "Datenbank",
       "nodeJs": "Node.js",
       "license": "Lizenz",
-      "repository": "Repository"
+      "repository": "Repository",
+      "privacyPolicy": "settings.about.privacyPolicy",
+      "termsOfService": "settings.about.termsOfService",
+      "credits": "settings.about.credits"
     },
     "search": "Einstellungen suchen...",
     "searchResults": "Suchergebnisse",
-    "noResults": "Keine Einstellungen gefunden"
+    "noResults": "Keine Einstellungen gefunden",
+    "offline": {
+      "queueCleared": "Pending message queue cleared",
+      "cacheCleared": "Cached messages cleared",
+      "pendingQueue": "Pending Messages",
+      "pendingQueueDesc": "Messages waiting to be sent",
+      "refresh": "Refresh",
+      "clearQueue": "Clear Queue",
+      "clearCache": "Clear Cached Messages",
+      "title": "Offline"
+    },
+    "audio-video": {
+      "noiseSuppression": "settings.audio-video.noiseSuppression",
+      "echoCancellation": "settings.audio-video.echoCancellation",
+      "backgroundBlur": "settings.audio-video.backgroundBlur",
+      "virtualBackground": "settings.audio-video.virtualBackground"
+    }
   },
   "themeEditor": {
     "customThemes": "Benutzerdefinierte Designs",
@@ -1054,7 +1109,12 @@
       "compact": "Kompakt",
       "cozy": "Gemütlich",
       "alternating": "Wechselnd"
-    }
+    },
+    "defaults": "Defaults",
+    "defaultDark": "Default Dark",
+    "defaultLight": "Default Light",
+    "darkPresets": "Dark Presets",
+    "lightPresets": "Light Presets"
   },
   "files": {
     "title": "Dateien",
@@ -1075,7 +1135,15 @@
     "rename": "Umbenennen",
     "moveTo": "Verschieben nach...",
     "rootFolder": "Hauptordner",
-    "moveToFolder": "In Ordner verschieben"
+    "moveToFolder": "In Ordner verschieben",
+    "uploadSuccess": "files.uploadSuccess",
+    "uploadError": "files.uploadError",
+    "folderCreateError": "files.folderCreateError",
+    "folderDeleteError": "files.folderDeleteError",
+    "membersLoadError": "files.membersLoadError",
+    "memberAddError": "files.memberAddError",
+    "memberRemoveError": "files.memberRemoveError",
+    "moveError": "files.moveError"
   },
   "setup": {
     "welcome": "Willkommen!",

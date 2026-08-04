@@ -26,6 +26,7 @@ export function Topbar({
   searchPlaceholder,
 }: TopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const [online, setOnline] = useState(true)
 
   useEffect(() => {
@@ -58,13 +59,32 @@ export function Topbar({
 
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="flex h-10 w-full items-center rounded-2xl border border-border bg-transparent px-10 text-sm text-text-muted text-left cursor-pointer hover:border-accent/50 transition-colors duration-200"
-        >
-          {searchPlaceholder}
-        </button>
-        {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
+        <input
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setSearchOpen(true)
+          }}
+          onFocus={() => setSearchOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setSearchOpen(false)
+              setSearchQuery("")
+            }
+          }}
+          placeholder={searchPlaceholder}
+          className="flex h-10 w-full rounded-2xl border border-border bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent/50 transition-colors duration-200"
+        />
+        {searchOpen && (
+          <SearchPanel
+            query={searchQuery}
+            onChange={setSearchQuery}
+            onClose={() => {
+              setSearchOpen(false)
+              setSearchQuery("")
+            }}
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-2 ml-auto">

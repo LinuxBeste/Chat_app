@@ -37,8 +37,33 @@ function displayName(url: string, attachment?: Attachment): string {
 }
 
 const TEXT_PREVIEW_EXT = new Set([
-  "txt", "log", "md", "markdown", "csv", "json", "xml", "yml", "yaml", "ini", "conf", "cfg",
-  "ts", "tsx", "js", "jsx", "css", "html", "htm", "sh", "py", "rb", "go", "rs", "java", "c", "h",
+  "txt",
+  "log",
+  "md",
+  "markdown",
+  "csv",
+  "json",
+  "xml",
+  "yml",
+  "yaml",
+  "ini",
+  "conf",
+  "cfg",
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "css",
+  "html",
+  "htm",
+  "sh",
+  "py",
+  "rb",
+  "go",
+  "rs",
+  "java",
+  "c",
+  "h",
 ])
 
 function isTextPreview(content: string, attachment?: Attachment): boolean {
@@ -46,12 +71,31 @@ function isTextPreview(content: string, attachment?: Attachment): boolean {
   const ext = displayName(content, attachment).split(".").pop()?.toLowerCase() ?? ""
   return TEXT_PREVIEW_EXT.has(ext)
 }
+
+async function downloadAttachment(msg: Message): Promise<void> {
+  const res = await fetch(`${BASE_URL}${msg.content}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = displayName(msg.content, msg.attachment)
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 import { useToast } from "../../lib/toast-context"
 import { wsClient } from "../../lib/ws"
 import { useNav } from "../layout/dashboard-layout"
 import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db"
 import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline"
-import { encryptMessage, decryptMessage, stripEncryptionPrefix, isEncrypted, getOrCreateDeviceId } from "../../lib/crypto"
+import {
+  encryptMessage,
+  decryptMessage,
+  stripEncryptionPrefix,
+  isEncrypted,
+  getOrCreateDeviceId,
+} from "../../lib/crypto"
 
 interface Attachment {
   id: string
@@ -198,32 +242,29 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
 
   // Fetch the exact key that encrypted a message (by the sender's device keyId),
   // falling back to the sender's latest key for legacy messages without a keyId.
-  const getSenderKey = useCallback(
-    async (userId: string, keyId?: string, force = false): Promise<string | null> => {
-      const cacheKey = `${userId}:${keyId ?? ""}`
-      if (!force && senderKeyCache.current.has(cacheKey)) return senderKeyCache.current.get(cacheKey)!
-      try {
-        if (keyId) {
-          const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/${keyId}`)
-          if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
-          return res.publicKey
-        }
-        // Legacy messages (no keyId) were always encrypted with the sender's
-        // legacy device key; fall back to their latest key if it is gone.
-        const legacy = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/legacy`)
-        if (legacy.publicKey) {
-          senderKeyCache.current.set(cacheKey, legacy.publicKey)
-          return legacy.publicKey
-        }
-        const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`)
+  const getSenderKey = useCallback(async (userId: string, keyId?: string, force = false): Promise<string | null> => {
+    const cacheKey = `${userId}:${keyId ?? ""}`
+    if (!force && senderKeyCache.current.has(cacheKey)) return senderKeyCache.current.get(cacheKey)!
+    try {
+      if (keyId) {
+        const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/${keyId}`)
         if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
         return res.publicKey
-      } catch {
-        return null
       }
-    },
-    [],
-  )
+      // Legacy messages (no keyId) were always encrypted with the sender's
+      // legacy device key; fall back to their latest key if it is gone.
+      const legacy = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/legacy`)
+      if (legacy.publicKey) {
+        senderKeyCache.current.set(cacheKey, legacy.publicKey)
+        return legacy.publicKey
+      }
+      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`)
+      if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
+      return res.publicKey
+    } catch {
+      return null
+    }
+  }, [])
 
   const getTheirPublicKey = useCallback(async (): Promise<string | null> => {
     if (!otherUserId) return null
@@ -253,6 +294,29 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
     t("chat.dmConversation")
   const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const stickToBottom = useRef(true)
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = listRef.current
+    if (el && typeof el.scrollTo === "function") el.scrollTo({ top: el.scrollHeight, behavior })
+    else if (el) el.scrollTop = el.scrollHeight
+  }, [])
+
+  useEffect(() => {
+    stickToBottom.current = true
+    scrollToBottom("auto")
+  }, [conversationId, scrollToBottom])
+
+  useEffect(() => {
+    if (stickToBottom.current) scrollToBottom("smooth")
+  }, [messages, scrollToBottom])
+
+  const handleScroll = () => {
+    const el = listRef.current
+    if (!el) return
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
 
   useEffect(() => {
     if (filePreview && isTextPreview(filePreview.content, filePreview.attachment)) {
@@ -446,7 +510,14 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             // Fall back to plaintext rather than silently dropping the message.
           }
           const keyId = encrypted ? await getOrCreateDeviceId(currentUserId) : undefined
-          wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted, keyId })
+          wsClient.send("message:send", {
+            conversationId,
+            content: finalContent,
+            messageType,
+            attachment,
+            encrypted,
+            keyId,
+          })
         })
       } else {
         wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
@@ -1011,6 +1082,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         <>
           <div
             className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+            ref={listRef}
+            onScroll={handleScroll}
             role="log"
             aria-live="polite"
             aria-label={t("chat.chatMessages")}
@@ -1086,7 +1159,13 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                             })}
                           </p>
                         </div>
-                        <Download className="h-4 w-4 text-text-muted shrink-0" />
+                        <Download
+                          className="h-4 w-4 text-text-muted shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")))
+                          }}
+                        />
                       </button>
                     ) : (
                       <p className="text-sm leading-relaxed">
@@ -1114,29 +1193,78 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       {msg.editedAt && <span className="ml-1">{t("chat.edited")}</span>}
                     </p>
                   </div>
-                  {isMe && editingMessageId !== msg.id && (
-                    <div className="relative ml-1 self-start mt-2">
+                  {editingMessageId !== msg.id && (
+                    <div className="relative self-start mt-2 ml-1">
                       <button
                         onClick={() => setMenuMessageId(menuMessageId === msg.id ? null : msg.id)}
                         aria-label={t("chat.messageMenu")}
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer"
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all duration-200 cursor-pointer ${
+                          !isMe && menuMessageId !== msg.id
+                            ? "opacity-0 hover:opacity-100 focus-visible:opacity-100"
+                            : ""
+                        }`}
                       >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                       {menuMessageId === msg.id && (
                         <div className="absolute right-0 top-8 z-50 bg-surface border border-border rounded-2xl shadow-lg py-1 min-w-[120px]">
                           <button
-                            onClick={() => handleEdit(msg)}
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(msg.content)
+                                showToast(t("chat.copied"), "success")
+                              } catch {
+                                showToast(t("chat.copyFailed"))
+                              }
+                              setMenuMessageId(null)
+                            }}
                             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
                           >
-                            <Edit3 className="h-3.5 w-3.5" /> {t("chat.edit")}
+                            <Copy className="h-3.5 w-3.5" /> {t("chat.copy")}
                           </button>
-                          <button
-                            onClick={() => handleDelete(msg)}
-                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-white/5 cursor-pointer"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" /> {t("chat.delete")}
-                          </button>
+                          {(msg.type === "image" || msg.type === "file") && (
+                            <button
+                              onClick={() => {
+                                downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")))
+                                setMenuMessageId(null)
+                              }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
+                            >
+                              <Download className="h-3.5 w-3.5" /> {t("files.download")}
+                            </button>
+                          )}
+                          {isMe && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(msg)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" /> {t("chat.edit")}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(msg)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-white/5 cursor-pointer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" /> {t("chat.delete")}
+                              </button>
+                            </>
+                          )}
+                          {!isMe && (
+                            <button
+                              onClick={() => {
+                                api("/api/moderation/reports", {
+                                  method: "POST",
+                                  body: JSON.stringify({ targetUserId: msg.senderId, reason: "Inappropriate message" }),
+                                })
+                                  .then(() => showToast(t("chat.reportSent"), "success"))
+                                  .catch(() => showToast(t("chat.reportFailed")))
+                                setMenuMessageId(null)
+                              }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-400 hover:bg-white/5 cursor-pointer"
+                            >
+                              <Flag className="h-3.5 w-3.5" /> {t("chat.report")}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1188,15 +1316,24 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                   <h3 className="text-sm font-semibold text-text-primary truncate">
                     {displayName(filePreview.content, filePreview.attachment)}
                   </h3>
-                  <button
-                    onClick={() => {
-                      setFilePreview(null)
-                      setPreviewText(null)
-                    }}
-                    className="text-text-muted hover:text-text-primary cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => downloadAttachment(filePreview).catch(() => showToast(t("chat.downloadFailed")))}
+                      className="text-text-muted hover:text-text-primary cursor-pointer p-1"
+                      aria-label={t("files.download")}
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilePreview(null)
+                        setPreviewText(null)
+                      }}
+                      className="text-text-muted hover:text-text-primary cursor-pointer p-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto">
                   {filePreview.type === "image" ? (

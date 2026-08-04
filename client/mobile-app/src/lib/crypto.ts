@@ -166,11 +166,18 @@ async function getConvKeys(conversationId: string, userId?: string): Promise<Con
 
 async function setConvKeys(conversationId: string, entries: ConvKeyEntry[], userId?: string) {
   try {
-    await AsyncStorage.setItem(convKeyStorageKey(conversationId, userId), JSON.stringify(entries.slice(0, MAX_CONVERSATION_KEYS)))
+    await AsyncStorage.setItem(
+      convKeyStorageKey(conversationId, userId),
+      JSON.stringify(entries.slice(0, MAX_CONVERSATION_KEYS)),
+    )
   } catch {}
 }
 
-async function deriveConvKey(conversationId: string, theirPublicKey: string, userId?: string): Promise<Uint8Array | null> {
+async function deriveConvKey(
+  conversationId: string,
+  theirPublicKey: string,
+  userId?: string,
+): Promise<Uint8Array | null> {
   const secret = await computeSharedSecret(theirPublicKey, userId)
   if (!secret) return null
   const keys = (await getConvKeys(conversationId, userId)).filter((k) => k.peer !== theirPublicKey)

@@ -5,6 +5,7 @@ import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
 import { createContextLogger } from "../lib/logger.js"
 import { sendToConversation } from "./clients.js"
+import { deleteMessageWithAttachments } from "../lib/message-cleanup.js"
 
 const log = createContextLogger("ws:messages")
 
@@ -210,7 +211,7 @@ export async function handleDeleteMessage(ws: WebSocket, payload: DeleteMessageP
       ws.send(JSON.stringify({ type: "error", error: "Not your message" }))
       return
     }
-    await db.delete(messages).where(eq(messages.id, payload.messageId))
+    await deleteMessageWithAttachments(msg.id)
 
     const event = {
       type: "message:deleted",

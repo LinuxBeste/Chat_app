@@ -120,6 +120,15 @@ const useColorScheme = () => "dark"
 const Alert = { alert: () => {} }
 const Linking = { openURL: () => Promise.resolve() }
 const RefreshControl = (props: Record<string, unknown>) => React.createElement("div", props)
+const Share = {
+  share: () => Promise.resolve({ action: "dismissedAction" }),
+  dismissedAction: "dismissedAction",
+  sharedAction: "sharedAction",
+}
+const BackHandler = {
+  addEventListener: () => ({ remove: () => {} }),
+  exitApp: () => {},
+}
 
 const exports = {
   View,
@@ -140,6 +149,8 @@ const exports = {
   Alert,
   Linking,
   RefreshControl,
+  Share,
+  BackHandler,
 }
 export default exports
 export {
@@ -161,4 +172,6 @@ export {
   Alert,
   Linking,
   RefreshControl,
+  Share,
+  BackHandler,
 }

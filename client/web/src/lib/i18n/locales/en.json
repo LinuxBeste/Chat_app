@@ -54,7 +54,11 @@
     "bio": "Bio",
     "bioPlaceholder": "Tell us about yourself...",
     "saveChanges": "Save Changes",
-    "userId": "User ID"
+    "userId": "User ID",
+    "saveSuccess": "profile.saveSuccess",
+    "saveError": "profile.saveError",
+    "avatarSuccess": "profile.avatarSuccess",
+    "avatarError": "profile.avatarError"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -169,7 +173,14 @@
     "uploadError": "File upload failed",
     "offline": "Offline",
     "couldNotDecrypt": "Could not decrypt message",
-    "deleteError": "Failed to delete message"
+    "deleteError": "Failed to delete message",
+    "report": "Report",
+    "reportSent": "Report submitted",
+    "reportFailed": "Failed to submit report",
+    "copyFailed": "Could not copy message",
+    "downloadFailed": "Download failed",
+    "copied": "chat.copied",
+    "copy": "chat.copy"
   },
   "calls": {
     "callControls": "Call controls",
@@ -203,7 +214,8 @@
     "groupNamePlaceholder": "Group name",
     "searchUsers": "Search users...",
     "noUsersFound": "No users found",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "noGroups": "groups.noGroups"
   },
   "communities": {
     "title": "Communities",
@@ -231,7 +243,8 @@
     "enterInviteCode": "Enter invite code",
     "join": "Join",
     "voiceChannels": "Voice Channels",
-    "newVoiceChannelName": "New voice channel name"
+    "newVoiceChannelName": "New voice channel name",
+    "delete": "communities.delete"
   },
   "voice": {
     "join": "Join",
@@ -298,9 +311,8 @@
     "memberSince": "Member since",
     "role": "Role",
     "member": "Member",
-    "reportBy": "Reported by",
-    "target": "Target",
-    "expires": "Expires"
+    "expires": "Expires",
+    "admin": "admin.admin"
   },
   "settings": {
     "title": "Settings",
@@ -633,7 +645,10 @@
         "dots": "Dots",
         "grid": "Grid",
         "waves": "Waves"
-      }
+      },
+      "lightMode": "settings.appearance.lightMode",
+      "avatarStyle": "settings.appearance.avatarStyle",
+      "avatarSize": "settings.appearance.avatarSize"
     },
     "notifications": {
       "title": "Notifications",
@@ -679,7 +694,8 @@
         "chime": "Chime",
         "pop": "Pop",
         "bell": "Bell"
-      }
+      },
+      "dnd": "settings.notifications.dnd"
     },
     "privacy": {
       "title": "Privacy & Safety",
@@ -737,7 +753,9 @@
       "spellCheck": "Spell Check",
       "spellCheckDesc": "Enable spell check in message input",
       "autoCorrect": "Auto-Correct",
-      "autoCorrectDesc": "Auto-correct typos while typing"
+      "autoCorrectDesc": "Auto-correct typos while typing",
+      "showTypingIndicators": "settings.chat.showTypingIndicators",
+      "autoPlayMedia": "settings.chat.autoPlayMedia"
     },
     "calls": {
       "title": "Calls",
@@ -788,7 +806,10 @@
         "default": "Default",
         "classic": "Classic",
         "digital": "Digital"
-      }
+      },
+      "audioInput": "settings.calls.audioInput",
+      "audioOutput": "settings.calls.audioOutput",
+      "videoInput": "settings.calls.videoInput"
     },
     "media": {
       "title": "Media",
@@ -823,7 +844,8 @@
         "low": "Low",
         "medium": "Medium",
         "high": "High"
-      }
+      },
+      "stickerSuggestions": "settings.media.stickerSuggestions"
     },
     "audioVideo": {
       "title": "Audio & Video",
@@ -893,7 +915,8 @@
         "auto": "Auto",
         "left": "Left",
         "right": "Right"
-      }
+      },
+      "reduceTransparency": "settings.accessibility.reduceTransparency"
     },
     "reader": {
       "title": "Reader",
@@ -910,7 +933,10 @@
         "24": "24px"
       },
       "lineSpacing": "Line Spacing",
-      "lineSpacingDesc": "Space between lines in reader mode"
+      "lineSpacingDesc": "Space between lines in reader mode",
+      "lineHeight": "settings.reader.lineHeight",
+      "columnWidth": "settings.reader.columnWidth",
+      "theme": "settings.reader.theme"
     },
     "shortcuts": {
       "title": "Keyboard Shortcuts",
@@ -981,7 +1007,9 @@
       "measurementOptions": {
         "metric": "Metric",
         "imperial": "Imperial"
-      }
+      },
+      "interface": "settings.language.interface",
+      "translation": "settings.language.translation"
     },
     "advanced": {
       "title": "Advanced",
@@ -1009,7 +1037,8 @@
         "warnings": "Warnings",
         "info": "Info",
         "debug": "Debug"
-      }
+      },
+      "cache": "settings.advanced.cache"
     },
     "offline": {
       "title": "Offline",
@@ -1033,11 +1062,20 @@
       "database": "Database",
       "nodeJs": "Node.js",
       "license": "License",
-      "repository": "Repository"
+      "repository": "Repository",
+      "privacyPolicy": "settings.about.privacyPolicy",
+      "termsOfService": "settings.about.termsOfService",
+      "credits": "settings.about.credits"
     },
     "search": "Search settings...",
     "searchResults": "Search Results",
-    "noResults": "No settings found"
+    "noResults": "No settings found",
+    "audio-video": {
+      "noiseSuppression": "settings.audio-video.noiseSuppression",
+      "echoCancellation": "settings.audio-video.echoCancellation",
+      "backgroundBlur": "settings.audio-video.backgroundBlur",
+      "virtualBackground": "settings.audio-video.virtualBackground"
+    }
   },
   "themeEditor": {
     "customThemes": "Custom Themes",
@@ -1097,7 +1135,15 @@
     "rename": "Rename",
     "moveTo": "Move to...",
     "rootFolder": "Root folder",
-    "moveToFolder": "Move to folder"
+    "moveToFolder": "Move to folder",
+    "uploadSuccess": "files.uploadSuccess",
+    "uploadError": "files.uploadError",
+    "folderCreateError": "files.folderCreateError",
+    "folderDeleteError": "files.folderDeleteError",
+    "membersLoadError": "files.membersLoadError",
+    "memberAddError": "files.memberAddError",
+    "memberRemoveError": "files.memberRemoveError",
+    "moveError": "files.moveError"
   },
   "setup": {
     "welcome": "Welcome!",

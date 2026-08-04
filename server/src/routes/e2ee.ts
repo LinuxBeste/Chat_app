@@ -42,7 +42,9 @@ router.get("/key/:userId/:deviceId", authGuard, async (req: Request, res: Respon
     const [record] = await db
       .select({ key: publicKeys.key })
       .from(publicKeys)
-      .where(and(eq(publicKeys.userId, req.params.userId as string), eq(publicKeys.deviceId, req.params.deviceId as string)))
+      .where(
+        and(eq(publicKeys.userId, req.params.userId as string), eq(publicKeys.deviceId, req.params.deviceId as string)),
+      )
       .limit(1)
 
     if (!record) {
@@ -84,10 +86,7 @@ router.put("/key", authGuard, validate(publishKeySchema), async (req: Request, r
       .limit(1)
 
     if (existing.length > 0) {
-      await db
-        .update(publicKeys)
-        .set({ key, updatedAt: new Date() })
-        .where(eq(publicKeys.id, existing[0].id))
+      await db.update(publicKeys).set({ key, updatedAt: new Date() }).where(eq(publicKeys.id, existing[0].id))
     } else {
       await db.insert(publicKeys).values({ userId, deviceId, key })
     }
@@ -102,9 +101,7 @@ router.delete("/key", authGuard, async (req: Request, res: Response) => {
   try {
     const deviceId: string | undefined = req.query.deviceId as string | undefined
     if (deviceId) {
-      await db
-        .delete(publicKeys)
-        .where(and(eq(publicKeys.userId, req.user!.userId), eq(publicKeys.deviceId, deviceId)))
+      await db.delete(publicKeys).where(and(eq(publicKeys.userId, req.user!.userId), eq(publicKeys.deviceId, deviceId)))
     } else {
       await db.delete(publicKeys).where(eq(publicKeys.userId, req.user!.userId))
     }
