@@ -45,6 +45,7 @@ services:
     volumes:
       - ./data:/app/server/data
       - ./logs:/app/server/logs
+      - ./drizzle:/app/server/drizzle
     env_file: .env
     environment:
       - DATABASE_URL=postgresql://chat:${DB_PASSWORD:-chat}@postgres:5432/chat

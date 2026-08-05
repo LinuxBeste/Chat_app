@@ -104,18 +104,18 @@ load_env "${ENV_FILE:-.env}"
 run_migrations() {
   echo "Running database migrations ..."
   if [[ "$MODE" == "native" ]]; then
-    pnpm run migrate
+    pnpm run db:migrate
   else
-    docker compose "${COMPOSE_PROFILES[@]}" exec -T server pnpm run migrate
+    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server pnpm run migrate
   fi
 }
 
 run_seed() {
   echo "Running seed data ..."
   if [[ "$MODE" == "native" ]]; then
-    pnpm run seed
+    pnpm run db:seed
   else
-    docker compose "${COMPOSE_PROFILES[@]}" exec -T server pnpm run seed
+    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server pnpm run seed
   fi
 }
 

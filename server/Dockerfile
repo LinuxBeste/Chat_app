@@ -21,6 +21,7 @@ RUN mkdir -p /app/deploy/server && \
     cp -r server/node_modules/. /app/deploy/server/node_modules/
 
 FROM node:22-alpine AS runner
+RUN npm install -g pnpm@11
 RUN addgroup -S chat && adduser -S chat -G chat
 WORKDIR /app
 COPY --from=builder /app/deploy ./
