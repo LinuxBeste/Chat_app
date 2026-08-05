@@ -6,6 +6,7 @@ cd "$SCRIPT_DIR"
 
 PORT="${PORT:-3000}"
 WEB_PORT="${WEB_PORT:-5173}"
+DB_PORT="${DB_PORT:-5432}"
 USE_REDIS=false
 MODE="docker"
 REBUILD=false
@@ -68,7 +69,7 @@ while [[ $# -gt 0 ]]; do
     --mobile|-m) START_MOBILE=true; shift ;;
     --all|-a) START_WEB=true; START_MOBILE=true; shift ;;
     --dev|-d) MODE="native"; START_WEB=true; shift ;;
-    --port) PORT="${2:-}"; shift 2 ;;
+    --port) PORT="${2:-}"; CLI_PORT="$PORT"; shift 2 ;;
     --web-port) WEB_PORT="${2:-}"; shift 2 ;;
     --migrate) RUN_MIGRATE=true; shift ;;
     --seed) RUN_SEED=true; shift ;;
@@ -80,6 +81,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 export PORT
+export DB_PORT
 
 if "$STOP_ONLY"; then
   echo "Stopping Docker containers ..."
@@ -101,11 +103,19 @@ load_env() {
 }
 load_env "${ENV_FILE:-.env}"
 
+if [[ -n "${CLI_PORT:-}" ]]; then
+  PORT="$CLI_PORT"
+fi
+if [[ -n "${CLI_DB_PORT:-}" ]]; then
+  DB_PORT="$CLI_DB_PORT"
+fi
+
 run_migrations() {
   echo "Running database migrations ..."
   if [[ "$MODE" == "native" ]]; then
     pnpm run db:migrate
   else
+    require_drizzle_files
     docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server node dist/db/migrate.js
   fi
 }
@@ -115,7 +125,28 @@ run_seed() {
   if [[ "$MODE" == "native" ]]; then
     pnpm run db:seed
   else
+    require_drizzle_files
     docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server node dist/db/seed.js
+  fi
+}
+
+require_drizzle_files() {
+  if [[ ! -d "drizzle/meta" || ! -f "drizzle/meta/_journal.json" ]]; then
+    cat >&2 <<'EOF'
+
+ERROR: server/drizzle/ is missing or empty.
+
+Database migrations live in server/drizzle/, which is intentionally NOT
+committed to git. A Docker bind mount would silently create an empty
+directory, so migrations cannot run.
+
+Restore it with:
+  pnpm run db:generate        # regenerate from schema (local, requires DB creds)
+  # or copy it from another checkout:
+  cp -r <other-checkout>/server/drizzle ./drizzle
+
+EOF
+    exit 1
   fi
 }
 
@@ -171,6 +202,28 @@ else
   fi
 
   echo "Starting server in Docker on http://localhost:$PORT ..."
+
+  preflight_ports() {
+    for p in "$PORT" "$DB_PORT"; do
+      if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+        cat >&2 <<EOF
+
+ERROR: Port $p is already in use.
+
+The Docker stack needs host ports $PORT (server) and $DB_PORT (postgres).
+Another process (e.g. a locally running server or a leftover postgres
+container) is holding $p.
+
+Options:
+  - Stop the other process, or
+  - Run with different ports: --port <server> and DB_PORT=<db> env var.
+
+EOF
+        exit 1
+      fi
+    done
+  }
+  preflight_ports
 
   if "$USE_REDIS"; then
     export REDIS_URL=redis://redis:6379
