@@ -133,7 +133,7 @@ start_web() {
 
 start_mobile() {
   echo "Starting Expo mobile client ..."
-  (cd "$SCRIPT_DIR/../client/mobile" && npx expo start) &
+  (cd "$SCRIPT_DIR/../client/mobile-app" && npx expo start) &
   MOBILE_PID=$!
 }
 
