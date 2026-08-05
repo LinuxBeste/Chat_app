@@ -6,6 +6,7 @@ cd "$SCRIPT_DIR"
 
 PORT="${PORT:-3000}"
 WEB_PORT="${WEB_PORT:-5173}"
+WEB_HOST="${WEB_HOST:-0.0.0.0}"
 DB_PORT="${DB_PORT:-5432}"
 USE_REDIS=false
 MODE="docker"
@@ -37,6 +38,7 @@ Options:
   --dev, -d           Shortcut for --native --web
   --port <num>        Server port (default: $PORT)
   --web-port <num>    Web dev server port (default: $WEB_PORT)
+  --web-host <host>   Web dev server host (vite --host, default: $WEB_HOST)
   --migrate           Run database migrations before starting
   --seed              Run seed data after migrations
   --logs, -l          Follow Docker logs after containers start
@@ -71,6 +73,7 @@ while [[ $# -gt 0 ]]; do
     --dev|-d) MODE="native"; START_WEB=true; shift ;;
     --port) PORT="${2:-}"; CLI_PORT="$PORT"; shift 2 ;;
     --web-port) WEB_PORT="${2:-}"; shift 2 ;;
+    --web-host) WEB_HOST="${2:-}"; shift 2 ;;
     --migrate) RUN_MIGRATE=true; shift ;;
     --seed) RUN_SEED=true; shift ;;
     --logs|-l) FOLLOW=true; shift ;;
@@ -175,6 +178,7 @@ start_web() {
   if "$FOLLOW"; then
     extra+=(--clearScreen false)
   fi
+  extra+=(--host "$WEB_HOST")
   echo "Starting web client on port $WEB_PORT ..."
   (cd "$SCRIPT_DIR/../client/web" && pnpm dev --port "$WEB_PORT" "${extra[@]}") &
   WEB_PID=$!
