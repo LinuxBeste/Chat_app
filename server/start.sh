@@ -106,7 +106,7 @@ run_migrations() {
   if [[ "$MODE" == "native" ]]; then
     pnpm run db:migrate
   else
-    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server pnpm run migrate
+    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server node dist/db/migrate.js
   fi
 }
 
@@ -115,7 +115,7 @@ run_seed() {
   if [[ "$MODE" == "native" ]]; then
     pnpm run db:seed
   else
-    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server pnpm run seed
+    docker compose "${COMPOSE_PROFILES[@]}" exec -T -w /app/server server node dist/db/seed.js
   fi
 }
 
