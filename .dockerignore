@@ -6,4 +6,5 @@ dist
 data
 logs
 client/
+server/drizzle
 .DS_Store

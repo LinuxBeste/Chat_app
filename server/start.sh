@@ -132,21 +132,28 @@ run_seed() {
 
 require_drizzle_files() {
   if [[ ! -d "drizzle/meta" || ! -f "drizzle/meta/_journal.json" ]]; then
-    cat >&2 <<'EOF'
+    echo "server/drizzle/ is missing or empty - regenerating migrations from schema ..."
+    if ! pnpm run db:generate 2>&1; then
+      cat >&2 <<'EOF'
 
-ERROR: server/drizzle/ is missing or empty.
+ERROR: server/drizzle/ is missing and regeneration failed.
 
 Database migrations live in server/drizzle/, which is intentionally NOT
-committed to git. A Docker bind mount would silently create an empty
-directory, so migrations cannot run.
+committed to git. Regeneration needs the server dev dependencies:
+  pnpm install
 
-Restore it with:
-  pnpm run db:generate        # regenerate from schema (local, requires DB creds)
-  # or copy it from another checkout:
+... or copy the folder from another checkout:
   cp -r <other-checkout>/server/drizzle ./drizzle
 
 EOF
-    exit 1
+      exit 1
+    fi
+    if [[ ! -f "drizzle/meta/_journal.json" ]]; then
+      echo >&2 "ERROR: db:generate finished but drizzle/meta/_journal.json is still missing."
+      exit 1
+    fi
+    echo "Migrations regenerated from schema."
+    echo "Note: a regenerated migration history only matches a fresh database."
   fi
 }
 
@@ -200,6 +207,13 @@ else
   if ! "$DETACH" && ! "$FOLLOW"; then
     trap cleanup EXIT INT TERM
   fi
+
+  on_error() {
+    echo >&2 ""
+    echo >&2 "Error detected - stopping Docker containers ..."
+    cleanup
+  }
+  trap on_error ERR
 
   echo "Starting server in Docker on http://localhost:$PORT ..."
 
@@ -275,8 +289,20 @@ EOF
     sleep 1
   done
 
-  "$RUN_MIGRATE" && run_migrations
-  "$RUN_SEED" && run_seed
+  if "$RUN_MIGRATE"; then
+    if ! run_migrations; then
+      echo >&2 "Migrations failed - stopping containers ..."
+      cleanup
+      exit 1
+    fi
+  fi
+  if "$RUN_SEED"; then
+    if ! run_seed; then
+      echo >&2 "Seeding failed - stopping containers ..."
+      cleanup
+      exit 1
+    fi
+  fi
 
   "$START_WEB" && start_web
   "$START_MOBILE" && start_mobile
