@@ -163,9 +163,20 @@ cleanup() {
   docker compose "${COMPOSE_PROFILES[@]}" down 2>/dev/null || true
 }
 
+stop_port_user() {
+  local p="$1"
+  docker compose "${COMPOSE_PROFILES[@]}" down 2>/dev/null || true
+  fuser -k "${p}/tcp" 2>/dev/null || true
+  sleep 1
+}
+
 start_web() {
+  local extra=()
+  if "$FOLLOW"; then
+    extra+=(--clearScreen false)
+  fi
   echo "Starting web client on port $WEB_PORT ..."
-  (cd "$SCRIPT_DIR/../client/web" && pnpm dev --port "$WEB_PORT") &
+  (cd "$SCRIPT_DIR/../client/web" && pnpm dev --port "$WEB_PORT" "${extra[@]}") &
   WEB_PID=$!
 }
 
@@ -187,6 +198,15 @@ if [[ "$MODE" == "native" ]]; then
   fi
 
   echo "Starting server natively on port $PORT ..."
+
+  if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
+    echo "Port $PORT is in use - stopping the running server ..."
+    stop_port_user "$PORT"
+    if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
+      echo >&2 "ERROR: Port $PORT is still in use after stopping the server."
+      exit 1
+    fi
+  fi
 
   if "$REBUILD"; then
     echo "Rebuilding ..."
@@ -220,17 +240,32 @@ else
   preflight_ports() {
     for p in "$PORT" "$DB_PORT"; do
       if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+        if [[ "$p" == "$PORT" ]]; then
+          echo "Port $p is in use - stopping the running server ..."
+          stop_port_user "$p"
+          if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+            cat >&2 <<EOF
+
+ERROR: Port $PORT is still in use after stopping the server.
+
+The server previously listening on $PORT could not be terminated.
+Kill it manually and re-run this script.
+
+EOF
+            exit 1
+          fi
+          continue
+        fi
         cat >&2 <<EOF
 
-ERROR: Port $p is already in use.
+ERROR: Port $p (postgres) is already in use.
 
 The Docker stack needs host ports $PORT (server) and $DB_PORT (postgres).
-Another process (e.g. a locally running server or a leftover postgres
-container) is holding $p.
+Another process (e.g. a locally running postgres) is holding $p.
 
 Options:
   - Stop the other process, or
-  - Run with different ports: --port <server> and DB_PORT=<db> env var.
+  - Run with a different postgres port: DB_PORT=<db> env var.
 
 EOF
         exit 1
