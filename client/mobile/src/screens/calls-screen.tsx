@@ -1,31 +1,31 @@
-import { View, Text, FlatList, StyleSheet } from "react-native"
-import { useState, useEffect } from "react"
-import { api } from "../lib/api"
+import { View, Text, FlatList, StyleSheet } from "react-native";
+import { useState, useEffect } from "react";
+import { api } from "../lib/api";
 
 interface Call {
-  id: string
-  callerId: string
-  calleeId: string
-  status: string
-  duration: number | null
-  createdAt: string
+  id: string;
+  callerId: string;
+  calleeId: string;
+  status: string;
+  duration: number | null;
+  createdAt: string;
 }
 
 export function CallsScreen() {
-  const [calls, setCalls] = useState<Call[]>([])
+  const [calls, setCalls] = useState<Call[]>([]);
 
   useEffect(() => {
     api<Call[]>("/api/calls")
       .then(setCalls)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    if (now.getTime() - d.getTime() < 86400000) return d.toLocaleTimeString()
-    return d.toLocaleDateString()
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    if (now.getTime() - d.getTime() < 86400000) return d.toLocaleTimeString();
+    return d.toLocaleDateString();
+  };
 
   return (
     <View style={s.container}>
@@ -47,7 +47,7 @@ export function CallsScreen() {
         ListEmptyComponent={<Text style={s.empty}>No call history</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -59,4 +59,4 @@ const s = StyleSheet.create({
   name: { color: "#F0F0F0", fontSize: 15 },
   meta: { color: "#6B7280", fontSize: 12, marginTop: 2 },
   empty: { color: "#6B7280", textAlign: "center", marginTop: 40, fontSize: 14 },
-})
+});

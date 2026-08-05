@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react"
-import { Search } from "lucide-react"
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Search } from "lucide-react";
 
 const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
   {
@@ -535,11 +535,11 @@ const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
       "❌",
     ],
   },
-]
+];
 
 interface EmojiPickerProps {
-  onEmojiSelect: (emoji: string) => void
-  onClose: () => void
+  onEmojiSelect: (emoji: string) => void;
+  onClose: () => void;
 }
 
 const EMOJI_NAMES: Record<string, string[]> = {
@@ -1030,50 +1030,50 @@ const EMOJI_NAMES: Record<string, string[]> = {
   "⏺️": ["record"],
   "✅": ["check", "check mark"],
   "❌": ["cross mark", "wrong"],
-}
+};
 
 export function EmojiPicker({ onEmojiSelect, onClose }: EmojiPickerProps) {
-  const [activeCategory, setActiveCategory] = useState(0)
-  const [searchQuery, setSearchQuery] = useState("")
-  const pickerRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const [activeCategory, setActiveCategory] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), [])
+  const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), []);
 
   const filteredEmojis = useMemo(() => {
-    if (!searchQuery) return null
-    const q = searchQuery.toLowerCase()
+    if (!searchQuery) return null;
+    const q = searchQuery.toLowerCase();
     return allEmojis.filter((emoji) => {
-      const names = EMOJI_NAMES[emoji] || []
-      return names.some((name) => name.includes(q)) || emoji === q
-    })
-  }, [searchQuery, allEmojis])
+      const names = EMOJI_NAMES[emoji] || [];
+      return names.some((name) => name.includes(q)) || emoji === q;
+    });
+  }, [searchQuery, allEmojis]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        onClose()
+        onClose();
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [onClose])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
-  }, [onClose])
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
 
   useEffect(() => {
     if (searchQuery && searchInputRef.current) {
-      searchInputRef.current.focus()
+      searchInputRef.current.focus();
     }
-  }, [searchQuery])
+  }, [searchQuery]);
 
-  const displayEmojis = filteredEmojis ?? EMOJI_CATEGORIES[activeCategory].emojis
+  const displayEmojis = filteredEmojis ?? EMOJI_CATEGORIES[activeCategory].emojis;
 
   return (
     <div
@@ -1087,8 +1087,8 @@ export function EmojiPicker({ onEmojiSelect, onClose }: EmojiPickerProps) {
             ref={searchInputRef}
             value={searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setActiveCategory(0)
+              setSearchQuery(e.target.value);
+              setActiveCategory(0);
             }}
             placeholder="Search emoji..."
             className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted outline-none"
@@ -1130,8 +1130,8 @@ export function EmojiPicker({ onEmojiSelect, onClose }: EmojiPickerProps) {
             <button
               key={emoji}
               onClick={() => {
-                onEmojiSelect(emoji)
-                onClose()
+                onEmojiSelect(emoji);
+                onClose();
               }}
               className="flex aspect-square items-center justify-center rounded-lg text-lg hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
@@ -1141,5 +1141,5 @@ export function EmojiPicker({ onEmojiSelect, onClose }: EmojiPickerProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

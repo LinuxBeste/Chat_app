@@ -1,24 +1,24 @@
-import { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native"
-import { useAuth } from "../lib/auth-context"
+import { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { useAuth } from "../lib/auth-context";
 
 export function LoginScreen() {
-  const { login, register } = useAuth()
-  const [mode, setMode] = useState<"login" | "register">("login")
-  const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    setError("")
+    setError("");
     try {
-      if (mode === "login") await login(email, password)
-      else await register(username, email, password)
+      if (mode === "login") await login(email, password);
+      else await register(username, email, password);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong")
+      setError(e instanceof Error ? e.message : "Something went wrong");
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -66,7 +66,7 @@ export function LoginScreen() {
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -107,4 +107,4 @@ const s = StyleSheet.create({
   error: { color: "#EF4444", fontSize: 13, marginBottom: 8 },
   switch: { color: "#8B8F96", fontSize: 13, textAlign: "center", marginTop: 24 },
   switchAccent: { color: "#4850BB" },
-})
+});

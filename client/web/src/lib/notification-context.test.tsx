@@ -1,16 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, act } from "@testing-library/react"
-import { NotificationProvider, useNotificationCount } from "./notification-context"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, act } from "@testing-library/react";
+import { NotificationProvider, useNotificationCount } from "./notification-context";
 
 vi.mock("./api", () => ({
   api: vi.fn(),
   getTokens: vi.fn(() => ({ accessToken: "mock-token", refreshToken: "mock-refresh" })),
-}))
+}));
 
-import { api } from "./api"
+import { api } from "./api";
 
 function TestComponent() {
-  const { unreadCount, refresh } = useNotificationCount()
+  const { unreadCount, refresh } = useNotificationCount();
   return (
     <div>
       <span data-testid="count">{unreadCount}</span>
@@ -18,7 +18,7 @@ function TestComponent() {
         Refresh
       </button>
     </div>
-  )
+  );
 }
 
 function renderWithProvider() {
@@ -26,50 +26,50 @@ function renderWithProvider() {
     <NotificationProvider>
       <TestComponent />
     </NotificationProvider>,
-  )
+  );
 }
 
 describe("NotificationProvider", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("fetches unread count on mount", async () => {
-    vi.mocked(api).mockResolvedValueOnce({ count: 5 })
+    vi.mocked(api).mockResolvedValueOnce({ count: 5 });
 
-    renderWithProvider()
+    renderWithProvider();
 
     await vi.waitFor(() => {
-      expect(screen.getByTestId("count").textContent).toBe("5")
-    })
-  })
+      expect(screen.getByTestId("count").textContent).toBe("5");
+    });
+  });
 
   it("handles fetch failure gracefully", async () => {
-    vi.mocked(api).mockRejectedValueOnce(new Error("Network error"))
+    vi.mocked(api).mockRejectedValueOnce(new Error("Network error"));
 
-    renderWithProvider()
+    renderWithProvider();
 
     await vi.waitFor(() => {
-      expect(screen.getByTestId("count").textContent).toBe("0")
-    })
-  })
+      expect(screen.getByTestId("count").textContent).toBe("0");
+    });
+  });
 
   it("refreshes count on demand", async () => {
-    vi.mocked(api).mockResolvedValueOnce({ count: 3 })
+    vi.mocked(api).mockResolvedValueOnce({ count: 3 });
 
-    renderWithProvider()
+    renderWithProvider();
 
     await vi.waitFor(() => {
-      expect(screen.getByTestId("count").textContent).toBe("3")
-    })
+      expect(screen.getByTestId("count").textContent).toBe("3");
+    });
 
-    vi.mocked(api).mockResolvedValueOnce({ count: 7 })
+    vi.mocked(api).mockResolvedValueOnce({ count: 7 });
     await act(async () => {
-      screen.getByTestId("refresh").click()
-    })
+      screen.getByTestId("refresh").click();
+    });
 
     await vi.waitFor(() => {
-      expect(screen.getByTestId("count").textContent).toBe("7")
-    })
-  })
-})
+      expect(screen.getByTestId("count").textContent).toBe("7");
+    });
+  });
+});

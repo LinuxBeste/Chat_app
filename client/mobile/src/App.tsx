@@ -1,16 +1,16 @@
-import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
-import { AuthProvider, useAuth } from "./lib/auth-context"
-import { LoginScreen } from "./screens/login-screen"
-import { ConversationsScreen } from "./screens/conversations-screen"
-import { ChatScreen } from "./screens/chat-screen"
-import { GroupsScreen } from "./screens/groups-screen"
-import { FilesScreen } from "./screens/files-screen"
-import { NotificationsScreen } from "./screens/notifications-screen"
-import { CallsScreen } from "./screens/calls-screen"
-import { ActivityIndicator } from "react-native"
+import { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { AuthProvider, useAuth } from "./lib/auth-context";
+import { LoginScreen } from "./screens/login-screen";
+import { ConversationsScreen } from "./screens/conversations-screen";
+import { ChatScreen } from "./screens/chat-screen";
+import { GroupsScreen } from "./screens/groups-screen";
+import { FilesScreen } from "./screens/files-screen";
+import { NotificationsScreen } from "./screens/notifications-screen";
+import { CallsScreen } from "./screens/calls-screen";
+import { ActivityIndicator } from "react-native";
 
-type Tab = "chats" | "groups" | "files" | "notifications" | "calls"
+type Tab = "chats" | "groups" | "files" | "notifications" | "calls";
 
 const tabs: { key: Tab; label: string; icon: string }[] = [
   { key: "chats", label: "Chats", icon: "💬" },
@@ -18,15 +18,15 @@ const tabs: { key: Tab; label: string; icon: string }[] = [
   { key: "files", label: "Files", icon: "📄" },
   { key: "notifications", label: "Notifs", icon: "🔔" },
   { key: "calls", label: "Calls", icon: "📞" },
-]
+];
 
 function HomeScreen() {
-  const [tab, setTab] = useState<Tab>("chats")
-  const [activeConv, setActiveConv] = useState<string | null>(null)
-  const { user } = useAuth()
+  const [tab, setTab] = useState<Tab>("chats");
+  const [activeConv, setActiveConv] = useState<string | null>(null);
+  const { user } = useAuth();
 
   if (activeConv) {
-    return <ChatScreen conversationId={activeConv} userId={user!.id} onBack={() => setActiveConv(null)} />
+    return <ChatScreen conversationId={activeConv} userId={user!.id} onBack={() => setActiveConv(null)} />;
   }
 
   return (
@@ -47,22 +47,22 @@ function HomeScreen() {
         ))}
       </View>
     </View>
-  )
+  );
 }
 
 function AppContent() {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0E1116" }}>
         <ActivityIndicator color="#4850BB" />
       </View>
-    )
+    );
   }
 
-  if (!user) return <LoginScreen />
-  return <HomeScreen />
+  if (!user) return <LoginScreen />;
+  return <HomeScreen />;
 }
 
 export default function App() {
@@ -70,7 +70,7 @@ export default function App() {
     <AuthProvider>
       <AppContent />
     </AuthProvider>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -100,4 +100,4 @@ const s = StyleSheet.create({
     opacity: 1,
     color: "#4850BB",
   },
-})
+});

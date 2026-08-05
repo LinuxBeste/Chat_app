@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { useNotificationCount } from "../../lib/notification-context"
-import { Bell, CheckCheck, MessageSquare, Users, Calendar, Globe } from "lucide-react"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { useNotificationCount } from "../../lib/notification-context";
+import { Bell, CheckCheck, MessageSquare, Users, Calendar, Globe } from "lucide-react";
 
 interface Notification {
-  id: string
-  type: string
-  title: string
-  body: string | null
-  isRead: string
-  createdAt: string
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  isRead: string;
+  createdAt: string;
 }
 
 const iconMap: Record<string, any> = {
@@ -17,42 +17,42 @@ const iconMap: Record<string, any> = {
   group: Users,
   event: Calendar,
   community: Globe,
-}
+};
 
 export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const { refresh } = useNotificationCount()
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { refresh } = useNotificationCount();
 
   useEffect(() => {
     api<Notification[]>("/api/notifications")
       .then(setNotifications)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const markRead = async (id: string) => {
-    await api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
-    refresh()
-  }
+    await api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {});
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)));
+    refresh();
+  };
 
   const markAllRead = async () => {
-    await api("/api/notifications/read-all", { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: "true" })))
-    refresh()
-  }
+    await api("/api/notifications/read-all", { method: "POST" }).catch(() => {});
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: "true" })));
+    refresh();
+  };
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    if (diff < 60000) return "just now"
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
-  const unread = notifications.filter((n) => n.isRead === "false")
-  const read = notifications.filter((n) => n.isRead === "true")
+  const unread = notifications.filter((n) => n.isRead === "false");
+  const read = notifications.filter((n) => n.isRead === "true");
 
   return (
     <div className="flex h-full">
@@ -114,5 +114,5 @@ export function NotificationsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

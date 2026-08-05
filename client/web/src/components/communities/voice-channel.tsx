@@ -1,106 +1,106 @@
-import { useState, useEffect, useCallback, useRef } from "react"
-import { wsClient } from "../../lib/ws"
-import { Headphones, Mic, MicOff, PhoneOff } from "lucide-react"
-import { useTranslation } from "react-i18next"
+import { useState, useEffect, useCallback, useRef } from "react";
+import { wsClient } from "../../lib/ws";
+import { Headphones, Mic, MicOff, PhoneOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Participant {
-  userId: string
+  userId: string;
 }
 
 interface VoiceChannelProps {
-  channelId: string
-  channelName: string
-  onLeave: () => void
+  channelId: string;
+  channelName: string;
+  onLeave: () => void;
 }
 
 export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelProps) {
-  const { t } = useTranslation()
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [muted, setMuted] = useState(false)
-  const [joined, setJoined] = useState(false)
-  const localStreamRef = useRef<MediaStream | null>(null)
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
-  const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
+  const { t } = useTranslation();
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [muted, setMuted] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   useEffect(() => {
-    const unsubs: (() => void)[] = []
+    const unsubs: (() => void)[] = [];
 
     unsubs.push(
       wsClient.on("voice:joined", (data: any) => {
         if (data.channelId === channelId) {
-          setJoined(true)
-          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
+          setJoined(true);
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })));
         }
       }),
-    )
+    );
 
     unsubs.push(
       wsClient.on("voice:user-joined", (data: any) => {
         if (data.channelId === channelId) {
-          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })));
         }
       }),
-    )
+    );
 
     unsubs.push(
       wsClient.on("voice:user-left", (data: any) => {
         if (data.channelId === channelId) {
-          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })))
+          setParticipants((data.participants as string[]).map((id: string) => ({ userId: id })));
         }
       }),
-    )
+    );
 
     unsubs.push(
       wsClient.on("voice:offer", async (data: any) => {
-        if (data.channelId !== channelId) return
-        const pc = createPeerConnection(data.callerId)
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp))
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
+        if (data.channelId !== channelId) return;
+        const pc = createPeerConnection(data.callerId);
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
         wsClient.send("voice:answer", {
           channelId,
           targetUserId: data.callerId,
           sdp: pc.localDescription,
-        })
+        });
       }),
-    )
+    );
 
     unsubs.push(
       wsClient.on("voice:answer", async (data: any) => {
-        if (data.channelId !== channelId) return
-        const pc = peerConnectionsRef.current.get(data.userId)
+        if (data.channelId !== channelId) return;
+        const pc = peerConnectionsRef.current.get(data.userId);
         if (pc && pc.remoteDescription === null) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp))
+          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
         }
       }),
-    )
+    );
 
     unsubs.push(
       wsClient.on("voice:ice-candidate", async (data: any) => {
-        if (data.channelId !== channelId) return
-        const pc = peerConnectionsRef.current.get(data.userId)
+        if (data.channelId !== channelId) return;
+        const pc = peerConnectionsRef.current.get(data.userId);
         if (pc) {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate))
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
         }
       }),
-    )
+    );
 
-    wsClient.send("voice:join", { channelId })
+    wsClient.send("voice:join", { channelId });
 
     return () => {
-      unsubs.forEach((fn) => fn())
-      cleanupConnections()
-    }
-  }, [channelId])
+      unsubs.forEach((fn) => fn());
+      cleanupConnections();
+    };
+  }, [channelId]);
 
   const createPeerConnection = useCallback(
     (targetUserId: string) => {
-      const existing = peerConnectionsRef.current.get(targetUserId)
-      if (existing) existing.close()
+      const existing = peerConnectionsRef.current.get(targetUserId);
+      if (existing) existing.close();
 
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      })
+      });
 
       pc.onicecandidate = (e) => {
         if (e.candidate) {
@@ -108,67 +108,67 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
             channelId,
             targetUserId,
             candidate: e.candidate,
-          })
+          });
         }
-      }
+      };
 
       pc.ontrack = (e) => {
-        const existingAudio = audioElementsRef.current.get(targetUserId)
-        if (existingAudio) existingAudio.remove()
+        const existingAudio = audioElementsRef.current.get(targetUserId);
+        if (existingAudio) existingAudio.remove();
 
-        const audio = new Audio()
-        audio.srcObject = e.streams[0]
-        audio.autoplay = true
-        audioElementsRef.current.set(targetUserId, audio)
-      }
+        const audio = new Audio();
+        audio.srcObject = e.streams[0];
+        audio.autoplay = true;
+        audioElementsRef.current.set(targetUserId, audio);
+      };
 
       if (localStreamRef.current) {
         for (const track of localStreamRef.current.getTracks()) {
-          pc.addTrack(track, localStreamRef.current)
+          pc.addTrack(track, localStreamRef.current);
         }
       }
 
-      peerConnectionsRef.current.set(targetUserId, pc)
-      return pc
+      peerConnectionsRef.current.set(targetUserId, pc);
+      return pc;
     },
     [channelId],
-  )
+  );
 
   const cleanupConnections = () => {
-    peerConnectionsRef.current.forEach((pc) => pc.close())
-    peerConnectionsRef.current.clear()
-    audioElementsRef.current.forEach((audio) => audio.remove())
-    audioElementsRef.current.clear()
+    peerConnectionsRef.current.forEach((pc) => pc.close());
+    peerConnectionsRef.current.clear();
+    audioElementsRef.current.forEach((audio) => audio.remove());
+    audioElementsRef.current.clear();
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop())
-      localStreamRef.current = null
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
     }
-  }
+  };
 
   const handleLeave = () => {
-    cleanupConnections()
-    wsClient.send("voice:leave", { channelId })
-    setJoined(false)
-    setParticipants([])
-    onLeave()
-  }
+    cleanupConnections();
+    wsClient.send("voice:leave", { channelId });
+    setJoined(false);
+    setParticipants([]);
+    onLeave();
+  };
 
   const toggleMute = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = muted
-      })
+        track.enabled = muted;
+      });
     }
-    setMuted(!muted)
-  }
+    setMuted(!muted);
+  };
 
   useEffect(() => {
     return () => {
       if (joined) {
-        wsClient.send("voice:leave", { channelId })
+        wsClient.send("voice:leave", { channelId });
       }
-    }
-  }, [])
+    };
+  }, []);
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
@@ -209,5 +209,5 @@ export function VoiceChannel({ channelId, channelName, onLeave }: VoiceChannelPr
         </button>
       </div>
     </div>
-  )
+  );
 }

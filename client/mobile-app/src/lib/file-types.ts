@@ -15,7 +15,7 @@ const TEXT_MIME = new Set([
   "application/x-yaml",
   "application/x-sh",
   "application/x-httpd-php",
-])
+]);
 
 const TEXT_EXTS = [
   "txt",
@@ -41,10 +41,10 @@ const TEXT_EXTS = [
   "env",
   "gitignore",
   "dockerfile",
-]
+];
 
 export function isTextFile(type: string | undefined | null, name: string | undefined | null): boolean {
-  if (type && TEXT_MIME.has(type)) return true
-  const ext = (name || "").split(".").pop()?.toLowerCase() || ""
-  return TEXT_EXTS.includes(ext)
+  if (type && TEXT_MIME.has(type)) return true;
+  const ext = (name || "").split(".").pop()?.toLowerCase() || "";
+  return TEXT_EXTS.includes(ext);
 }

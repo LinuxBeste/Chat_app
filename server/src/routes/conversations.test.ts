@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import request from "supertest"
-import app from "../app.js"
-import { verifyToken } from "../lib/jwt.js"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import request from "supertest";
+import app from "../app.js";
+import { verifyToken } from "../lib/jwt.js";
 
 const { mockData, queryQueue } = vi.hoisted(() => ({
   mockData: { current: [] as any[] },
   queryQueue: [] as any[][],
-}))
+}));
 
 vi.mock("../lib/db.js", () => {
   const chain: any = {
     then: (resolve: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).then(resolve)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).then(resolve);
     },
     catch: (reject: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).catch(reject)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).catch(reject);
     },
     finally: (handler: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).finally(handler)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).finally(handler);
     },
     from: vi.fn(() => chain),
     where: vi.fn(() => chain),
@@ -33,7 +33,7 @@ vi.mock("../lib/db.js", () => {
     values: vi.fn(() => chain),
     set: vi.fn(() => chain),
     onConflictDoNothing: vi.fn(() => chain),
-  }
+  };
   return {
     db: {
       select: vi.fn(() => chain),
@@ -45,146 +45,146 @@ vi.mock("../lib/db.js", () => {
         conversations: { findFirst: vi.fn(() => Promise.resolve(undefined)) },
       },
     },
-  }
-})
+  };
+});
 
-vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }))
+vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }));
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  vi.mocked(verifyToken).mockReturnValue({ userId: "00000000-0000-0000-0000-000000000001", username: "test" })
-  mockData.current = []
-  queryQueue.length = 0
-})
+  vi.clearAllMocks();
+  vi.mocked(verifyToken).mockReturnValue({ userId: "00000000-0000-0000-0000-000000000001", username: "test" });
+  mockData.current = [];
+  queryQueue.length = 0;
+});
 
 describe("POST /api/conversations", () => {
-  const dmBody = { type: "dm", participantIds: ["00000000-0000-0000-0000-000000000002"] }
+  const dmBody = { type: "dm", participantIds: ["00000000-0000-0000-0000-000000000002"] };
   const groupBody = {
     type: "group",
     name: "Group",
     participantIds: ["00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000003"],
-  }
+  };
 
   it("creates a DM", async () => {
-    mockData.current = [{ id: "new-dm", type: "dm" }]
-    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody)
-    expect(res.status).toBe(201)
-    expect(res.body).toHaveProperty("id")
-  })
+    mockData.current = [{ id: "new-dm", type: "dm" }];
+    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody);
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("id");
+  });
 
   it("creates a group", async () => {
-    mockData.current = [{ id: "new-group", type: "group", name: "Group" }]
-    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(groupBody)
-    expect(res.status).toBe(201)
-    expect(res.body).toHaveProperty("id")
-    expect(res.body).toHaveProperty("type", "group")
-  })
+    mockData.current = [{ id: "new-group", type: "group", name: "Group" }];
+    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(groupBody);
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("id");
+    expect(res.body).toHaveProperty("type", "group");
+  });
 
   it("reuses existing DM", async () => {
-    queryQueue.push([{ id: "existing-dm" }])
+    queryQueue.push([{ id: "existing-dm" }]);
     queryQueue.push([
       { userId: "00000000-0000-0000-0000-000000000001" },
       { userId: "00000000-0000-0000-0000-000000000002" },
-    ])
-    mockData.current = [{ id: "existing-dm", type: "dm", name: null, createdAt: new Date().toISOString() }]
-    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody)
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("id", "existing-dm")
-  })
+    ]);
+    mockData.current = [{ id: "existing-dm", type: "dm", name: null, createdAt: new Date().toISOString() }];
+    const res = await request(app).post("/api/conversations").set("Authorization", "Bearer token").send(dmBody);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", "existing-dm");
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).post("/api/conversations").send(dmBody)
-    expect(res.status).toBe(401)
-  })
+    const res = await request(app).post("/api/conversations").send(dmBody);
+    expect(res.status).toBe(401);
+  });
 
   it("returns 400 with invalid participantId format", async () => {
     const res = await request(app)
       .post("/api/conversations")
       .set("Authorization", "Bearer token")
-      .send({ type: "dm", participantIds: ["not-a-uuid"] })
-    expect(res.status).toBe(400)
-  })
-})
+      .send({ type: "dm", participantIds: ["not-a-uuid"] });
+    expect(res.status).toBe(400);
+  });
+});
 
 describe("GET /api/conversations", () => {
   it("lists conversations", async () => {
-    mockData.current = [{ id: "c1", type: "dm", createdAt: new Date().toISOString() }]
-    const res = await request(app).get("/api/conversations").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(Array.isArray(res.body)).toBe(true)
-  })
+    mockData.current = [{ id: "c1", type: "dm", createdAt: new Date().toISOString() }];
+    const res = await request(app).get("/api/conversations").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).get("/api/conversations")
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).get("/api/conversations");
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("GET /api/conversations/:id", () => {
   it("returns conversation with members", async () => {
-    mockData.current = [{ id: "c1", type: "dm", name: null, createdAt: new Date().toISOString() }]
-    const res = await request(app).get("/api/conversations/c1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("id", "c1")
-    expect(res.body).toHaveProperty("type", "dm")
-  })
+    mockData.current = [{ id: "c1", type: "dm", name: null, createdAt: new Date().toISOString() }];
+    const res = await request(app).get("/api/conversations/c1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", "c1");
+    expect(res.body).toHaveProperty("type", "dm");
+  });
 
   it("returns 404 for unknown conversation", async () => {
-    const res = await request(app).get("/api/conversations/unknown").set("Authorization", "Bearer token")
-    expect(res.status).toBe(404)
-    expect(res.body).toHaveProperty("error", "Conversation not found")
-  })
+    const res = await request(app).get("/api/conversations/unknown").set("Authorization", "Bearer token");
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("error", "Conversation not found");
+  });
 
   it("includes members array", async () => {
-    mockData.current = [{ id: "c1", type: "dm" }]
-    const res = await request(app).get("/api/conversations/c1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("members")
-    expect(Array.isArray(res.body.members)).toBe(true)
-  })
-})
+    mockData.current = [{ id: "c1", type: "dm" }];
+    const res = await request(app).get("/api/conversations/c1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("members");
+    expect(Array.isArray(res.body.members)).toBe(true);
+  });
+});
 
 describe("PUT /api/conversations/:id", () => {
   it("renames group", async () => {
-    mockData.current = [{ id: "c1", type: "group", name: "New Name" }]
+    mockData.current = [{ id: "c1", type: "group", name: "New Name" }];
     const res = await request(app)
       .put("/api/conversations/c1")
       .set("Authorization", "Bearer token")
-      .send({ name: "New Name" })
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("name", "New Name")
-  })
+      .send({ name: "New Name" });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("name", "New Name");
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).put("/api/conversations/c1").send({ name: "New Name" })
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).put("/api/conversations/c1").send({ name: "New Name" });
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("DELETE /api/conversations/:id", () => {
   it("deletes own conversation", async () => {
-    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "00000000-0000-0000-0000-000000000001" }]
-    const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Conversation deleted")
-  })
+    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "00000000-0000-0000-0000-000000000001" }];
+    const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Conversation deleted");
+  });
 
   it("returns 403 for non-creator", async () => {
-    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "other-user" }]
-    const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(403)
-  })
+    mockData.current = [{ id: "c1", type: "group", name: "Test", createdBy: "other-user" }];
+    const res = await request(app).delete("/api/conversations/c1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(403);
+  });
 
   it("returns 404 for unknown conversation", async () => {
-    const res = await request(app).delete("/api/conversations/unknown").set("Authorization", "Bearer token")
-    expect(res.status).toBe(404)
-  })
+    const res = await request(app).delete("/api/conversations/unknown").set("Authorization", "Bearer token");
+    expect(res.status).toBe(404);
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).delete("/api/conversations/c1")
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).delete("/api/conversations/c1");
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("PUT /api/conversations/:id/messages/:msgId", () => {
   it("edits own message", async () => {
@@ -197,48 +197,48 @@ describe("PUT /api/conversations/:id/messages/:msgId", () => {
         deletedAt: null,
         editedAt: new Date().toISOString(),
       },
-    ]
+    ];
     const res = await request(app)
       .put("/api/conversations/c1/messages/m1")
       .set("Authorization", "Bearer token")
-      .send({ content: "updated" })
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("content", "updated")
-  })
+      .send({ content: "updated" });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("content", "updated");
+  });
 
   it("returns 404 for unknown message", async () => {
-    mockData.current = []
+    mockData.current = [];
     const res = await request(app)
       .put("/api/conversations/c1/messages/unknown")
       .set("Authorization", "Bearer token")
-      .send({ content: "updated" })
-    expect(res.status).toBe(404)
-  })
+      .send({ content: "updated" });
+    expect(res.status).toBe(404);
+  });
 
   it("returns 403 for other's message", async () => {
-    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", content: "old", deletedAt: null }]
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", content: "old", deletedAt: null }];
     const res = await request(app)
       .put("/api/conversations/c1/messages/m1")
       .set("Authorization", "Bearer token")
-      .send({ content: "updated" })
-    expect(res.status).toBe(403)
-  })
+      .send({ content: "updated" });
+    expect(res.status).toBe(403);
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).put("/api/conversations/c1/messages/m1").send({ content: "updated" })
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).put("/api/conversations/c1/messages/m1").send({ content: "updated" });
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("DELETE /api/conversations/:id/messages/:msgId", () => {
   it("deletes own message", async () => {
     mockData.current = [
       { id: "m1", conversationId: "c1", senderId: "00000000-0000-0000-0000-000000000001", deletedAt: null },
-    ]
-    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Message deleted")
-  })
+    ];
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Message deleted");
+  });
 
   it("deletes own message and its attachment", async () => {
     queryQueue.push(
@@ -246,29 +246,31 @@ describe("DELETE /api/conversations/:id/messages/:msgId", () => {
       [{ id: "a1", messageId: "m1", url: "/uploads/x.txt", filename: "x.txt", mimeType: "text/plain", size: 5 }],
       [],
       [],
-    )
-    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Message deleted")
-  })
+    );
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Message deleted");
+  });
 
   it("returns 404 for unknown message", async () => {
-    mockData.current = []
-    const res = await request(app).delete("/api/conversations/c1/messages/unknown").set("Authorization", "Bearer token")
-    expect(res.status).toBe(404)
-  })
+    mockData.current = [];
+    const res = await request(app)
+      .delete("/api/conversations/c1/messages/unknown")
+      .set("Authorization", "Bearer token");
+    expect(res.status).toBe(404);
+  });
 
   it("returns 403 for other's message", async () => {
-    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", deletedAt: null }]
-    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(403)
-  })
+    mockData.current = [{ id: "m1", conversationId: "c1", senderId: "other-user", deletedAt: null }];
+    const res = await request(app).delete("/api/conversations/c1/messages/m1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(403);
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).delete("/api/conversations/c1/messages/m1")
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).delete("/api/conversations/c1/messages/m1");
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("GET /api/conversations/:id/messages", () => {
   it("returns messages", async () => {
@@ -282,42 +284,42 @@ describe("GET /api/conversations/:id/messages", () => {
         editedAt: null,
         sender: { username: "test", displayName: null, avatar: null },
       },
-    ]
-    const res = await request(app).get("/api/conversations/c1/messages").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(Array.isArray(res.body)).toBe(true)
-  })
-})
+    ];
+    const res = await request(app).get("/api/conversations/c1/messages").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+});
 
 describe("POST /api/conversations/:id/messages", () => {
   it("returns 404 (route not found)", async () => {
     const res = await request(app)
       .post("/api/conversations/c1/messages")
       .set("Authorization", "Bearer token")
-      .send({ content: "hello" })
-    expect(res.status).toBe(404)
-  })
-})
+      .send({ content: "hello" });
+    expect(res.status).toBe(404);
+  });
+});
 
 describe("Mute /api/conversations/:id/mute", () => {
   it("mutes a conversation", async () => {
-    queryQueue.push([{ id: "c1", type: "dm" }])
-    queryQueue.push([{ conversationId: "c1", userId: "u1" }])
-    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("muted", true)
-  })
+    queryQueue.push([{ id: "c1", type: "dm" }]);
+    queryQueue.push([{ conversationId: "c1", userId: "u1" }]);
+    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("muted", true);
+  });
 
   it("returns 403 for non-member", async () => {
-    queryQueue.push([{ id: "c1", type: "dm" }])
-    queryQueue.push([])
-    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token")
-    expect(res.status).toBe(403)
-  })
+    queryQueue.push([{ id: "c1", type: "dm" }]);
+    queryQueue.push([]);
+    const res = await request(app).put("/api/conversations/c1/mute").set("Authorization", "Bearer token");
+    expect(res.status).toBe(403);
+  });
 
   it("unmutes a conversation", async () => {
-    const res = await request(app).delete("/api/conversations/c1/mute").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("muted", false)
-  })
-})
+    const res = await request(app).delete("/api/conversations/c1/mute").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("muted", false);
+  });
+});

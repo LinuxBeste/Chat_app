@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
-import { LoginScreen } from "./login-screen"
-import type { ReactNode } from "react"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { LoginScreen } from "./login-screen";
+import type { ReactNode } from "react";
 
 vi.mock("../lib/auth-context", async () => {
-  const React = await import("react")
-  const ce = (React as any).default?.createElement || React.createElement
+  const React = await import("react");
+  const ce = (React as any).default?.createElement || React.createElement;
   return {
     AuthProvider: ({ children }: { children: ReactNode }) => ce(React.Fragment, null, children),
     useAuth: () => ({
@@ -17,12 +17,12 @@ vi.mock("../lib/auth-context", async () => {
       logout: vi.fn(),
       completeSetup: vi.fn(),
     }),
-  }
-})
+  };
+});
 
 vi.mock("../lib/theme-context", async () => {
-  const React = await import("react")
-  const ce = (React as any).default?.createElement || React.createElement
+  const React = await import("react");
+  const ce = (React as any).default?.createElement || React.createElement;
   return {
     ThemeProvider: ({ children }: { children: ReactNode }) => ce(React.Fragment, null, children),
     useTheme: () => ({
@@ -41,50 +41,50 @@ vi.mock("../lib/theme-context", async () => {
         white: "#FFFFFF",
       },
     }),
-  }
-})
+  };
+});
 
 describe("LoginScreen", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("renders login form by default", () => {
-    render(<LoginScreen />)
-    expect(screen.getByPlaceholderText("Email or username")).toBeInTheDocument()
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument()
-  })
+    render(<LoginScreen />);
+    expect(screen.getByPlaceholderText("Email or username")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+  });
 
   it("renders register form when toggled", () => {
-    render(<LoginScreen />)
-    fireEvent.click(screen.getByText("Register"))
-    expect(screen.getByPlaceholderText("Username")).toBeInTheDocument()
-    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument()
-  })
+    render(<LoginScreen />);
+    fireEvent.click(screen.getByText("Register"));
+    expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
+  });
 
   it("shows validation error when fields are empty", () => {
-    render(<LoginScreen />)
-    fireEvent.click(screen.getByText("Sign In"))
-    expect(screen.getByText("Email or username required")).toBeInTheDocument()
-  })
+    render(<LoginScreen />);
+    fireEvent.click(screen.getByText("Sign In"));
+    expect(screen.getByText("Email or username required")).toBeInTheDocument();
+  });
 
   it("toggles password visibility", () => {
-    render(<LoginScreen />)
-    fireEvent.click(screen.getByLabelText("Show password"))
-  })
+    render(<LoginScreen />);
+    fireEvent.click(screen.getByLabelText("Show password"));
+  });
 
   it("renders brand name", () => {
-    render(<LoginScreen />)
-    expect(screen.getByText("Chats")).toBeInTheDocument()
-  })
+    render(<LoginScreen />);
+    expect(screen.getByText("Chats")).toBeInTheDocument();
+  });
 
   it("shows language picker", () => {
-    render(<LoginScreen />)
-    expect(screen.getByLabelText("Language")).toBeInTheDocument()
-  })
+    render(<LoginScreen />);
+    expect(screen.getByLabelText("Language")).toBeInTheDocument();
+  });
 
   it("shows theme toggle", () => {
-    render(<LoginScreen />)
-    expect(screen.getByLabelText("Light")).toBeInTheDocument()
-  })
-})
+    render(<LoginScreen />);
+    expect(screen.getByLabelText("Light")).toBeInTheDocument();
+  });
+});

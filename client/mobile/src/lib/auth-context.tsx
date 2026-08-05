@@ -1,95 +1,95 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { api, setTokens, clearTokens, getTokens } from "./api"
-import { wsClient } from "./ws"
-import { getOrCreateKeyPair, deleteKeyPair } from "./crypto"
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { api, setTokens, clearTokens, getTokens } from "./api";
+import { wsClient } from "./ws";
+import { getOrCreateKeyPair, deleteKeyPair } from "./crypto";
 
 interface User {
-  id: string
-  username: string
-  email: string
+  id: string;
+  username: string;
+  email: string;
 }
 
 interface AuthState {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
-  logout: () => void
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthState>(null!)
+const AuthContext = createContext<AuthState>(null!);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const syncKey = useCallback(async () => {
     try {
-      const kp = await getOrCreateKeyPair()
+      const kp = await getOrCreateKeyPair();
       await api("/api/e2ee/key", {
         method: "PUT",
         body: JSON.stringify({ key: kp.publicKey }),
-      })
+      });
     } catch {}
-  }, [])
+  }, []);
 
   const fetchMe = useCallback(async () => {
     try {
-      setUser(await api<User>("/api/users/me"))
-      wsClient.connect()
-      syncKey()
+      setUser(await api<User>("/api/users/me"));
+      wsClient.connect();
+      syncKey();
     } catch {
-      setUser(null)
-      await clearTokens()
+      setUser(null);
+      await clearTokens();
     }
-  }, [syncKey])
+  }, [syncKey]);
 
   useEffect(() => {
-    getTokens().then((t) => (t.accessToken ? fetchMe().finally(() => setLoading(false)) : setLoading(false)))
-  }, [fetchMe])
+    getTokens().then((t) => (t.accessToken ? fetchMe().finally(() => setLoading(false)) : setLoading(false)));
+  }, [fetchMe]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const d = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
-      })
-      await setTokens(d.accessToken, d.refreshToken)
-      setUser(d.user)
-      wsClient.connect()
-      syncKey()
+      });
+      await setTokens(d.accessToken, d.refreshToken);
+      setUser(d.user);
+      wsClient.connect();
+      syncKey();
     },
     [syncKey],
-  )
+  );
 
   const register = useCallback(
     async (username: string, email: string, password: string) => {
       const d = await api<{ user: User; accessToken: string; refreshToken: string }>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({ username, email, password }),
-      })
-      await setTokens(d.accessToken, d.refreshToken)
-      setUser(d.user)
-      wsClient.connect()
-      syncKey()
+      });
+      await setTokens(d.accessToken, d.refreshToken);
+      setUser(d.user);
+      wsClient.connect();
+      syncKey();
     },
     [syncKey],
-  )
+  );
 
   const logout = useCallback(async () => {
-    await clearTokens()
-    wsClient.disconnect()
-    setUser(null)
+    await clearTokens();
+    wsClient.disconnect();
+    setUser(null);
     try {
-      await deleteKeyPair()
+      await deleteKeyPair();
     } catch {}
-  }, [])
+  }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider")
-  return ctx
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }

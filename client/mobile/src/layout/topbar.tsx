@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react"
-import { Search, ChevronDown, PanelLeftClose, PanelLeft, Menu, Moon, Sun } from "lucide-react"
-import { SearchPanel } from "../../../web/src/components/search/search-panel"
-import { isOnline, subscribeToOnlineStatus } from "../../../web/src/lib/offline"
-import { isDesktop } from "../../../web/src/lib/utils"
+import { useState, useEffect } from "react";
+import { Search, ChevronDown, PanelLeftClose, PanelLeft, Menu, Moon, Sun } from "lucide-react";
+import { SearchPanel } from "../../../web/src/components/search/search-panel";
+import { isOnline, subscribeToOnlineStatus } from "../../../web/src/lib/offline";
+import { isDesktop } from "../../../web/src/lib/utils";
 
 interface TopbarProps {
-  collapsed: boolean
-  onToggleCollapse: () => void
-  onOpenMobile: () => void
-  theme: "light" | "dark"
-  onToggleTheme: () => void
-  displayName: string
-  initials: string
-  searchPlaceholder: string
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  onOpenMobile: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
+  displayName: string;
+  initials: string;
+  searchPlaceholder: string;
 }
 
 export function Topbar({
@@ -25,20 +25,20 @@ export function Topbar({
   initials,
   searchPlaceholder,
 }: TopbarProps) {
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [online, setOnline] = useState(true)
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
-    if (!isDesktop()) return
-    setOnline(isOnline())
+    if (!isDesktop()) return;
+    setOnline(isOnline());
     return subscribeToOnlineStatus(
       () => setOnline(true),
       () => setOnline(false),
-    )
-  }, [])
+    );
+  }, []);
 
-  const showOffline = isDesktop() && !online
+  const showOffline = isDesktop() && !online;
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-bg-secondary px-4 lg:px-6">
@@ -62,14 +62,14 @@ export function Topbar({
         <input
           value={searchQuery}
           onChange={(e) => {
-            setSearchQuery(e.target.value)
-            setSearchOpen(true)
+            setSearchQuery(e.target.value);
+            setSearchOpen(true);
           }}
           onFocus={() => setSearchOpen(true)}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
-              setSearchOpen(false)
-              setSearchQuery("")
+              setSearchOpen(false);
+              setSearchQuery("");
             }
           }}
           placeholder={searchPlaceholder}
@@ -80,8 +80,8 @@ export function Topbar({
             query={searchQuery}
             onChange={setSearchQuery}
             onClose={() => {
-              setSearchOpen(false)
-              setSearchQuery("")
+              setSearchOpen(false);
+              setSearchQuery("");
             }}
           />
         )}
@@ -117,5 +117,5 @@ export function Topbar({
         </div>
       </div>
     </header>
-  )
+  );
 }

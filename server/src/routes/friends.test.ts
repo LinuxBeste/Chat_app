@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import request from "supertest"
-import app from "../app.js"
-import { verifyToken } from "../lib/jwt.js"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import request from "supertest";
+import app from "../app.js";
+import { verifyToken } from "../lib/jwt.js";
 
-const { mockData } = vi.hoisted(() => ({ mockData: { current: [] as any[] } }))
+const { mockData } = vi.hoisted(() => ({ mockData: { current: [] as any[] } }));
 
 vi.mock("../lib/db.js", () => {
   const chain: any = {
@@ -21,7 +21,7 @@ vi.mock("../lib/db.js", () => {
     values: vi.fn(() => chain),
     set: vi.fn(() => chain),
     onConflictDoNothing: vi.fn(() => Promise.resolve(undefined)),
-  }
+  };
   return {
     db: {
       select: vi.fn(() => chain),
@@ -32,79 +32,79 @@ vi.mock("../lib/db.js", () => {
         conversations: { findFirst: vi.fn(() => Promise.resolve(undefined)) },
       },
     },
-  }
-})
+  };
+});
 
-vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }))
+vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }));
 
-const USER_ID = "00000000-0000-0000-0000-000000000001"
-const FRIEND_ID = "00000000-0000-0000-0000-000000000002"
+const USER_ID = "00000000-0000-0000-0000-000000000001";
+const FRIEND_ID = "00000000-0000-0000-0000-000000000002";
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  vi.mocked(verifyToken).mockReturnValue({ userId: USER_ID, username: "test" })
-  mockData.current = []
-})
+  vi.clearAllMocks();
+  vi.mocked(verifyToken).mockReturnValue({ userId: USER_ID, username: "test" });
+  mockData.current = [];
+});
 
 describe("POST /api/friends/requests", () => {
-  const validBody = { friendId: FRIEND_ID }
+  const validBody = { friendId: FRIEND_ID };
 
   it("sends a friend request", async () => {
-    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send(validBody)
-    expect(res.status).toBe(201)
-    expect(res.body).toHaveProperty("message", "Friend request sent")
-  })
+    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send(validBody);
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Friend request sent");
+  });
 
   it("returns 400 with invalid body", async () => {
-    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send({})
-    expect(res.status).toBe(400)
-  })
+    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send({});
+    expect(res.status).toBe(400);
+  });
 
   it("returns 400 when friending self", async () => {
     const res = await request(app)
       .post("/api/friends/requests")
       .set("Authorization", "Bearer token")
-      .send({ friendId: USER_ID })
-    expect(res.status).toBe(400)
-    expect(res.body).toHaveProperty("error", "Cannot friend yourself")
-  })
+      .send({ friendId: USER_ID });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("error", "Cannot friend yourself");
+  });
 
   it("returns 409 when duplicate request exists", async () => {
-    mockData.current = [{ id: "existing" }]
-    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send(validBody)
-    expect(res.status).toBe(409)
-    expect(res.body).toHaveProperty("error", "Friend request already exists")
-  })
+    mockData.current = [{ id: "existing" }];
+    const res = await request(app).post("/api/friends/requests").set("Authorization", "Bearer token").send(validBody);
+    expect(res.status).toBe(409);
+    expect(res.body).toHaveProperty("error", "Friend request already exists");
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).post("/api/friends/requests").send(validBody)
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).post("/api/friends/requests").send(validBody);
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("POST /api/friends/requests/:id/accept", () => {
   it("accepts a friend request", async () => {
-    mockData.current = [{ userId: FRIEND_ID, friendId: USER_ID, status: "accepted" }]
+    mockData.current = [{ userId: FRIEND_ID, friendId: USER_ID, status: "accepted" }];
     const res = await request(app)
       .post(`/api/friends/requests/${FRIEND_ID}/accept`)
-      .set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Friend request accepted")
-  })
+      .set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Friend request accepted");
+  });
 
   it("returns 404 when no pending request", async () => {
     const res = await request(app)
       .post(`/api/friends/requests/${FRIEND_ID}/accept`)
-      .set("Authorization", "Bearer token")
-    expect(res.status).toBe(404)
-    expect(res.body).toHaveProperty("error", "No pending request found")
-  })
+      .set("Authorization", "Bearer token");
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("error", "No pending request found");
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).post(`/api/friends/requests/${FRIEND_ID}/accept`)
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).post(`/api/friends/requests/${FRIEND_ID}/accept`);
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("GET /api/friends", () => {
   it("lists friends", async () => {
@@ -118,27 +118,27 @@ describe("GET /api/friends", () => {
         status_: "accepted",
         createdAt: new Date().toISOString(),
       },
-    ]
-    const res = await request(app).get("/api/friends").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(Array.isArray(res.body)).toBe(true)
-  })
+    ];
+    const res = await request(app).get("/api/friends").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).get("/api/friends")
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).get("/api/friends");
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("DELETE /api/friends/:friendId", () => {
   it("removes a friend", async () => {
-    const res = await request(app).delete(`/api/friends/${FRIEND_ID}`).set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Friend removed")
-  })
+    const res = await request(app).delete(`/api/friends/${FRIEND_ID}`).set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Friend removed");
+  });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).delete(`/api/friends/${FRIEND_ID}`)
-    expect(res.status).toBe(401)
-  })
-})
+    const res = await request(app).delete(`/api/friends/${FRIEND_ID}`);
+    expect(res.status).toBe(401);
+  });
+});

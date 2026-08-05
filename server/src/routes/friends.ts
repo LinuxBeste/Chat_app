@@ -1,14 +1,14 @@
-import { Router, Request, Response } from "express"
-import type { Router as RouterType } from "express"
-import { z } from "zod"
-import { db } from "../lib/db.js"
-import { validate } from "../middleware/validate.js"
-import { authGuard } from "../middleware/auth.js"
-import { catchAsync } from "../middleware/error-handler.js"
-import { friends, users } from "../db/schema.js"
-import { eq, and, or, ilike } from "drizzle-orm"
+import { Router, Request, Response } from "express";
+import type { Router as RouterType } from "express";
+import { z } from "zod";
+import { db } from "../lib/db.js";
+import { validate } from "../middleware/validate.js";
+import { authGuard } from "../middleware/auth.js";
+import { catchAsync } from "../middleware/error-handler.js";
+import { friends, users } from "../db/schema.js";
+import { eq, and, or, ilike } from "drizzle-orm";
 
-const router: RouterType = Router()
+const router: RouterType = Router();
 
 const requestSchema = z
   .object({
@@ -17,19 +17,19 @@ const requestSchema = z
   })
   .refine((data) => data.friendId || data.username, {
     message: "Either friendId or username is required",
-  })
+  });
 
 router.get(
   "/search",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const q = req.query.q as string
+    const q = req.query.q as string;
     if (!q || q.length < 1) {
-      res.json([])
-      return
+      res.json([]);
+      return;
     }
 
-    let results
+    let results;
     if (q.includes("@")) {
       results = await db
         .select({
@@ -42,7 +42,7 @@ router.get(
         })
         .from(users)
         .where(ilike(users.email, `%${q}%`))
-        .limit(10)
+        .limit(10);
     } else if (/^[0-9a-f-]+$/i.test(q) && q.length >= 8) {
       results = await db
         .select({
@@ -55,7 +55,7 @@ router.get(
         })
         .from(users)
         .where(ilike(users.id, `${q}%`))
-        .limit(10)
+        .limit(10);
     } else {
       results = await db
         .select({
@@ -68,26 +68,26 @@ router.get(
         })
         .from(users)
         .where(ilike(users.username, `%${q}%`))
-        .limit(10)
+        .limit(10);
     }
 
-    res.json(results)
+    res.json(results);
   }),
-)
+);
 
 router.get(
   "/lookup",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const q = req.query.q as string
+    const q = req.query.q as string;
     if (!q) {
-      res.status(400).json({ error: "Query parameter required" })
-      return
+      res.status(400).json({ error: "Query parameter required" });
+      return;
     }
 
-    let user
+    let user;
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) {
-      ;[user] = await db
+      [user] = await db
         .select({
           id: users.id,
           username: users.username,
@@ -97,9 +97,9 @@ router.get(
         })
         .from(users)
         .where(eq(users.id, q))
-        .limit(1)
+        .limit(1);
     } else {
-      ;[user] = await db
+      [user] = await db
         .select({
           id: users.id,
           username: users.username,
@@ -109,28 +109,28 @@ router.get(
         })
         .from(users)
         .where(eq(users.username, q))
-        .limit(1)
+        .limit(1);
     }
 
     if (!user) {
-      res.status(404).json({ error: "User not found" })
-      return
+      res.status(404).json({ error: "User not found" });
+      return;
     }
 
-    res.json(user)
+    res.json(user);
   }),
-)
+);
 
 router.get(
   "/status/:userId",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const targetId = req.params.userId as string
+    const userId = req.user!.userId;
+    const targetId = req.params.userId as string;
 
     if (targetId === userId) {
-      res.json({ status: "self" })
-      return
+      res.json({ status: "self" });
+      return;
     }
 
     const [rel] = await db
@@ -142,32 +142,36 @@ router.get(
           and(eq(friends.userId, targetId), eq(friends.friendId, userId)),
         ),
       )
-      .limit(1)
+      .limit(1);
 
-    res.json({ status: rel?.status ?? "none" })
+    res.json({ status: rel?.status ?? "none" });
   }),
-)
+);
 
 router.post(
   "/requests",
   authGuard,
   validate(requestSchema),
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    let friendId = req.body.friendId
+    const userId = req.user!.userId;
+    let friendId = req.body.friendId;
 
     if (!friendId && req.body.username) {
-      const [user] = await db.select({ id: users.id }).from(users).where(eq(users.username, req.body.username)).limit(1)
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, req.body.username))
+        .limit(1);
       if (!user) {
-        res.status(404).json({ error: "User not found by username" })
-        return
+        res.status(404).json({ error: "User not found by username" });
+        return;
       }
-      friendId = user.id
+      friendId = user.id;
     }
 
     if (friendId === userId) {
-      res.status(400).json({ error: "Cannot friend yourself" })
-      return
+      res.status(400).json({ error: "Cannot friend yourself" });
+      return;
     }
 
     const existing = await db
@@ -179,17 +183,17 @@ router.post(
           and(eq(friends.userId, friendId), eq(friends.friendId, userId)),
         ),
       )
-      .limit(1)
+      .limit(1);
 
     if (existing.length > 0) {
-      res.status(409).json({ error: "Friend request already exists" })
-      return
+      res.status(409).json({ error: "Friend request already exists" });
+      return;
     }
 
-    await db.insert(friends).values({ userId, friendId, status: "pending" })
-    res.status(201).json({ message: "Friend request sent" })
+    await db.insert(friends).values({ userId, friendId, status: "pending" });
+    res.status(201).json({ message: "Friend request sent" });
   }),
-)
+);
 
 router.post(
   "/requests/:id/accept",
@@ -205,22 +209,22 @@ router.post(
           eq(friends.status, "pending"),
         ),
       )
-      .returning()
+      .returning();
 
     if (!updated) {
-      res.status(404).json({ error: "No pending request found" })
-      return
+      res.status(404).json({ error: "No pending request found" });
+      return;
     }
 
-    res.json({ message: "Friend request accepted" })
+    res.json({ message: "Friend request accepted" });
   }),
-)
+);
 
 router.get(
   "/",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
+    const userId = req.user!.userId;
 
     const result = await db
       .select({
@@ -239,19 +243,19 @@ router.get(
           and(eq(friends.userId, userId), eq(friends.status, "accepted")),
           and(eq(friends.friendId, userId), eq(friends.status, "accepted")),
         ),
-      )
+      );
 
-    const filtered = result.filter((r) => r.id !== userId)
+    const filtered = result.filter((r) => r.id !== userId);
 
-    res.json(filtered)
+    res.json(filtered);
   }),
-)
+);
 
 router.get(
   "/pending",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
+    const userId = req.user!.userId;
 
     const result = await db
       .select({
@@ -265,18 +269,18 @@ router.get(
       })
       .from(friends)
       .innerJoin(users, eq(users.id, friends.userId))
-      .where(and(eq(friends.friendId, userId), eq(friends.status, "pending")))
+      .where(and(eq(friends.friendId, userId), eq(friends.status, "pending")));
 
-    res.json(result)
+    res.json(result);
   }),
-)
+);
 
 router.delete(
   "/:friendId",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const friendId = req.params.friendId
+    const userId = req.user!.userId;
+    const friendId = req.params.friendId;
 
     await db
       .delete(friends)
@@ -285,10 +289,10 @@ router.delete(
           and(eq(friends.userId, userId), eq(friends.friendId, friendId as string)),
           and(eq(friends.userId, friendId as string), eq(friends.friendId, userId)),
         ),
-      )
+      );
 
-    res.json({ message: "Friend removed" })
+    res.json({ message: "Friend removed" });
   }),
-)
+);
 
-export default router
+export default router;

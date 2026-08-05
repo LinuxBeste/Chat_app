@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron"
+import { contextBridge, ipcRenderer } from "electron";
 
 export type MenuAction =
   | "new-conversation"
@@ -16,7 +16,7 @@ export type MenuAction =
   | "go-events"
   | "toggle-sidebar"
   | "toggle-dark-mode"
-  | "about"
+  | "about";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   getUserDataPath: () => ipcRenderer.invoke("get-user-data-path"),
@@ -32,8 +32,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     deleteConvKeys: (id?: string) => ipcRenderer.invoke("e2ee:delete-conv-keys", id),
   },
   onMenuAction: (callback: (action: MenuAction) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action)
-    ipcRenderer.on("menu:action", handler)
-    return () => ipcRenderer.removeListener("menu:action", handler)
+    const handler = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action);
+    ipcRenderer.on("menu:action", handler);
+    return () => ipcRenderer.removeListener("menu:action", handler);
   },
-})
+});

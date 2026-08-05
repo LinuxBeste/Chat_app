@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,84 +11,84 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-} from "react-native"
-import { Calendar, Plus, X, ChevronRight, MessageSquare, Clock, ChevronLeft } from "lucide-react-native"
-import { api } from "../lib/api"
-import { useTheme } from "../lib/theme-context"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { wsClient } from "../lib/ws"
-import DateTimePicker from "@react-native-community/datetimepicker"
+} from "react-native";
+import { Calendar, Plus, X, ChevronRight, MessageSquare, Clock, ChevronLeft } from "lucide-react-native";
+import { api } from "../lib/api";
+import { useTheme } from "../lib/theme-context";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { wsClient } from "../lib/ws";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 interface Event {
-  id: string
-  title: string
-  description: string | null
-  startsAt: string
-  endsAt: string | null
-  creatorId: string
-  conversationId?: string
-  conversationName?: string
-  myRsvp?: string | null
-  rsvpCount?: { going: number; maybe: number; declined: number }
+  id: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  creatorId: string;
+  conversationId?: string;
+  conversationName?: string;
+  myRsvp?: string | null;
+  rsvpCount?: { going: number; maybe: number; declined: number };
 }
 
 interface Conv {
-  id: string
-  name: string | null
-  type: string
+  id: string;
+  name: string | null;
+  type: string;
 }
 
 export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; onSelectChat?: (id: string) => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
-  const { c } = useTheme()
-  const [events, setEvents] = useState<Event[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [filter, setFilter] = useState<"upcoming" | "past">("upcoming")
-  const [modalVisible, setModalVisible] = useState(false)
-  const [title, setTitle] = useState("")
-  const [desc, setDesc] = useState("")
-  const [startsAt, setStartsAt] = useState(new Date())
-  const [endsAt, setEndsAt] = useState<Date | null>(null)
-  const [convId, setConvId] = useState("")
-  const [showStartPicker, setShowStartPicker] = useState(false)
-  const [showEndPicker, setShowEndPicker] = useState(false)
-  const [convs, setConvs] = useState<Conv[]>([])
-  const [showConvPicker, setShowConvPicker] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const { c } = useTheme();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<"upcoming" | "past">("upcoming");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [startsAt, setStartsAt] = useState(new Date());
+  const [endsAt, setEndsAt] = useState<Date | null>(null);
+  const [convId, setConvId] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [convs, setConvs] = useState<Conv[]>([]);
+  const [showConvPicker, setShowConvPicker] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(() => {
     api<Event[]>("/api/events")
       .then(setEvents)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   useEffect(() => {
-    const unsub = wsClient.on("event:new", load)
-    return () => unsub()
-  }, [load])
+    const unsub = wsClient.on("event:new", load);
+    return () => unsub();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   useEffect(() => {
     api<Conv[]>("/api/conversations")
       .then(setConvs)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const create = async () => {
-    if (!title.trim()) return
-    setCreating(true)
+    if (!title.trim()) return;
+    setCreating(true);
     try {
       await api("/api/events", {
         method: "POST",
@@ -99,17 +99,17 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
           startsAt: startsAt.toISOString(),
           endsAt: endsAt?.toISOString() || undefined,
         }),
-      })
-      setTitle("")
-      setDesc("")
-      setStartsAt(new Date())
-      setEndsAt(null)
-      setConvId("")
-      setModalVisible(false)
-      load()
+      });
+      setTitle("");
+      setDesc("");
+      setStartsAt(new Date());
+      setEndsAt(null);
+      setConvId("");
+      setModalVisible(false);
+      load();
     } catch {}
-    setCreating(false)
-  }
+    setCreating(false);
+  };
 
   const deleteEvent = (eventId: string) => {
     Alert.alert("Delete Event", "Are you sure?", [
@@ -120,51 +120,51 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
         onPress: () => {
           api(`/api/events/${eventId}`, { method: "DELETE" })
             .then(load)
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const rsvp = async (eventId: string, status: "going" | "maybe" | "declined") => {
     try {
-      await api(`/api/events/${eventId}/rsvp`, { method: "POST", body: JSON.stringify({ status }) })
-      load()
+      await api(`/api/events/${eventId}/rsvp`, { method: "POST", body: JSON.stringify({ status }) });
+      load();
     } catch {}
-  }
+  };
 
   const filtered = events.filter((e) => {
-    const isPast = new Date(e.startsAt) < new Date()
-    return filter === "upcoming" ? !isPast : isPast
-  })
+    const isPast = new Date(e.startsAt) < new Date();
+    return filter === "upcoming" ? !isPast : isPast;
+  });
 
   const formatDate = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = d.getTime() - now.getTime()
-    const isToday = d.toDateString() === now.toDateString()
-    const isTomorrow = new Date(now.getTime() + 86400000).toDateString() === d.toDateString()
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = d.getTime() - now.getTime();
+    const isToday = d.toDateString() === now.toDateString();
+    const isTomorrow = new Date(now.getTime() + 86400000).toDateString() === d.toDateString();
     const day = isToday
       ? "Today"
       : isTomorrow
         ? "Tomorrow"
-        : d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-    return `${day} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-  }
+        : d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    return `${day} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  };
 
   const formatDuration = (start: string, end: string | null) => {
-    if (!end) return null
-    const s = new Date(start)
-    const e = new Date(end)
-    const ms = e.getTime() - s.getTime()
-    const h = Math.floor(ms / 3600000)
-    const m = Math.floor((ms % 3600000) / 60000)
-    if (h === 0) return `${m}m`
-    if (m === 0) return `${h}h`
-    return `${h}h ${m}m`
-  }
+    if (!end) return null;
+    const s = new Date(start);
+    const e = new Date(end);
+    const ms = e.getTime() - s.getTime();
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
 
-  const RSVP_LABELS = { going: "👍 Going", maybe: "🤷 Maybe", declined: "👎 Decline" } as const
+  const RSVP_LABELS = { going: "👍 Going", maybe: "🤷 Maybe", declined: "👎 Decline" } as const;
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
@@ -202,7 +202,7 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item }) => {
-          const duration = formatDuration(item.startsAt, item.endsAt)
+          const duration = formatDuration(item.startsAt, item.endsAt);
           return (
             <TouchableOpacity
               style={[st.eventItem, { borderBottomColor: c.borderLight }]}
@@ -266,7 +266,7 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
                 </View>
               )}
             </TouchableOpacity>
-          )
+          );
         }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", marginTop: 80 }}>
@@ -382,8 +382,8 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
                 mode="datetime"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(_: any, date?: Date) => {
-                  setShowStartPicker(false)
-                  if (date) setStartsAt(date)
+                  setShowStartPicker(false);
+                  if (date) setStartsAt(date);
                 }}
               />
             )}
@@ -393,8 +393,8 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
                 mode="datetime"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(_: any, date?: Date) => {
-                  setShowEndPicker(false)
-                  if (date) setEndsAt(date)
+                  setShowEndPicker(false);
+                  if (date) setEndsAt(date);
                 }}
               />
             )}
@@ -407,8 +407,8 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
                     <TouchableOpacity
                       style={{ paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 8 }}
                       onPress={() => {
-                        setConvId(item.id)
-                        setShowConvPicker(false)
+                        setConvId(item.id);
+                        setShowConvPicker(false);
                       }}
                     >
                       <Text style={{ color: item.id === convId ? c.accent : c.text, fontSize: 14, flex: 1 }}>
@@ -443,7 +443,7 @@ export function EventsScreen({ onBack, onSelectChat }: { onBack?: () => void; on
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 const st = StyleSheet.create({
@@ -489,4 +489,4 @@ const st = StyleSheet.create({
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 8, alignItems: "center" },
   confirmBtn: { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, minWidth: 80, alignItems: "center" },
   confirmText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});

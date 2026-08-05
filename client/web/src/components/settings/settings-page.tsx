@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from "react"
-import { api } from "../../lib/api"
-import { useAuth } from "../../lib/auth-context"
-import { useTheme } from "../../lib/theme-context"
-import { ThemeEditor } from "./theme-editor"
-import { Avatar } from "../ui/avatar"
-import { getPendingMessages, clearPendingMessages, clearConversationCache } from "../../lib/offline"
-import { supportedLanguages } from "../../lib/i18n"
-import i18n from "../../lib/i18n"
-import { useTranslation } from "react-i18next"
+import { useState, useEffect, useCallback } from "react";
+import { api } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
+import { useTheme } from "../../lib/theme-context";
+import { ThemeEditor } from "./theme-editor";
+import { Avatar } from "../ui/avatar";
+import { getPendingMessages, clearPendingMessages, clearConversationCache } from "../../lib/offline";
+import { supportedLanguages } from "../../lib/i18n";
+import i18n from "../../lib/i18n";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Shield,
@@ -59,228 +59,228 @@ import {
   Wifi,
   RefreshCw,
   Keyboard,
-} from "lucide-react"
+} from "lucide-react";
 
 interface TOTPStatus {
-  enabled: boolean
+  enabled: boolean;
 }
 interface LoginEntry {
-  id: string
-  ip: string | null
-  userAgent: string | null
-  success: string
-  createdAt: string
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  success: string;
+  createdAt: string;
 }
 interface Session {
-  id: string
-  createdAt: string
-  expiresAt: string
+  id: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 interface Preferences {
   // Notifications
-  messageNotifications?: boolean
-  groupInvites?: boolean
-  communityUpdates?: boolean
-  eventReminders?: boolean
-  callAlerts?: boolean
-  notificationSound?: boolean
-  desktopNotifications?: boolean
-  pushNotifications?: boolean
-  mentionOnly?: boolean
-  notificationPreview?: boolean
-  dndEnabled?: boolean
-  dndStart?: string
-  dndEnd?: string
-  badgeCount?: boolean
-  messagePreview?: boolean
-  keywordAlerts?: string
-  notificationSoundName?: string
-  notificationVolume?: number
+  messageNotifications?: boolean;
+  groupInvites?: boolean;
+  communityUpdates?: boolean;
+  eventReminders?: boolean;
+  callAlerts?: boolean;
+  notificationSound?: boolean;
+  desktopNotifications?: boolean;
+  pushNotifications?: boolean;
+  mentionOnly?: boolean;
+  notificationPreview?: boolean;
+  dndEnabled?: boolean;
+  dndStart?: string;
+  dndEnd?: string;
+  badgeCount?: boolean;
+  messagePreview?: boolean;
+  keywordAlerts?: string;
+  notificationSoundName?: string;
+  notificationVolume?: number;
   // Privacy
-  readReceipts?: boolean
-  showOnlineStatus?: boolean
-  allowFriendRequests?: boolean
-  dmFrom?: "everyone" | "friends" | "off"
-  explicitFilter?: boolean
-  safetyAlerts?: boolean
-  shareActivity?: boolean
-  showPresence?: boolean
+  readReceipts?: boolean;
+  showOnlineStatus?: boolean;
+  allowFriendRequests?: boolean;
+  dmFrom?: "everyone" | "friends" | "off";
+  explicitFilter?: boolean;
+  safetyAlerts?: boolean;
+  shareActivity?: boolean;
+  showPresence?: boolean;
   // Chat
-  enterToSend?: boolean
-  showTypingIndicators?: boolean
-  autoPlayMedia?: boolean
-  imagePreviews?: boolean
-  linkPreviews?: boolean
-  emojiSuggestions?: boolean
-  markdownPreview?: boolean
-  spellCheck?: boolean
-  autoCorrect?: boolean
-  messageGrouping?: boolean
-  replyPreview?: boolean
-  autoDownloadFiles?: boolean
-  imageQuality?: "low" | "medium" | "high"
-  gifAutoplay?: boolean
-  videoAutoplay?: boolean
-  stickerSuggestions?: boolean
-  inlineCodePreview?: boolean
+  enterToSend?: boolean;
+  showTypingIndicators?: boolean;
+  autoPlayMedia?: boolean;
+  imagePreviews?: boolean;
+  linkPreviews?: boolean;
+  emojiSuggestions?: boolean;
+  markdownPreview?: boolean;
+  spellCheck?: boolean;
+  autoCorrect?: boolean;
+  messageGrouping?: boolean;
+  replyPreview?: boolean;
+  autoDownloadFiles?: boolean;
+  imageQuality?: "low" | "medium" | "high";
+  gifAutoplay?: boolean;
+  videoAutoplay?: boolean;
+  stickerSuggestions?: boolean;
+  inlineCodePreview?: boolean;
   // Appearance
-  compactMode?: boolean
-  fontSize?: "small" | "medium" | "large" | "xlarge"
-  timeFormat?: "12h" | "24h"
-  fontFamily?: string
-  monospaceFont?: string
-  showTimestamps?: "always" | "hover" | "off"
-  avatarStyle?: "circle" | "square"
-  avatarSize?: "small" | "medium" | "large"
-  avatarChatSize?: "small" | "medium" | "large"
-  animatedEmoji?: boolean
-  reduceMotion?: boolean
-  reduceTransparency?: boolean
-  chatBubbleStyle?: "rounded" | "flat" | "minimal"
-  sidebarWidth?: "narrow" | "default" | "wide"
-  accentColor?: string
-  secondaryColor?: string
-  surfaceColor?: string
-  backgroundColor?: string
-  textColor?: string
-  linkColor?: string
-  borderColor?: string
-  successColor?: string
-  dangerColor?: string
-  warningColor?: string
-  glassMorphism?: boolean
-  saturation?: number
-  contrast?: number
-  brightness?: number
+  compactMode?: boolean;
+  fontSize?: "small" | "medium" | "large" | "xlarge";
+  timeFormat?: "12h" | "24h";
+  fontFamily?: string;
+  monospaceFont?: string;
+  showTimestamps?: "always" | "hover" | "off";
+  avatarStyle?: "circle" | "square";
+  avatarSize?: "small" | "medium" | "large";
+  avatarChatSize?: "small" | "medium" | "large";
+  animatedEmoji?: boolean;
+  reduceMotion?: boolean;
+  reduceTransparency?: boolean;
+  chatBubbleStyle?: "rounded" | "flat" | "minimal";
+  sidebarWidth?: "narrow" | "default" | "wide";
+  accentColor?: string;
+  secondaryColor?: string;
+  surfaceColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  linkColor?: string;
+  borderColor?: string;
+  successColor?: string;
+  dangerColor?: string;
+  warningColor?: string;
+  glassMorphism?: boolean;
+  saturation?: number;
+  contrast?: number;
+  brightness?: number;
   // Corners
-  borderRadius?: "none" | "small" | "medium" | "large" | "full"
-  buttonRadius?: "none" | "small" | "medium" | "large" | "full"
-  inputRadius?: "none" | "small" | "medium" | "large" | "full"
-  chatBubbleRadius?: "none" | "small" | "medium" | "large" | "full"
-  avatarRadius?: "none" | "small" | "medium" | "full"
-  modalRadius?: "none" | "small" | "medium" | "large" | "full"
-  cardRadius?: "none" | "small" | "medium" | "large" | "full"
+  borderRadius?: "none" | "small" | "medium" | "large" | "full";
+  buttonRadius?: "none" | "small" | "medium" | "large" | "full";
+  inputRadius?: "none" | "small" | "medium" | "large" | "full";
+  chatBubbleRadius?: "none" | "small" | "medium" | "large" | "full";
+  avatarRadius?: "none" | "small" | "medium" | "full";
+  modalRadius?: "none" | "small" | "medium" | "large" | "full";
+  cardRadius?: "none" | "small" | "medium" | "large" | "full";
   // Shadows & Effects
-  shadowIntensity?: "none" | "light" | "medium" | "strong"
-  borderWidth?: "none" | "thin" | "normal" | "thick"
-  hoverScale?: number
-  transitionDuration?: "fast" | "normal" | "slow"
-  animationSpeed?: "slow" | "normal" | "fast" | "none"
-  backgroundPattern?: "none" | "dots" | "grid" | "waves"
-  backgroundBlur?: number
+  shadowIntensity?: "none" | "light" | "medium" | "strong";
+  borderWidth?: "none" | "thin" | "normal" | "thick";
+  hoverScale?: number;
+  transitionDuration?: "fast" | "normal" | "slow";
+  animationSpeed?: "slow" | "normal" | "fast" | "none";
+  backgroundPattern?: "none" | "dots" | "grid" | "waves";
+  backgroundBlur?: number;
   // Layout
-  messageSpacing?: "compact" | "normal" | "relaxed"
-  sectionSpacing?: "compact" | "normal" | "relaxed"
-  elementGap?: "compact" | "normal" | "wide"
-  listDensity?: "compact" | "normal" | "relaxed"
-  channelListDensity?: "compact" | "normal" | "relaxed"
-  memberListWidth?: "narrow" | "default" | "wide"
-  sidebarPosition?: "left" | "right"
-  showHeader?: boolean
-  showFooter?: boolean
-  scrollbarStyle?: "default" | "thin" | "hidden"
-  scrollbarWidth?: number
-  scrollBehavior?: "smooth" | "instant"
+  messageSpacing?: "compact" | "normal" | "relaxed";
+  sectionSpacing?: "compact" | "normal" | "relaxed";
+  elementGap?: "compact" | "normal" | "wide";
+  listDensity?: "compact" | "normal" | "relaxed";
+  channelListDensity?: "compact" | "normal" | "relaxed";
+  memberListWidth?: "narrow" | "default" | "wide";
+  sidebarPosition?: "left" | "right";
+  showHeader?: boolean;
+  showFooter?: boolean;
+  scrollbarStyle?: "default" | "thin" | "hidden";
+  scrollbarWidth?: number;
+  scrollBehavior?: "smooth" | "instant";
   // Messages
-  dateSeparator?: "full" | "short" | "none"
-  dateSeparatorStyle?: "line" | "pill" | "minimal"
-  senderNameFormat?: "full" | "first" | "none"
-  badgeStyle?: "dot" | "pill" | "number"
-  notificationDotSize?: "small" | "medium" | "large"
-  typingIndicatorStyle?: "dots" | "pulse" | "text"
-  loadingStyle?: "spinner" | "skeleton" | "dots"
-  codeBlockTheme?: "light" | "dark" | "auto"
-  codeFontSize?: "small" | "medium" | "large"
-  codeBackground?: string
-  linkStyle?: "underline" | "colored" | "both"
-  mentionStyle?: "highlight" | "bold" | "both"
-  spoilerStyle?: "blur" | "hidden" | "reveal"
-  blockquoteStyle?: "line" | "accent" | "modern"
-  headingStyle?: "default" | "accent" | "underlined"
+  dateSeparator?: "full" | "short" | "none";
+  dateSeparatorStyle?: "line" | "pill" | "minimal";
+  senderNameFormat?: "full" | "first" | "none";
+  badgeStyle?: "dot" | "pill" | "number";
+  notificationDotSize?: "small" | "medium" | "large";
+  typingIndicatorStyle?: "dots" | "pulse" | "text";
+  loadingStyle?: "spinner" | "skeleton" | "dots";
+  codeBlockTheme?: "light" | "dark" | "auto";
+  codeFontSize?: "small" | "medium" | "large";
+  codeBackground?: string;
+  linkStyle?: "underline" | "colored" | "both";
+  mentionStyle?: "highlight" | "bold" | "both";
+  spoilerStyle?: "blur" | "hidden" | "reveal";
+  blockquoteStyle?: "line" | "accent" | "modern";
+  headingStyle?: "default" | "accent" | "underlined";
   // Animations
-  pageTransition?: "fade" | "slide" | "scale" | "none"
-  messageAnimation?: "fade" | "slide" | "scale" | "none"
-  modalAnimation?: "fade" | "scale" | "slide" | "none"
-  hoverAnimation?: "scale" | "glow" | "lift" | "none"
-  reactionAnimation?: "bounce" | "pop" | "fade" | "none"
-  skeletonStyle?: "shimmer" | "pulse" | "none"
-  stickyHeader?: boolean
+  pageTransition?: "fade" | "slide" | "scale" | "none";
+  messageAnimation?: "fade" | "slide" | "scale" | "none";
+  modalAnimation?: "fade" | "scale" | "slide" | "none";
+  hoverAnimation?: "scale" | "glow" | "lift" | "none";
+  reactionAnimation?: "bounce" | "pop" | "fade" | "none";
+  skeletonStyle?: "shimmer" | "pulse" | "none";
+  stickyHeader?: boolean;
   // Chat
-  avatarPresenceSize?: "small" | "medium" | "large"
-  imagePreviewSize?: "small" | "medium" | "large"
-  inlineCodeStyle?: "modern" | "classic" | "minimal"
-  selectionColor?: string
-  highlightColor?: string
+  avatarPresenceSize?: "small" | "medium" | "large";
+  imagePreviewSize?: "small" | "medium" | "large";
+  inlineCodeStyle?: "modern" | "classic" | "minimal";
+  selectionColor?: string;
+  highlightColor?: string;
   // Language
-  language?: string
-  dateFormat?: "MDY" | "DMY" | "YMD"
-  firstDayOfWeek?: "mon" | "sun"
-  timezone?: string
-  temperatureUnit?: "c" | "f"
-  measurementSystem?: "metric" | "imperial"
+  language?: string;
+  dateFormat?: "MDY" | "DMY" | "YMD";
+  firstDayOfWeek?: "mon" | "sun";
+  timezone?: string;
+  temperatureUnit?: "c" | "f";
+  measurementSystem?: "metric" | "imperial";
   // Accessibility
-  highContrast?: boolean
-  screenReader?: boolean
-  stickyHeaders?: boolean
-  focusIndicators?: boolean
-  colorBlindMode?: string
-  lineHeight?: number
-  letterSpacing?: number
-  chatBubbleDir?: "auto" | "left" | "right"
+  highContrast?: boolean;
+  screenReader?: boolean;
+  stickyHeaders?: boolean;
+  focusIndicators?: boolean;
+  colorBlindMode?: string;
+  lineHeight?: number;
+  letterSpacing?: number;
+  chatBubbleDir?: "auto" | "left" | "right";
   // Calls
-  defaultMic?: string
-  defaultSpeaker?: string
-  echoCancellation?: boolean
-  noiseSuppression?: boolean
-  autoGainControl?: boolean
-  videoQuality?: "480p" | "720p" | "1080p"
-  pictureInPicture?: boolean
-  pushToTalk?: boolean
-  voiceActivityThreshold?: number
-  callRecording?: boolean
-  ringtone?: string
+  defaultMic?: string;
+  defaultSpeaker?: string;
+  echoCancellation?: boolean;
+  noiseSuppression?: boolean;
+  autoGainControl?: boolean;
+  videoQuality?: "480p" | "720p" | "1080p";
+  pictureInPicture?: boolean;
+  pushToTalk?: boolean;
+  voiceActivityThreshold?: number;
+  callRecording?: boolean;
+  ringtone?: string;
   // Audio/Video
-  inputDevice?: string
-  outputDevice?: string
-  camera?: string
-  micSensitivity?: number
-  videoBackgroundBlur?: boolean
-  videoResolution?: string
-  frameRate?: number
+  inputDevice?: string;
+  outputDevice?: string;
+  camera?: string;
+  micSensitivity?: number;
+  videoBackgroundBlur?: boolean;
+  videoResolution?: string;
+  frameRate?: number;
   // Advanced
-  developerMode?: boolean
-  experimentalFeatures?: boolean
-  hardwareAcceleration?: boolean
-  loggingLevel?: "error" | "warn" | "info" | "debug"
-  autoUpdate?: boolean
-  crashReporting?: boolean
-  diagnostics?: boolean
-  cacheEnabled?: boolean
-  sessionTimeout?: string
-  securityAlerts?: boolean
+  developerMode?: boolean;
+  experimentalFeatures?: boolean;
+  hardwareAcceleration?: boolean;
+  loggingLevel?: "error" | "warn" | "info" | "debug";
+  autoUpdate?: boolean;
+  crashReporting?: boolean;
+  diagnostics?: boolean;
+  cacheEnabled?: boolean;
+  sessionTimeout?: string;
+  securityAlerts?: boolean;
   // Media
-  voiceMessageQuality?: "low" | "medium" | "high"
-  maxFileSize?: number
-  downloadLocation?: string
-  imageSaveQuality?: number
+  voiceMessageQuality?: "low" | "medium" | "high";
+  maxFileSize?: number;
+  downloadLocation?: string;
+  imageSaveQuality?: number;
   // Reader
-  readerMode?: boolean
-  fontSizeReader?: number
-  lineSpacing?: number
+  readerMode?: boolean;
+  fontSizeReader?: number;
+  lineSpacing?: number;
   // Shortcuts
-  shortcutNavigateUp?: string
-  shortcutNavigateDown?: string
-  shortcutNewChat?: string
-  shortcutSearch?: string
-  shortcutToggleSidebar?: string
-  shortcutJumpToDm?: string
-  shortcutMarkRead?: string
-  shortcutQuickReply?: string
-  shortcutToggleMute?: string
-  shortcutToggleTheme?: string
-  shortcutQuickSwitch?: string
-  shortcutCreateGroup?: string
+  shortcutNavigateUp?: string;
+  shortcutNavigateDown?: string;
+  shortcutNewChat?: string;
+  shortcutSearch?: string;
+  shortcutToggleSidebar?: string;
+  shortcutJumpToDm?: string;
+  shortcutMarkRead?: string;
+  shortcutQuickReply?: string;
+  shortcutToggleMute?: string;
+  shortcutToggleTheme?: string;
+  shortcutQuickSwitch?: string;
+  shortcutCreateGroup?: string;
 }
 
 const defaultPrefs: Preferences = {
@@ -455,7 +455,7 @@ const defaultPrefs: Preferences = {
   shortcutToggleTheme: "Ctrl+Shift+T",
   shortcutQuickSwitch: "Ctrl+Tab",
   shortcutCreateGroup: "Ctrl+Shift+N",
-}
+};
 
 type SettingsTab =
   | "account"
@@ -471,7 +471,7 @@ type SettingsTab =
   | "audio-video"
   | "advanced"
   | "shortcuts"
-  | "about"
+  | "about";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
@@ -484,7 +484,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`}
       />
     </button>
-  )
+  );
 }
 
 function Select({
@@ -492,9 +492,9 @@ function Select({
   options,
   onChange,
 }: {
-  value: string
-  options: { value: string; label: string }[]
-  onChange: (v: string) => void
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
 }) {
   return (
     <select
@@ -508,7 +508,7 @@ function Select({
         </option>
       ))}
     </select>
-  )
+  );
 }
 
 function SliderControl({
@@ -519,12 +519,12 @@ function SliderControl({
   onChange,
   label,
 }: {
-  value: number
-  min: number
-  max: number
-  step?: number
-  onChange: (v: number) => void
-  label?: string
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
+  label?: string;
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -543,7 +543,7 @@ function SliderControl({
         {step && step < 1 ? "" : ""}
       </span>
     </div>
-  )
+  );
 }
 
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
@@ -555,7 +555,7 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
       </h2>
       <div className="rounded-2xl border border-border bg-surface p-4 space-y-4">{children}</div>
     </section>
-  )
+  );
 }
 
 function Row({ label, desc, control, id }: { label: string; desc: string; control: React.ReactNode; id?: string }) {
@@ -567,33 +567,33 @@ function Row({ label, desc, control, id }: { label: string; desc: string; contro
       </div>
       {control}
     </div>
-  )
+  );
 }
 
 function OfflineCacheInfo() {
-  const { t } = useTranslation()
-  const [queueCount, setQueueCount] = useState(getPendingMessages().length)
-  const [msg, setMsg] = useState("")
+  const { t } = useTranslation();
+  const [queueCount, setQueueCount] = useState(getPendingMessages().length);
+  const [msg, setMsg] = useState("");
 
-  const refreshQueue = () => setQueueCount(getPendingMessages().length)
+  const refreshQueue = () => setQueueCount(getPendingMessages().length);
 
   const handleClearQueue = () => {
-    clearPendingMessages()
-    setQueueCount(0)
-    setMsg(t("settings.offline.queueCleared"))
-    setTimeout(() => setMsg(""), 2000)
-  }
+    clearPendingMessages();
+    setQueueCount(0);
+    setMsg(t("settings.offline.queueCleared"));
+    setTimeout(() => setMsg(""), 2000);
+  };
 
   const handleClearCache = () => {
-    const keys: string[] = []
+    const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith("offline:messages:")) keys.push(key)
+      const key = localStorage.key(i);
+      if (key?.startsWith("offline:messages:")) keys.push(key);
     }
-    keys.forEach((k) => clearConversationCache(k.replace("offline:messages:", "")))
-    setMsg(t("settings.offline.cacheCleared"))
-    setTimeout(() => setMsg(""), 2000)
-  }
+    keys.forEach((k) => clearConversationCache(k.replace("offline:messages:", "")));
+    setMsg(t("settings.offline.cacheCleared"));
+    setTimeout(() => setMsg(""), 2000);
+  };
 
   return (
     <div className="space-y-3" role="group">
@@ -629,11 +629,11 @@ function OfflineCacheInfo() {
       </div>
       {msg && <p className="text-xs text-text-muted">{msg}</p>}
     </div>
-  )
+  );
 }
 
 export function SettingsPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const tabs: { id: SettingsTab; label: string; icon: any; group?: string }[] = [
     { id: "account", label: t("settings.tabs.account"), icon: User },
     { id: "security", label: t("settings.tabs.security"), icon: Shield },
@@ -649,228 +649,228 @@ export function SettingsPage() {
     { id: "language", label: t("settings.tabs.language"), icon: Globe, group: t("settings.groups.experience") },
     { id: "advanced", label: t("settings.tabs.advanced"), icon: Terminal, group: t("settings.groups.system") },
     { id: "about", label: t("settings.tabs.about"), icon: Info },
-  ]
-  const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const [tab, setTab] = useState<SettingsTab>("account")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [totpStatus, setTotpStatus] = useState<TOTPStatus | null>(null)
-  const [loginHistory, setLoginHistory] = useState<LoginEntry[]>([])
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [secret, setSecret] = useState("")
-  const [setupUri, setSetupUri] = useState("")
-  const [verifyCode, setVerifyCode] = useState("")
-  const [showVerify, setShowVerify] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [verifyMsg, setVerifyMsg] = useState("")
-  const [sendingVerification, setSendingVerification] = useState(false)
-  const [prefs, setPrefs] = useState<Preferences>(defaultPrefs)
-  const [highlightedKey, setHighlightedKey] = useState<string | null>(null)
+  ];
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [tab, setTab] = useState<SettingsTab>("account");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [totpStatus, setTotpStatus] = useState<TOTPStatus | null>(null);
+  const [loginHistory, setLoginHistory] = useState<LoginEntry[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [secret, setSecret] = useState("");
+  const [setupUri, setSetupUri] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [showVerify, setShowVerify] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState("");
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [prefs, setPrefs] = useState<Preferences>(defaultPrefs);
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!highlightedKey) return
-    const el = document.getElementById(highlightedKey)
+    if (!highlightedKey) return;
+    const el = document.getElementById(highlightedKey);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" })
-      el.classList.add("ring-2", "ring-accent/50", "rounded-2xl", "transition-all", "duration-1000")
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-accent/50", "rounded-2xl", "transition-all", "duration-1000");
       setTimeout(() => {
-        el.classList.remove("ring-2", "ring-accent/50", "rounded-2xl")
-        setHighlightedKey(null)
-      }, 2500)
+        el.classList.remove("ring-2", "ring-accent/50", "rounded-2xl");
+        setHighlightedKey(null);
+      }, 2500);
     }
-  }, [tab, highlightedKey])
+  }, [tab, highlightedKey]);
 
   useEffect(() => {
     api<Preferences>("/api/users/preferences")
       .then((p) => setPrefs({ ...defaultPrefs, ...p }))
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === "L") {
-        e.preventDefault()
-        setTab("language")
+        e.preventDefault();
+        setTab("language");
       }
-    }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [])
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const updatePref = useCallback(
     async (key: keyof Preferences, value: any) => {
-      const next = { ...prefs, [key]: value }
-      setPrefs(next)
+      const next = { ...prefs, [key]: value };
+      setPrefs(next);
       if (key === "language") {
-        i18n.changeLanguage(value)
+        i18n.changeLanguage(value);
       }
       try {
-        await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(next) })
+        await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(next) });
       } catch {
         /* */
       }
     },
     [prefs],
-  )
+  );
 
-  const [statusEmojiLocal, setStatusEmojiLocal] = useState("")
-  const [statusEmojiSaveMsg, setStatusEmojiSaveMsg] = useState("")
-  const [customStatusText, setCustomStatusText] = useState("")
-  const [savingCustomStatus, setSavingCustomStatus] = useState(false)
-  const [customStatusMsg, setCustomStatusMsg] = useState("")
+  const [statusEmojiLocal, setStatusEmojiLocal] = useState("");
+  const [statusEmojiSaveMsg, setStatusEmojiSaveMsg] = useState("");
+  const [customStatusText, setCustomStatusText] = useState("");
+  const [savingCustomStatus, setSavingCustomStatus] = useState(false);
+  const [customStatusMsg, setCustomStatusMsg] = useState("");
 
   useEffect(() => {
     api<{ customStatus: string | null }>("/api/users/me")
       .then((u) => setCustomStatusText(u.customStatus ?? ""))
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const saveCustomStatus = async () => {
-    setSavingCustomStatus(true)
+    setSavingCustomStatus(true);
     try {
       await api("/api/users/me", {
         method: "PUT",
         body: JSON.stringify({ customStatus: customStatusText }),
-      })
-      setCustomStatusMsg(t("settings.status.saved"))
-      setTimeout(() => setCustomStatusMsg(""), 2000)
+      });
+      setCustomStatusMsg(t("settings.status.saved"));
+      setTimeout(() => setCustomStatusMsg(""), 2000);
     } catch {
       /* */
     }
-    setSavingCustomStatus(false)
-  }
+    setSavingCustomStatus(false);
+  };
 
   useEffect(() => {
-    const activeTheme = localStorage.getItem("customThemeId")
+    const activeTheme = localStorage.getItem("customThemeId");
     if (activeTheme) {
-      const stored = localStorage.getItem("customTheme")
+      const stored = localStorage.getItem("customTheme");
       if (stored) {
         try {
-          const config = JSON.parse(stored)
-          setStatusEmojiLocal(config.statusEmoji ?? "")
+          const config = JSON.parse(stored);
+          setStatusEmojiLocal(config.statusEmoji ?? "");
         } catch {
           /* */
         }
       }
     }
-  }, [])
+  }, []);
 
   const saveStatusEmoji = async (emoji: string) => {
     try {
-      const active = await api<{ id: string; theme: string; name?: string } | null>("/api/themes/active")
+      const active = await api<{ id: string; theme: string; name?: string } | null>("/api/themes/active");
       if (active) {
-        const themeConfig = JSON.parse(active.theme)
-        themeConfig.statusEmoji = emoji
+        const themeConfig = JSON.parse(active.theme);
+        themeConfig.statusEmoji = emoji;
         await api(`/api/themes/${active.id}`, {
           method: "PUT",
           body: JSON.stringify({ name: active.name || "Custom Theme", theme: themeConfig }),
-        })
-        localStorage.setItem("customTheme", JSON.stringify(themeConfig))
-        setStatusEmojiSaveMsg(t("settings.status.saved"))
-        setTimeout(() => setStatusEmojiSaveMsg(""), 2000)
+        });
+        localStorage.setItem("customTheme", JSON.stringify(themeConfig));
+        setStatusEmojiSaveMsg(t("settings.status.saved"));
+        setTimeout(() => setStatusEmojiSaveMsg(""), 2000);
       }
     } catch {
       /* */
     }
-  }
+  };
 
   const clearStatusEmoji = () => {
-    setStatusEmojiLocal("")
-    saveStatusEmoji("")
-  }
+    setStatusEmojiLocal("");
+    saveStatusEmoji("");
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveStatusEmoji(statusEmojiLocal)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [statusEmojiLocal])
+      saveStatusEmoji(statusEmojiLocal);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [statusEmojiLocal]);
 
   const [blockedUsers, setBlockedUsers] = useState<
     { blockedUserId: string; createdAt: string; username: string; displayName: string | null; avatar: string | null }[]
-  >([])
+  >([]);
 
   const fetchBlocked = useCallback(async () => {
     try {
-      const list = await api<typeof blockedUsers>("/api/privacy/blocks")
-      setBlockedUsers(list)
+      const list = await api<typeof blockedUsers>("/api/privacy/blocks");
+      setBlockedUsers(list);
     } catch {
       /* */
     }
-  }, [])
+  }, []);
 
   const unblockUser = async (userId: string) => {
     try {
-      await api(`/api/privacy/blocks/${userId}`, { method: "DELETE" })
-      setBlockedUsers((prev) => prev.filter((b) => b.blockedUserId !== userId))
+      await api(`/api/privacy/blocks/${userId}`, { method: "DELETE" });
+      setBlockedUsers((prev) => prev.filter((b) => b.blockedUserId !== userId));
     } catch {
       /* */
     }
-  }
+  };
 
   useEffect(() => {
     if (tab === "privacy") {
-      fetchBlocked()
+      fetchBlocked();
     }
-  }, [tab, fetchBlocked])
+  }, [tab, fetchBlocked]);
 
   useEffect(() => {
     if (tab === "security") {
       api<TOTPStatus>("/api/security/totp/status")
         .then(setTotpStatus)
-        .catch(() => {})
+        .catch(() => {});
       api<LoginEntry[]>("/api/security/history")
         .then(setLoginHistory)
-        .catch(() => {})
+        .catch(() => {});
       api<Session[]>("/api/auth/sessions")
         .then(setSessions)
-        .catch(() => {})
+        .catch(() => {});
     }
-  }, [tab])
+  }, [tab]);
 
   const setupTOTP = async () => {
     const data = await api<{ secret: string; uri: string }>("/api/security/totp/setup", { method: "POST" }).catch(
       () => null,
-    )
+    );
     if (data) {
-      setSecret(data.secret)
-      setSetupUri(data.uri)
-      setShowVerify(true)
+      setSecret(data.secret);
+      setSetupUri(data.uri);
+      setShowVerify(true);
     }
-  }
+  };
   const verifyTOTP = async () => {
-    if (!verifyCode.trim()) return
+    if (!verifyCode.trim()) return;
     await api("/api/security/totp/verify", { method: "POST", body: JSON.stringify({ code: verifyCode.trim() }) }).catch(
       () => null,
-    )
-    setTotpStatus({ enabled: true })
-    setShowVerify(false)
-    setVerifyCode("")
-  }
+    );
+    setTotpStatus({ enabled: true });
+    setShowVerify(false);
+    setVerifyCode("");
+  };
   const disableTOTP = async () => {
-    await api("/api/security/totp/disable", { method: "POST" }).catch(() => {})
-    setTotpStatus({ enabled: false })
-    setSecret("")
-    setSetupUri("")
-  }
+    await api("/api/security/totp/disable", { method: "POST" }).catch(() => {});
+    setTotpStatus({ enabled: false });
+    setSecret("");
+    setSetupUri("");
+  };
   const revokeSession = async (id: string) => {
-    await api(`/api/auth/sessions/${id}`, { method: "DELETE" }).catch(() => {})
-    setSessions((prev) => prev.filter((s) => s.id !== id))
-  }
+    await api(`/api/auth/sessions/${id}`, { method: "DELETE" }).catch(() => {});
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+  };
   const copySecret = () => {
-    navigator.clipboard.writeText(secret)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  const formatDate = (iso: string) => new Date(iso).toLocaleString()
+    navigator.clipboard.writeText(secret);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const formatDate = (iso: string) => new Date(iso).toLocaleString();
   const formatUA = (ua: string | null) => {
-    if (!ua) return t("common.unknown")
-    if (ua.includes("Chrome")) return "Chrome"
-    if (ua.includes("Firefox")) return "Firefox"
-    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari"
-    if (ua.includes("Expo")) return "Mobile App"
-    return ua.slice(0, 30)
-  }
+    if (!ua) return t("common.unknown");
+    if (ua.includes("Chrome")) return "Chrome";
+    if (ua.includes("Firefox")) return "Firefox";
+    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+    if (ua.includes("Expo")) return "Mobile App";
+    return ua.slice(0, 30);
+  };
 
   const settingsSearchIndex = [
     // Account
@@ -1315,26 +1315,26 @@ export function SettingsPage() {
     { key: "settings.about.privacyPolicy", tab: "about" as SettingsTab, label: t("settings.about.privacyPolicy") },
     { key: "settings.about.termsOfService", tab: "about" as SettingsTab, label: t("settings.about.termsOfService") },
     { key: "settings.about.credits", tab: "about" as SettingsTab, label: t("settings.about.credits") },
-  ]
+  ];
 
   const searchResults = searchQuery.trim()
     ? settingsSearchIndex.filter((item) => {
-        const q = searchQuery.toLowerCase()
-        if (item.label.toLowerCase().includes(q)) return true
-        if (item.keywords?.some((k) => k.toLowerCase().includes(q))) return true
-        return false
+        const q = searchQuery.toLowerCase();
+        if (item.label.toLowerCase().includes(q)) return true;
+        if (item.keywords?.some((k) => k.toLowerCase().includes(q))) return true;
+        return false;
       })
-    : []
+    : [];
 
   const grouped = tabs.reduce(
     (acc, tab) => {
-      const g = tab.group ?? t("settings.groups.general")
-      if (!acc[g]) acc[g] = []
-      acc[g].push(tab)
-      return acc
+      const g = tab.group ?? t("settings.groups.general");
+      if (!acc[g]) acc[g] = [];
+      acc[g].push(tab);
+      return acc;
     },
     {} as Record<string, typeof tabs>,
-  )
+  );
 
   return (
     <div className="flex h-full">
@@ -1346,7 +1346,7 @@ export function SettingsPage() {
           <div key={group} className="mb-2">
             <p className="px-3 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{group}</p>
             {items.map((t) => {
-              const Icon = t.icon
+              const Icon = t.icon;
               return (
                 <button
                   key={t.id}
@@ -1360,7 +1360,7 @@ export function SettingsPage() {
                   <Icon className="h-4 w-4 shrink-0" />
                   {t.label}
                 </button>
-              )
+              );
             })}
           </div>
         ))}
@@ -1396,15 +1396,15 @@ export function SettingsPage() {
                 <p className="text-sm text-text-muted">{t("settings.noResults")}</p>
               ) : (
                 searchResults.map((r, i) => {
-                  const tabDef = tabs.find((t) => t.id === r.tab)
-                  const Icon = tabDef?.icon
+                  const tabDef = tabs.find((t) => t.id === r.tab);
+                  const Icon = tabDef?.icon;
                   return (
                     <button
                       key={`${r.tab}-${r.label}-${i}`}
                       onClick={() => {
-                        setTab(r.tab)
-                        setSearchQuery("")
-                        setHighlightedKey(r.key)
+                        setTab(r.tab);
+                        setSearchQuery("");
+                        setHighlightedKey(r.key);
                       }}
                       className="w-full flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 hover:bg-white/[0.02] transition-all cursor-pointer text-left"
                     >
@@ -1416,7 +1416,7 @@ export function SettingsPage() {
                         <p className="text-xs text-text-muted">{tabDef?.label}</p>
                       </div>
                     </button>
-                  )
+                  );
                 })
               )}
             </div>
@@ -1477,17 +1477,17 @@ export function SettingsPage() {
                       {user?.emailVerified !== "true" && (
                         <button
                           onClick={async () => {
-                            setSendingVerification(true)
-                            setVerifyMsg("")
+                            setSendingVerification(true);
+                            setVerifyMsg("");
                             try {
                               const res = await api<{ verifyUrl: string }>("/api/auth/send-verification", {
                                 method: "POST",
-                              })
-                              setVerifyMsg(`${t("settings.account.sent")} ${res.verifyUrl}`)
+                              });
+                              setVerifyMsg(`${t("settings.account.sent")} ${res.verifyUrl}`);
                             } catch {
-                              setVerifyMsg(t("settings.account.failed"))
+                              setVerifyMsg(t("settings.account.failed"));
                             }
-                            setSendingVerification(false)
+                            setSendingVerification(false);
                           }}
                           disabled={sendingVerification}
                           className="text-xs text-accent hover:text-accent-hover cursor-pointer disabled:opacity-40"
@@ -4344,5 +4344,5 @@ export function SettingsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next"
+import { useTranslation } from "react-i18next";
 import {
   MessageSquare,
   Users,
@@ -12,21 +12,21 @@ import {
   Calendar,
   Shield,
   X,
-} from "lucide-react"
-import type { LucideIcon } from "lucide-react"
-import { cn } from "../../../web/src/lib/utils"
-import { useNav, type View } from "./dashboard-layout"
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "../../../web/src/lib/utils";
+import { useNav, type View } from "./dashboard-layout";
 
 interface NavItem {
-  icon: LucideIcon
-  labelKey: string
-  view: View
+  icon: LucideIcon;
+  labelKey: string;
+  view: View;
 }
 
 interface BottomItem {
-  icon: LucideIcon
-  labelKey: string
-  action: "profile" | "settings" | "logout"
+  icon: LucideIcon;
+  labelKey: string;
+  action: "profile" | "settings" | "logout";
 }
 
 export const navItems: NavItem[] = [
@@ -38,40 +38,40 @@ export const navItems: NavItem[] = [
   { icon: FileText, labelKey: "nav.files", view: "files" },
   { icon: Bell, labelKey: "nav.notifications", view: "notifications" },
   { icon: Shield, labelKey: "nav.admin", view: "admin" },
-]
+];
 
 export const bottomItems: BottomItem[] = [
   { icon: User, labelKey: "nav.profile", action: "profile" },
   { icon: Settings, labelKey: "nav.settings", action: "settings" },
   { icon: LogOut, labelKey: "nav.logout", action: "logout" },
-]
+];
 
 interface SidebarProps {
-  collapsed: boolean
-  mobileOpen: boolean
-  onMobileClose: () => void
-  isAdmin?: boolean
-  unreadCount: number
-  onLogout: () => void
+  collapsed: boolean;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+  isAdmin?: boolean;
+  unreadCount: number;
+  onLogout: () => void;
 }
 
 export function Sidebar({ collapsed, mobileOpen, onMobileClose, isAdmin, unreadCount, onLogout }: SidebarProps) {
-  const { t } = useTranslation()
-  const { view, setView } = useNav()
+  const { t } = useTranslation();
+  const { view, setView } = useNav();
 
-  const visibleNavItems = navItems.filter((item) => item.view !== "admin" || isAdmin)
+  const visibleNavItems = navItems.filter((item) => item.view !== "admin" || isAdmin);
 
   const handleNavClick = (v: View) => {
-    setView(v)
-    onMobileClose()
-  }
+    setView(v);
+    onMobileClose();
+  };
 
   const handleBottomClick = (action: string) => {
-    if (action === "profile") setView("profile")
-    if (action === "settings") setView("settings")
-    if (action === "logout") onLogout()
-    onMobileClose()
-  }
+    if (action === "profile") setView("profile");
+    if (action === "settings") setView("settings");
+    if (action === "logout") onLogout();
+    onMobileClose();
+  };
 
   const content = (
     <>
@@ -133,7 +133,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, isAdmin, unreadC
         ))}
       </div>
     </>
-  )
+  );
 
   return (
     <>
@@ -157,5 +157,5 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, isAdmin, unreadC
         {content}
       </aside>
     </>
-  )
+  );
 }

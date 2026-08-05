@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback } from "react"
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from "react-native"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTheme } from "../lib/theme-context"
-import { MessageSquare, Users, Globe, Calendar, Phone } from "lucide-react-native"
+import { useState, useEffect, useCallback } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from "react-native";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../lib/theme-context";
+import { MessageSquare, Users, Globe, Calendar, Phone } from "lucide-react-native";
 
 interface Notification {
-  id: string
-  title: string
-  body: string | null
-  isRead: string
-  createdAt: string
-  type?: string
-  conversationId?: string
+  id: string;
+  title: string;
+  body: string | null;
+  isRead: string;
+  createdAt: string;
+  type?: string;
+  conversationId?: string;
 }
 
 const NOTIFICATION_ICONS: Record<string, typeof MessageSquare> = {
@@ -22,59 +22,59 @@ const NOTIFICATION_ICONS: Record<string, typeof MessageSquare> = {
   community: Globe,
   event: Calendar,
   call: Phone,
-}
+};
 
 export function NotificationsScreen({
   onNavigateToConversation,
 }: {
-  onNavigateToConversation?: (convId: string) => void
+  onNavigateToConversation?: (convId: string) => void;
 }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [tab, setTab] = useState<"all" | "unread">("all")
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tab, setTab] = useState<"all" | "unread">("all");
 
   const load = useCallback(() => {
     api<Notification[]>("/api/notifications")
       .then(setNotifications)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const markRead = (id: string) => {
-    api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
-  }
+    api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {});
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)));
+  };
 
   const markAllRead = () => {
-    api("/api/notifications/read-all", { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: "true" })))
-  }
+    api("/api/notifications/read-all", { method: "POST" }).catch(() => {});
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: "true" })));
+  };
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    if (diff < 60000) return "just now"
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-    return d.toLocaleDateString()
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString();
+  };
 
-  const unread = notifications.filter((n) => n.isRead === "false")
-  const displayed = tab === "unread" ? unread : notifications
+  const unread = notifications.filter((n) => n.isRead === "false");
+  const displayed = tab === "unread" ? unread : notifications;
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -120,7 +120,7 @@ export function NotificationsScreen({
         keyExtractor={(n) => n.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
-          const IconComp = NOTIFICATION_ICONS[item.type || ""] || MessageSquare
+          const IconComp = NOTIFICATION_ICONS[item.type || ""] || MessageSquare;
           return (
             <TouchableOpacity
               style={[
@@ -129,8 +129,8 @@ export function NotificationsScreen({
                 item.isRead === "false" && [s.unread, { backgroundColor: c.accentLight }],
               ]}
               onPress={() => {
-                markRead(item.id)
-                if (item.conversationId) onNavigateToConversation?.(item.conversationId)
+                markRead(item.id);
+                if (item.conversationId) onNavigateToConversation?.(item.conversationId);
               }}
             >
               <View style={[s.iconWrap, { backgroundColor: c.accentLight }]}>
@@ -143,12 +143,12 @@ export function NotificationsScreen({
               </View>
               {item.isRead === "false" && <View style={[s.dot, { backgroundColor: c.accent }]} />}
             </TouchableOpacity>
-          )
+          );
         }}
         ListEmptyComponent={<Text style={[s.empty, { color: c.textMuted }]}>{t("notifications.noNotifications")}</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -192,4 +192,4 @@ const s = StyleSheet.create({
   filterText: { fontSize: 13 },
   filterTextActive: { color: "#FFFFFF", fontWeight: "600" },
   empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
-})
+});

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Modal,
   Platform,
   Dimensions,
-} from "react-native"
+} from "react-native";
 import {
   User,
   Lock,
@@ -45,17 +45,17 @@ import {
   Eye,
   Search,
   LogOut,
-} from "lucide-react-native"
-import { api } from "../lib/api"
-import { useAuth } from "../lib/auth-context"
-import { useTheme } from "../lib/theme-context"
-import { useToast } from "../lib/toast-context"
-import { cacheClear } from "../lib/offline-cache"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { supportedLanguages } from "../lib/i18n/index"
-import i18n from "../lib/i18n"
-import { APP_VERSION, EXPO_SDK } from "../lib/version"
+} from "lucide-react-native";
+import { api } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
+import { useTheme } from "../lib/theme-context";
+import { useToast } from "../lib/toast-context";
+import { cacheClear } from "../lib/offline-cache";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { supportedLanguages } from "../lib/i18n/index";
+import i18n from "../lib/i18n";
+import { APP_VERSION, EXPO_SDK } from "../lib/version";
 
 type SettingsTab =
   | "account"
@@ -71,12 +71,12 @@ type SettingsTab =
   | "language"
   | "shortcuts"
   | "advanced"
-  | "about"
+  | "about";
 
 interface TabItem {
-  key: SettingsTab
-  label: string
-  icon: typeof User
+  key: SettingsTab;
+  label: string;
+  icon: typeof User;
 }
 
 const tabGroups: { label: string; tabs: TabItem[] }[] = [
@@ -112,39 +112,39 @@ const tabGroups: { label: string; tabs: TabItem[] }[] = [
     label: "System",
     tabs: [{ key: "advanced", label: "Advanced", icon: SettingsIcon }],
   },
-]
+];
 
-const allTabs = tabGroups.flatMap((g) => g.tabs)
+const allTabs = tabGroups.flatMap((g) => g.tabs);
 
 export function SettingsScreen({ onBack }: { onBack: () => void }) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const { c } = useTheme()
-  const insets = useSafeAreaInsets()
-  const [tab, setTab] = useState<SettingsTab>("account")
-  const [prefs, setPrefs] = useState<Record<string, any>>({})
-  const [searchQuery, setSearchQuery] = useState("")
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const { c } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<SettingsTab>("account");
+  const [prefs, setPrefs] = useState<Record<string, any>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     api<Record<string, any>>("/api/users/preferences")
       .then(setPrefs)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const updatePref = async (key: string, value: any) => {
-    const updated = { ...prefs, [key]: value }
-    setPrefs(updated)
+    const updated = { ...prefs, [key]: value };
+    setPrefs(updated);
     try {
-      await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(updated) })
+      await api("/api/users/preferences", { method: "PUT", body: JSON.stringify(updated) });
     } catch {}
-  }
+  };
 
   const filteredTabs = searchQuery
     ? allTabs.filter((t) => t.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : null
+    : null;
 
-  const showingSearch = filteredTabs !== null
-  const displayTabs = showingSearch ? filteredTabs : allTabs
+  const showingSearch = filteredTabs !== null;
+  const displayTabs = showingSearch ? filteredTabs : allTabs;
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
@@ -188,21 +188,21 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
           contentContainerStyle={st.catContent}
         >
           {allTabs.map((tabItem) => {
-            const TabIcon = tabItem.icon
-            const isActive = tab === tabItem.key
+            const TabIcon = tabItem.icon;
+            const isActive = tab === tabItem.key;
             return (
               <TouchableOpacity
                 key={tabItem.key}
                 style={[st.tab, { backgroundColor: isActive ? c.accent : c.surfaceAlt }]}
                 onPress={() => {
-                  setTab(tabItem.key)
-                  setSearchQuery("")
+                  setTab(tabItem.key);
+                  setSearchQuery("");
                 }}
               >
                 <TabIcon size={12} color={isActive ? "#FFFFFF" : c.textSecondary} />
                 <Text style={[st.tabText, { color: isActive ? "#FFFFFF" : c.textSecondary }]}>{tabItem.label}</Text>
               </TouchableOpacity>
-            )
+            );
           })}
         </ScrollView>
       )}
@@ -215,15 +215,15 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
       ) : showingSearch ? (
         <ScrollView style={st.content} showsVerticalScrollIndicator={false}>
           {tabGroups.map((group) => {
-            const matched = group.tabs.filter((t) => t.key === tab || filteredTabs.some((ft) => ft.key === t.key))
-            if (matched.length === 0) return null
+            const matched = group.tabs.filter((t) => t.key === tab || filteredTabs.some((ft) => ft.key === t.key));
+            if (matched.length === 0) return null;
             return (
               <View key={group.label} style={{ marginBottom: 8 }}>
                 <Text style={[st.searchCat, { color: c.textMuted }]}>{group.label}</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 16 }}>
                   {matched.map((tabItem) => {
-                    const TabIcon = tabItem.icon
-                    const isActive = tab === tabItem.key
+                    const TabIcon = tabItem.icon;
+                    const isActive = tab === tabItem.key;
                     return (
                       <TouchableOpacity
                         key={tabItem.key}
@@ -235,8 +235,8 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                           },
                         ]}
                         onPress={() => {
-                          setTab(tabItem.key)
-                          setSearchQuery("")
+                          setTab(tabItem.key);
+                          setSearchQuery("");
                         }}
                       >
                         <TabIcon size={14} color={isActive ? "#FFFFFF" : c.textSecondary} />
@@ -244,11 +244,11 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                           {tabItem.label}
                         </Text>
                       </TouchableOpacity>
-                    )
+                    );
                   })}
                 </View>
               </View>
-            )
+            );
           })}
         </ScrollView>
       ) : (
@@ -270,7 +270,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         </ScrollView>
       )}
     </View>
-  )
+  );
 }
 
 /* ---------- shared helpers ---------- */
@@ -281,12 +281,12 @@ function SettingRow({
   children,
   last,
 }: {
-  label: string
-  description?: string
-  children: React.ReactNode
-  last?: boolean
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+  last?: boolean;
 }) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View style={[ss.row, !last && { borderBottomWidth: 1, borderBottomColor: c.borderLight }]}>
       <View style={ss.rowLeft}>
@@ -295,11 +295,11 @@ function SettingRow({
       </View>
       {children}
     </View>
-  )
+  );
 }
 
 function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <Switch
       value={value}
@@ -307,11 +307,11 @@ function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: b
       trackColor={{ false: c.textMuted, true: c.accent }}
       thumbColor={c.text}
     />
-  )
+  );
 }
 
 function SectionTitle({ icon: Icon, label }: { icon: any; label: string }) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View
       style={{
@@ -326,7 +326,7 @@ function SectionTitle({ icon: Icon, label }: { icon: any; label: string }) {
       <Icon size={14} color={c.accent} />
       <Text style={[ss.sectionTitle, { color: c.textMuted }]}>{label}</Text>
     </View>
-  )
+  );
 }
 
 function Select({
@@ -335,14 +335,14 @@ function Select({
   onChange,
   label,
 }: {
-  value: string
-  options: { value: string; label: string }[]
-  onChange: (v: string) => void
-  label?: string
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+  label?: string;
 }) {
-  const { c } = useTheme()
-  const [open, setOpen] = useState(false)
-  const current = options.find((o) => o.value === value)
+  const { c } = useTheme();
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
   return (
     <>
       <TouchableOpacity
@@ -366,14 +366,14 @@ function Select({
             <Text style={[ss.selectSheetTitle, { color: c.text }]}>{label || "Select"}</Text>
             <ScrollView style={{ maxHeight: 400 }}>
               {options.map((opt) => {
-                const isSelected = opt.value === value
+                const isSelected = opt.value === value;
                 return (
                   <TouchableOpacity
                     key={opt.value}
                     style={[ss.selectItem, isSelected && { backgroundColor: c.accentLight }]}
                     onPress={() => {
-                      onChange(opt.value)
-                      setOpen(false)
+                      onChange(opt.value);
+                      setOpen(false);
                     }}
                   >
                     <Text
@@ -387,14 +387,14 @@ function Select({
                     </Text>
                     {isSelected && <Text style={{ color: c.accent, fontSize: 14 }}>✓</Text>}
                   </TouchableOpacity>
-                )
+                );
               })}
             </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
     </>
-  )
+  );
 }
 
 function ColorSwatchPicker({
@@ -402,9 +402,9 @@ function ColorSwatchPicker({
   onChange,
   colors,
 }: {
-  value: string
-  onChange: (c: string) => void
-  colors: string[]
+  value: string;
+  onChange: (c: string) => void;
+  colors: string[];
 }) {
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -417,7 +417,7 @@ function ColorSwatchPicker({
         />
       ))}
     </View>
-  )
+  );
 }
 
 function SliderControl({
@@ -427,16 +427,16 @@ function SliderControl({
   step,
   onChange,
 }: {
-  value: number
-  min: number
-  max: number
-  step?: number
-  onChange: (v: number) => void
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
 }) {
-  const { c } = useTheme()
-  const s = step || 1
-  const [editing, setEditing] = useState(false)
-  const [input, setInput] = useState(String(value))
+  const { c } = useTheme();
+  const s = step || 1;
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState(String(value));
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
       <TouchableOpacity
@@ -447,8 +447,8 @@ function SliderControl({
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => {
-          setInput(String(value))
-          setEditing(true)
+          setInput(String(value));
+          setEditing(true);
         }}
         style={[ss.sliderValue, { backgroundColor: c.inputBg }]}
       >
@@ -484,9 +484,9 @@ function SliderControl({
               <TouchableOpacity
                 style={[ss.btnSm, { backgroundColor: c.accent }]}
                 onPress={() => {
-                  const v = parseInt(input)
-                  if (!isNaN(v)) onChange(Math.min(max, Math.max(min, v)))
-                  setEditing(false)
+                  const v = parseInt(input);
+                  if (!isNaN(v)) onChange(Math.min(max, Math.max(min, v)));
+                  setEditing(false);
                 }}
               >
                 <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600" }}>Set</Text>
@@ -496,11 +496,11 @@ function SliderControl({
         </TouchableOpacity>
       </Modal>
     </View>
-  )
+  );
 }
 
 function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View style={[ss.sectionCard, { backgroundColor: c.surface, borderColor: c.borderLight }]}>
       <View
@@ -519,29 +519,29 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
       </View>
       <View style={{ paddingHorizontal: 16 }}>{children}</View>
     </View>
-  )
+  );
 }
 
 /* ---------- ACCOUNT ---------- */
 
 function AccountSettings({ user }: { user: any }) {
-  const { c } = useTheme()
-  const { logout } = useAuth()
-  const [verifyMsg, setVerifyMsg] = useState("")
-  const [sendingVerification, setSendingVerification] = useState(false)
-  const [sessions, setSessions] = useState<any[]>([])
+  const { c } = useTheme();
+  const { logout } = useAuth();
+  const [verifyMsg, setVerifyMsg] = useState("");
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
 
   useEffect(() => {
     api<any[]>("/api/auth/sessions")
       .then(setSessions)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const revokeSession = (id: string) => {
     api(`/api/auth/sessions/${id}`, { method: "DELETE" })
       .then(() => setSessions((p) => p.filter((s) => s.id !== id)))
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   const deleteAccount = () => {
     Alert.alert("Delete Account", "This will permanently delete your account and all data. This cannot be undone.", [
@@ -551,15 +551,15 @@ function AccountSettings({ user }: { user: any }) {
         style: "destructive",
         onPress: async () => {
           try {
-            await api("/api/users/me", { method: "DELETE" })
-            Alert.alert("Account deleted")
+            await api("/api/users/me", { method: "DELETE" });
+            Alert.alert("Account deleted");
           } catch {
-            Alert.alert("Failed to delete account")
+            Alert.alert("Failed to delete account");
           }
         },
       },
-    ])
-  }
+    ]);
+  };
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -589,14 +589,14 @@ function AccountSettings({ user }: { user: any }) {
             <TouchableOpacity
               style={[ss.btnInline, { backgroundColor: c.accent }]}
               onPress={async () => {
-                setSendingVerification(true)
+                setSendingVerification(true);
                 try {
-                  await api("/api/auth/send-verification", { method: "POST" })
-                  setVerifyMsg("Verification email sent")
+                  await api("/api/auth/send-verification", { method: "POST" });
+                  setVerifyMsg("Verification email sent");
                 } catch {
-                  setVerifyMsg("Failed to send verification")
+                  setVerifyMsg("Failed to send verification");
                 }
-                setSendingVerification(false)
+                setSendingVerification(false);
               }}
               disabled={sendingVerification}
             >
@@ -648,64 +648,64 @@ function AccountSettings({ user }: { user: any }) {
         </TouchableOpacity>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- SECURITY ---------- */
 
 function SecuritySettings({ prefs, updatePref }: { prefs: any; updatePref: (k: string, v: any) => void }) {
-  const { c } = useTheme()
-  const [totpStatus, setTotpStatus] = useState<any>(null)
-  const [totpModal, setTotpModal] = useState(false)
-  const [totpCode, setTotpCode] = useState("")
-  const [sessions, setSessions] = useState<any[]>([])
-  const [history, setHistory] = useState<any[]>([])
+  const { c } = useTheme();
+  const [totpStatus, setTotpStatus] = useState<any>(null);
+  const [totpModal, setTotpModal] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     api("/api/security/totp/status")
       .then(setTotpStatus)
-      .catch(() => {})
+      .catch(() => {});
     api<any[]>("/api/auth/sessions")
       .then(setSessions)
-      .catch(() => {})
+      .catch(() => {});
     api<any[]>("/api/security/history")
       .then(setHistory)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const setupTotp = async () => {
     try {
-      const data = await api<{ secret: string }>("/api/security/totp/setup", { method: "POST" })
-      Alert.alert("TOTP Setup", `Secret: ${data.secret}\nAdd this to your authenticator app, then verify with a code.`)
-      setTotpModal(true)
+      const data = await api<{ secret: string }>("/api/security/totp/setup", { method: "POST" });
+      Alert.alert("TOTP Setup", `Secret: ${data.secret}\nAdd this to your authenticator app, then verify with a code.`);
+      setTotpModal(true);
     } catch {}
-  }
+  };
 
   const verifyTotp = async () => {
     try {
-      await api("/api/security/totp/verify", { method: "POST", body: JSON.stringify({ code: totpCode }) })
-      setTotpModal(false)
-      setTotpCode("")
+      await api("/api/security/totp/verify", { method: "POST", body: JSON.stringify({ code: totpCode }) });
+      setTotpModal(false);
+      setTotpCode("");
       api("/api/security/totp/status")
         .then(setTotpStatus)
-        .catch(() => {})
+        .catch(() => {});
     } catch {}
-  }
+  };
 
   const disableTotp = async () => {
     try {
-      await api("/api/security/totp/disable", { method: "POST" })
+      await api("/api/security/totp/disable", { method: "POST" });
       api("/api/security/totp/status")
         .then(setTotpStatus)
-        .catch(() => {})
+        .catch(() => {});
     } catch {}
-  }
+  };
 
   const revokeSession = (id: string) => {
     api(`/api/auth/sessions/${id}`, { method: "DELETE" })
       .then(() => setSessions((p) => p.filter((s) => s.id !== id)))
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -784,7 +784,7 @@ function SecuritySettings({ prefs, updatePref }: { prefs: any; updatePref: (k: s
         )}
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- APPEARANCE ---------- */
@@ -802,39 +802,39 @@ const ACCENT_COLORS = [
   "#14b8a6",
   "#06b6d4",
   "#3b82f6",
-]
-const SECONDARY_COLORS = ["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#14b8a6", "#22c55e", "#eab308", "#f97316"]
+];
+const SECONDARY_COLORS = ["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#14b8a6", "#22c55e", "#eab308", "#f97316"];
 
 function AppearanceSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: string, v: any) => void }) {
-  const { t } = useTranslation()
-  const { mode: theme, toggle: toggleTheme, c } = useTheme()
-  const [themeEditorVisible, setThemeEditorVisible] = useState(false)
-  const [customStatusText, setCustomStatusText] = useState("")
-  const [statusEmojiLocal, setStatusEmojiLocal] = useState("")
-  const [savingCustomStatus, setSavingCustomStatus] = useState(false)
-  const [customStatusMsg, setCustomStatusMsg] = useState("")
-  const [statusEmojiSaveMsg, setStatusEmojiSaveMsg] = useState("")
+  const { t } = useTranslation();
+  const { mode: theme, toggle: toggleTheme, c } = useTheme();
+  const [themeEditorVisible, setThemeEditorVisible] = useState(false);
+  const [customStatusText, setCustomStatusText] = useState("");
+  const [statusEmojiLocal, setStatusEmojiLocal] = useState("");
+  const [savingCustomStatus, setSavingCustomStatus] = useState(false);
+  const [customStatusMsg, setCustomStatusMsg] = useState("");
+  const [statusEmojiSaveMsg, setStatusEmojiSaveMsg] = useState("");
 
   const saveCustomStatus = async () => {
-    setSavingCustomStatus(true)
+    setSavingCustomStatus(true);
     try {
-      await api("/api/users/status", { method: "PUT", body: JSON.stringify({ text: customStatusText }) })
-      setCustomStatusMsg("Status updated")
+      await api("/api/users/status", { method: "PUT", body: JSON.stringify({ text: customStatusText }) });
+      setCustomStatusMsg("Status updated");
     } catch {
-      setCustomStatusMsg("Failed")
+      setCustomStatusMsg("Failed");
     }
-    setSavingCustomStatus(false)
-    setTimeout(() => setCustomStatusMsg(""), 2000)
-  }
+    setSavingCustomStatus(false);
+    setTimeout(() => setCustomStatusMsg(""), 2000);
+  };
 
   const clearStatusEmoji = async () => {
-    setStatusEmojiLocal("")
+    setStatusEmojiLocal("");
     try {
-      await api("/api/users/preferences", { method: "PUT", body: JSON.stringify({ ...prefs, statusEmoji: "" }) })
+      await api("/api/users/preferences", { method: "PUT", body: JSON.stringify({ ...prefs, statusEmoji: "" }) });
     } catch {}
-    setStatusEmojiSaveMsg("Reset to colored dot")
-    setTimeout(() => setStatusEmojiSaveMsg(""), 2000)
-  }
+    setStatusEmojiSaveMsg("Reset to colored dot");
+    setTimeout(() => setStatusEmojiSaveMsg(""), 2000);
+  };
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -1013,7 +1013,7 @@ function AppearanceSettings({ prefs, updatePref }: { prefs: any; updatePref: (k:
             chatBubbleRadius: { label: "Chat Bubble Radius", desc: "Message bubble corner rounding" },
             modalRadius: { label: "Modal Radius", desc: "Dialog corner rounding" },
             cardRadius: { label: "Card Radius", desc: "Card corner rounding" },
-          }
+          };
           return (
             <SettingRow
               key={key}
@@ -1034,7 +1034,7 @@ function AppearanceSettings({ prefs, updatePref }: { prefs: any; updatePref: (k:
                 label={labels[key].label}
               />
             </SettingRow>
-          )
+          );
         })}
         <SettingRow label="Avatar Radius" description="Avatar shape" last>
           <Select
@@ -1754,20 +1754,20 @@ function AppearanceSettings({ prefs, updatePref }: { prefs: any; updatePref: (k:
         )}
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- NOTIFICATIONS ---------- */
 
 function NotificationSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: string, v: any) => void }) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   const notifications = [
     { key: "messageNotifications", label: "Messages" },
     { key: "groupNotifications", label: "Groups" },
     { key: "communityNotifications", label: "Communities" },
     { key: "eventNotifications", label: "Events" },
     { key: "callNotifications", label: "Calls" },
-  ]
+  ];
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Push & In-App" icon={Bell}>
@@ -1849,7 +1849,7 @@ function NotificationSettings({ prefs, updatePref }: { prefs: any; updatePref: (
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- PRIVACY ---------- */
@@ -1859,22 +1859,22 @@ function PrivacySettings({
   prefs,
   updatePref,
 }: {
-  user: any
-  prefs: any
-  updatePref: (k: string, v: any) => void
+  user: any;
+  prefs: any;
+  updatePref: (k: string, v: any) => void;
 }) {
-  const { c } = useTheme()
-  const [blocked, setBlocked] = useState<any[]>([])
+  const { c } = useTheme();
+  const [blocked, setBlocked] = useState<any[]>([]);
   useEffect(() => {
     api<any[]>("/api/privacy/blocks")
       .then(setBlocked)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
   const unblock = (userId: string) => {
     api(`/api/privacy/blocks/${userId}`, { method: "DELETE" })
       .then(() => setBlocked((p) => p.filter((b) => b.id !== userId)))
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -1916,7 +1916,7 @@ function PrivacySettings({
         )}
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- CHAT ---------- */
@@ -1958,7 +1958,7 @@ function ChatSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: strin
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- CALLS ---------- */
@@ -1988,14 +1988,14 @@ function CallSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: strin
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- MEDIA ---------- */
 
 function MediaSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: string, v: any) => void }) {
-  const { c } = useTheme()
-  const { showToast } = useToast()
+  const { c } = useTheme();
+  const { showToast } = useToast();
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Images & Video" icon={Camera}>
@@ -2032,8 +2032,8 @@ function MediaSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: stri
           <TouchableOpacity
             style={[ss.btnSm, { backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: c.border }]}
             onPress={async () => {
-              await cacheClear()
-              showToast("Offline cache cleared", "success")
+              await cacheClear();
+              showToast("Offline cache cleared", "success");
             }}
           >
             <Text style={{ color: "#EF4444", fontSize: 13, fontWeight: "600" }}>Clear</Text>
@@ -2041,13 +2041,13 @@ function MediaSettings({ prefs, updatePref }: { prefs: any; updatePref: (k: stri
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- AUDIO & VIDEO ---------- */
 
 function AudioVideoSettings() {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Input / Output" icon={Mic}>
@@ -2066,7 +2066,7 @@ function AudioVideoSettings() {
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- ACCESSIBILITY ---------- */
@@ -2096,14 +2096,14 @@ function AccessibilitySettings({ prefs, updatePref }: { prefs: any; updatePref: 
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- LANGUAGE ---------- */
 
 function LanguageSettings() {
-  const { c } = useTheme()
-  const changeLang = (code: string) => i18n.changeLanguage(code)
+  const { c } = useTheme();
+  const changeLang = (code: string) => i18n.changeLanguage(code);
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -2154,13 +2154,13 @@ function LanguageSettings() {
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- SHORTCUTS ---------- */
 
 function ShortcutsSettings() {
-  const { c } = useTheme()
+  const { c } = useTheme();
   const shortcuts = [
     { keys: "Ctrl+K", label: "Quick switch" },
     { keys: "Ctrl+N", label: "New message" },
@@ -2170,7 +2170,7 @@ function ShortcutsSettings() {
     { keys: "Ctrl+,", label: "Open settings" },
     { keys: "Ctrl+Shift+T", label: "Toggle theme" },
     { keys: "Ctrl+B", label: "Toggle sidebar" },
-  ]
+  ];
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Keyboard Shortcuts" icon={Keyboard}>
@@ -2181,23 +2181,23 @@ function ShortcutsSettings() {
         ))}
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- ADVANCED ---------- */
 
 function AdvancedSettings() {
-  const { c } = useTheme()
-  const [pendingCount, setPendingCount] = useState(0)
+  const { c } = useTheme();
+  const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       try {
-        const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default
-        const raw = await AsyncStorage.getItem("offline:pending")
-        if (raw) setPendingCount(JSON.parse(raw).length)
+        const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+        const raw = await AsyncStorage.getItem("offline:pending");
+        if (raw) setPendingCount(JSON.parse(raw).length);
       } catch {}
-    })()
-  }, [])
+    })();
+  }, []);
 
   return (
     <View style={{ paddingBottom: 40 }}>
@@ -2222,9 +2222,9 @@ function AdvancedSettings() {
           style={[ss.btnSm, { backgroundColor: c.accent }]}
           onPress={async () => {
             try {
-              const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default
-              await AsyncStorage.removeItem("offline:pending")
-              setPendingCount(0)
+              const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+              await AsyncStorage.removeItem("offline:pending");
+              setPendingCount(0);
             } catch {}
           }}
         >
@@ -2234,9 +2234,9 @@ function AdvancedSettings() {
           style={[ss.btnSm, { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, marginLeft: 8 }]}
           onPress={async () => {
             try {
-              const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default
-              await AsyncStorage.removeItem("offline:cached")
-              Alert.alert("Cached messages cleared")
+              const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+              await AsyncStorage.removeItem("offline:cached");
+              Alert.alert("Cached messages cleared");
             } catch {}
           }}
         >
@@ -2244,13 +2244,13 @@ function AdvancedSettings() {
         </TouchableOpacity>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- ABOUT ---------- */
 
 function AboutSection() {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View style={{ paddingBottom: 40 }}>
       <Section title="Application Info" icon={Info}>
@@ -2279,7 +2279,7 @@ function AboutSection() {
         </SettingRow>
       </Section>
     </View>
-  )
+  );
 }
 
 /* ---------- STYLES ---------- */
@@ -2355,7 +2355,7 @@ const ss = StyleSheet.create({
   swatchActive: { borderColor: "#FFFFFF" },
   sliderBtn: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   sliderValue: { minWidth: 36, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 6 },
-})
+});
 
 const st = StyleSheet.create({
   container: { flex: 1 },
@@ -2410,4 +2410,4 @@ const st = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-})
+});

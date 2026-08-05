@@ -1,22 +1,22 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native"
-import { useState, useEffect } from "react"
-import { api } from "../lib/api"
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { useState, useEffect } from "react";
+import { api } from "../lib/api";
 
 interface Group {
-  id: string
-  name: string | null
+  id: string;
+  name: string | null;
 }
 
 export function GroupsScreen() {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
     api<Group[]>("/api/conversations")
       .then((convs) => {
-        setGroups(convs.filter((c: any) => c.type === "group"))
+        setGroups(convs.filter((c: any) => c.type === "group"));
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   return (
     <View style={s.container}>
@@ -37,7 +37,7 @@ export function GroupsScreen() {
         ListEmptyComponent={<Text style={s.empty}>No groups</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -59,4 +59,4 @@ const s = StyleSheet.create({
   avatarText: { color: "#F0F0F0", fontSize: 16, fontWeight: "600" },
   name: { color: "#F0F0F0", fontSize: 16 },
   empty: { color: "#6B7280", textAlign: "center", marginTop: 40, fontSize: 14 },
-})
+});

@@ -1,40 +1,40 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native"
-import { useState, useEffect } from "react"
-import { api } from "../lib/api"
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { useState, useEffect } from "react";
+import { api } from "../lib/api";
 
 interface Notification {
-  id: string
-  title: string
-  body: string | null
-  isRead: string
-  createdAt: string
+  id: string;
+  title: string;
+  body: string | null;
+  isRead: string;
+  createdAt: string;
 }
 
 export function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     api<Notification[]>("/api/notifications")
       .then(setNotifications)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const markRead = (id: string) => {
-    api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {})
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)))
-  }
+    api(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {});
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: "true" } : n)));
+  };
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    if (diff < 60000) return "just now"
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-    return d.toLocaleDateString()
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString();
+  };
 
-  const unread = notifications.filter((n) => n.isRead === "false")
+  const unread = notifications.filter((n) => n.isRead === "false");
 
   return (
     <View style={s.container}>
@@ -62,7 +62,7 @@ export function NotificationsScreen() {
         ListEmptyComponent={<Text style={s.empty}>No notifications</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -85,4 +85,4 @@ const s = StyleSheet.create({
   time: { color: "#6B7280", fontSize: 11, marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4850BB", marginLeft: 12 },
   empty: { color: "#6B7280", textAlign: "center", marginTop: 40, fontSize: 14 },
-})
+});

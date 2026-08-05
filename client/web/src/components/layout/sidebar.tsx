@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next"
-import { cn } from "../../lib/utils"
+import { useTranslation } from "react-i18next";
+import { cn } from "../../lib/utils";
 import {
   MessageSquare,
   Users,
@@ -12,11 +12,11 @@ import {
   Globe,
   Calendar,
   Shield,
-} from "lucide-react"
-import { useNotificationCount } from "../../lib/notification-context"
-import { useNav } from "./dashboard-layout"
-import { useAuth } from "../../lib/auth-context"
-import type { View } from "./dashboard-layout"
+} from "lucide-react";
+import { useNotificationCount } from "../../lib/notification-context";
+import { useNav } from "./dashboard-layout";
+import { useAuth } from "../../lib/auth-context";
+import type { View } from "./dashboard-layout";
 
 const navItems: { icon: any; labelKey: string; view: View }[] = [
   { icon: MessageSquare, labelKey: "nav.messages", view: "chat" },
@@ -27,33 +27,33 @@ const navItems: { icon: any; labelKey: string; view: View }[] = [
   { icon: FileText, labelKey: "nav.files", view: "files" },
   { icon: Bell, labelKey: "nav.notifications", view: "notifications" },
   { icon: Shield, labelKey: "nav.admin", view: "admin" },
-]
+];
 
 const bottomItems = [
   { icon: User, labelKey: "nav.profile" },
   { icon: Settings, labelKey: "nav.settings" },
   { icon: LogOut, labelKey: "nav.logout" },
-]
+];
 
 interface SidebarProps {
-  collapsed: boolean
-  onToggle: () => void
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
 export function Sidebar({ collapsed }: SidebarProps) {
-  const { t } = useTranslation()
-  const { unreadCount } = useNotificationCount()
-  const { view, setView } = useNav()
-  const { user, logout } = useAuth()
+  const { t } = useTranslation();
+  const { unreadCount } = useNotificationCount();
+  const { view, setView } = useNav();
+  const { user, logout } = useAuth();
 
-  const filteredNavItems = navItems.filter((item) => item.view !== "admin" || user?.isAdmin)
+  const filteredNavItems = navItems.filter((item) => item.view !== "admin" || user?.isAdmin);
 
-  const handleNavClick = (v: View) => setView(v)
+  const handleNavClick = (v: View) => setView(v);
   const handleBottomClick = (labelKey: string) => {
-    if (labelKey === "nav.profile") setView("profile")
-    if (labelKey === "nav.settings") setView("settings")
-    if (labelKey === "nav.logout") logout()
-  }
+    if (labelKey === "nav.profile") setView("profile");
+    if (labelKey === "nav.settings") setView("settings");
+    if (labelKey === "nav.logout") logout();
+  };
 
   return (
     <aside
@@ -112,5 +112,5 @@ export function Sidebar({ collapsed }: SidebarProps) {
         ))}
       </div>
     </aside>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { cn } from "../../lib/utils"
+import { cn } from "../../lib/utils";
 
 const variantStyles = {
   default: "bg-accent/10 text-accent border-accent/20",
@@ -6,10 +6,10 @@ const variantStyles = {
   warning: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   danger: "bg-red-500/10 text-red-400 border-red-500/20",
   muted: "bg-white/5 text-text-muted border-white/10",
-}
+};
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: keyof typeof variantStyles
+  variant?: keyof typeof variantStyles;
 }
 
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
@@ -22,7 +22,7 @@ function Badge({ className, variant = "default", ...props }: BadgeProps) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Badge }
+export { Badge };

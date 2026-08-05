@@ -1,18 +1,18 @@
-import { useState } from "react"
-import { useTranslation } from "react-i18next"
-import { useAuth } from "../../lib/auth-context"
-import { useTheme } from "../../lib/theme-context"
-import i18n, { supportedLanguages } from "../../lib/i18n"
-import { api } from "../../lib/api"
-import { Sun, Moon, User, ArrowRight, Check } from "lucide-react"
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../lib/auth-context";
+import { useTheme } from "../../lib/theme-context";
+import i18n, { supportedLanguages } from "../../lib/i18n";
+import { api } from "../../lib/api";
+import { Sun, Moon, User, ArrowRight, Check } from "lucide-react";
 
 export function SetupDialog() {
-  const { t } = useTranslation()
-  const { completeSetup } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const [step, setStep] = useState(0)
-  const [displayName, setDisplayName] = useState("")
-  const [saving, setSaving] = useState(false)
+  const { t } = useTranslation();
+  const { completeSetup } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [step, setStep] = useState(0);
+  const [displayName, setDisplayName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const steps = [
     {
@@ -56,7 +56,7 @@ export function SetupDialog() {
         <div className="flex gap-3 py-4 justify-center">
           <button
             onClick={() => {
-              if (theme !== "light") toggleTheme()
+              if (theme !== "light") toggleTheme();
             }}
             className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all cursor-pointer ${
               theme === "light" ? "border-accent bg-accent/5" : "border-border hover:border-accent/50"
@@ -70,7 +70,7 @@ export function SetupDialog() {
           </button>
           <button
             onClick={() => {
-              if (theme !== "dark") toggleTheme()
+              if (theme !== "dark") toggleTheme();
             }}
             className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all cursor-pointer ${
               theme === "dark" ? "border-accent bg-accent/5" : "border-border hover:border-accent/50"
@@ -103,33 +103,33 @@ export function SetupDialog() {
         </div>
       ),
     },
-  ]
+  ];
 
-  const current = steps[step]
+  const current = steps[step];
 
   const handleNext = async () => {
     if (step < steps.length - 1) {
-      setStep(step + 1)
-      return
+      setStep(step + 1);
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
       if (displayName.trim()) {
         await api("/api/users/me", {
           method: "PUT",
           body: JSON.stringify({ displayName: displayName.trim() }),
-        })
+        });
       }
     } catch {
       /* Ignored */
     }
-    completeSetup()
-    setSaving(false)
-  }
+    completeSetup();
+    setSaving(false);
+  };
 
   const handleSkip = () => {
-    completeSetup()
-  }
+    completeSetup();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -180,5 +180,5 @@ export function SetupDialog() {
         </div>
       </div>
     </div>
-  )
+  );
 }

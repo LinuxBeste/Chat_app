@@ -1,41 +1,41 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { Phone, PhoneIncoming, PhoneOutgoing, Clock } from "lucide-react"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { Phone, PhoneIncoming, PhoneOutgoing, Clock } from "lucide-react";
 
 interface Call {
-  id: string
-  callerId: string
-  calleeId: string
-  status: string
-  duration: number | null
-  createdAt: string
+  id: string;
+  callerId: string;
+  calleeId: string;
+  status: string;
+  duration: number | null;
+  createdAt: string;
 }
 
 export function CallsPage() {
-  const [calls, setCalls] = useState<Call[]>([])
+  const [calls, setCalls] = useState<Call[]>([]);
 
   useEffect(() => {
     api<Call[]>("/api/calls")
       .then(setCalls)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
-  const myId = localStorage.getItem("userId")
+  const myId = localStorage.getItem("userId");
 
   const formatDuration = (sec: number | null) => {
-    if (!sec) return null
-    const m = Math.floor(sec / 60)
-    const s = sec % 60
-    return `${m}:${s.toString().padStart(2, "0")}`
-  }
+    if (!sec) return null;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    if (diff < 86400000) return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000) return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
     <div className="flex h-full">
@@ -51,8 +51,8 @@ export function CallsPage() {
             </div>
           )}
           {calls.map((call) => {
-            const incoming = call.calleeId === myId
-            const missed = call.status !== "ended"
+            const incoming = call.calleeId === myId;
+            const missed = call.status !== "ended";
             return (
               <div key={call.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50">
                 <div
@@ -77,10 +77,10 @@ export function CallsPage() {
                 </div>
                 {missed && incoming && <span className="text-xs text-danger font-medium">Missed</span>}
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }

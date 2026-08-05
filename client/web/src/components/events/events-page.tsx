@@ -1,48 +1,48 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { Plus, X, Calendar, Clock } from "lucide-react"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { Plus, X, Calendar, Clock } from "lucide-react";
 
 interface Event {
-  id: string
-  conversationId: string
-  createdBy: string
-  title: string
-  description: string | null
-  startsAt: string
-  endsAt: string | null
-  createdAt: string
-  rsvps?: { userId: string; status: string }[]
+  id: string;
+  conversationId: string;
+  createdBy: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  createdAt: string;
+  rsvps?: { userId: string; status: string }[];
 }
 
 export function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([])
-  const [selected, setSelected] = useState<Event | null>(null)
-  const [showCreate, setShowCreate] = useState(false)
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [startsAt, setStartsAt] = useState("")
-  const [endsAt, setEndsAt] = useState("")
-  const [myRsvp, setMyRsvp] = useState<string | null>(null)
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selected, setSelected] = useState<Event | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [myRsvp, setMyRsvp] = useState<string | null>(null);
 
   useEffect(() => {
     api<Event[]>("/api/events")
       .then(setEvents)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const selectEvent = async (e: Event) => {
-    setSelected(e)
-    const data = await api<Event>(`/api/events/${e.id}`).catch(() => null)
+    setSelected(e);
+    const data = await api<Event>(`/api/events/${e.id}`).catch(() => null);
     if (data) {
-      setSelected(data)
-      const me = localStorage.getItem("userId")
-      const my = data.rsvps?.find((r) => r.userId === me)
-      setMyRsvp(my?.status ?? null)
+      setSelected(data);
+      const me = localStorage.getItem("userId");
+      const my = data.rsvps?.find((r) => r.userId === me);
+      setMyRsvp(my?.status ?? null);
     }
-  }
+  };
 
   const createEvent = async () => {
-    if (!title.trim() || !startsAt) return
+    if (!title.trim() || !startsAt) return;
     const e = await api<Event>("/api/events", {
       method: "POST",
       body: JSON.stringify({
@@ -52,26 +52,26 @@ export function EventsPage() {
         startsAt: new Date(startsAt).toISOString(),
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
       }),
-    }).catch(() => null)
+    }).catch(() => null);
     if (e) {
-      setEvents((prev) => [e, ...prev.filter((ev) => ev.id !== e.id)])
-      setTitle("")
-      setDescription("")
-      setStartsAt("")
-      setEndsAt("")
-      setShowCreate(false)
+      setEvents((prev) => [e, ...prev.filter((ev) => ev.id !== e.id)]);
+      setTitle("");
+      setDescription("");
+      setStartsAt("");
+      setEndsAt("");
+      setShowCreate(false);
     }
-  }
+  };
 
   const rsvp = async (status: string) => {
-    if (!selected) return
+    if (!selected) return;
     await api(`/api/events/${selected.id}/rsvp`, {
       method: "POST",
       body: JSON.stringify({ status }),
-    }).catch(() => {})
-    setMyRsvp(status)
-    selectEvent(selected)
-  }
+    }).catch(() => {});
+    setMyRsvp(status);
+    selectEvent(selected);
+  };
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString("en-US", {
@@ -80,13 +80,13 @@ export function EventsPage() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
-  const rsvpCount = (status: string) => selected?.rsvps?.filter((r) => r.status === status).length ?? 0
+  const rsvpCount = (status: string) => selected?.rsvps?.filter((r) => r.status === status).length ?? 0;
 
-  const upcoming = events.filter((e) => new Date(e.startsAt) > new Date())
-  const past = events.filter((e) => new Date(e.startsAt) <= new Date())
+  const upcoming = events.filter((e) => new Date(e.startsAt) > new Date());
+  const past = events.filter((e) => new Date(e.startsAt) <= new Date());
 
   return (
     <div className="flex h-full">
@@ -189,15 +189,15 @@ export function EventsPage() {
                 <h3 className="text-sm font-medium text-text-primary mb-2">Responses ({selected.rsvps.length})</h3>
                 <div className="space-y-1.5">
                   {["going", "maybe", "declined"].map((s) => {
-                    const filtered = selected.rsvps!.filter((r) => r.status === s)
-                    if (filtered.length === 0) return null
+                    const filtered = selected.rsvps!.filter((r) => r.status === s);
+                    if (filtered.length === 0) return null;
                     return (
                       <div key={s} className="rounded-2xl border border-border bg-surface px-4 py-2.5">
                         <span className="text-xs text-text-muted capitalize">
                           {s} — {filtered.length}
                         </span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -262,5 +262,5 @@ export function EventsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

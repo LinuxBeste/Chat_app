@@ -1,10 +1,10 @@
-import { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from "react-native"
-import { useAuth } from "../lib/auth-context"
-import { api } from "../lib/api"
-import { useTheme } from "../lib/theme-context"
-import { useTranslation } from "react-i18next"
-import { Check, Sun, Moon, ChevronRight } from "lucide-react-native"
+import { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from "react-native";
+import { useAuth } from "../lib/auth-context";
+import { api } from "../lib/api";
+import { useTheme } from "../lib/theme-context";
+import { useTranslation } from "react-i18next";
+import { Check, Sun, Moon, ChevronRight } from "lucide-react-native";
 
 const languages = [
   { code: "en", native: "English" },
@@ -12,32 +12,32 @@ const languages = [
   { code: "fr", native: "Français" },
   { code: "es", native: "Español" },
   { code: "ja", native: "日本語" },
-]
+];
 
 export function SetupDialog() {
-  const { t, i18n } = useTranslation()
-  const { completeSetup } = useAuth()
-  const { mode: theme, toggle: toggleTheme, c } = useTheme()
-  const [step, setStep] = useState(0)
-  const [displayName, setDisplayName] = useState("")
-  const [saving, setSaving] = useState(false)
+  const { t, i18n } = useTranslation();
+  const { completeSetup } = useAuth();
+  const { mode: theme, toggle: toggleTheme, c } = useTheme();
+  const [step, setStep] = useState(0);
+  const [displayName, setDisplayName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleNext = async () => {
     if (step < 3) {
-      setStep(step + 1)
-      return
+      setStep(step + 1);
+      return;
     }
     if (displayName.trim()) {
-      setSaving(true)
+      setSaving(true);
       try {
-        await api("/api/users/me", { method: "PUT", body: JSON.stringify({ displayName: displayName.trim() }) })
+        await api("/api/users/me", { method: "PUT", body: JSON.stringify({ displayName: displayName.trim() }) });
       } catch {}
-      setSaving(false)
+      setSaving(false);
     }
-    completeSetup()
-  }
+    completeSetup();
+  };
 
-  const skip = () => completeSetup()
+  const skip = () => completeSetup();
 
   return (
     <Modal visible transparent animationType="fade">
@@ -112,7 +112,7 @@ export function SetupDialog() {
                     theme === "light" && [s.themeBtnActive, { borderColor: c.accent, backgroundColor: c.accentLight }],
                   ]}
                   onPress={() => {
-                    if (theme !== "light") toggleTheme()
+                    if (theme !== "light") toggleTheme();
                   }}
                 >
                   <Sun size={32} color={theme === "light" ? c.accent : c.text} />
@@ -133,7 +133,7 @@ export function SetupDialog() {
                     theme === "dark" && [s.themeBtnActive, { borderColor: c.accent, backgroundColor: c.accentLight }],
                   ]}
                   onPress={() => {
-                    if (theme !== "dark") toggleTheme()
+                    if (theme !== "dark") toggleTheme();
                   }}
                 >
                   <Moon size={32} color={theme === "dark" ? c.accent : c.text} />
@@ -181,7 +181,7 @@ export function SetupDialog() {
         </View>
       </View>
     </Modal>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -255,4 +255,4 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   nextText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});

@@ -1,91 +1,91 @@
-import { useState, useEffect } from "react"
-import { useTranslation } from "react-i18next"
-import { Avatar } from "../ui/avatar"
-import { api } from "../../lib/api"
-import { useToast } from "../../lib/toast-context"
-import { cacheConversations, getCachedConversations } from "../../lib/offline-db"
-import { isOnline } from "../../lib/offline"
-import { Plus, X, UserPlus, Loader2, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Avatar } from "../ui/avatar";
+import { api } from "../../lib/api";
+import { useToast } from "../../lib/toast-context";
+import { cacheConversations, getCachedConversations } from "../../lib/offline-db";
+import { isOnline } from "../../lib/offline";
+import { Plus, X, UserPlus, Loader2, AlertCircle } from "lucide-react";
 
 interface Conversation {
-  id: string
-  type: "dm" | "group" | "channel"
-  name: string | null
-  avatar: string | null
-  createdAt: string
+  id: string;
+  type: "dm" | "group" | "channel";
+  name: string | null;
+  avatar: string | null;
+  createdAt: string;
   otherUser?: {
-    id: string
-    username: string
-    displayName: string | null
-    avatar: string | null
-    customStatus: string | null
-  } | null
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatar: string | null;
+    customStatus: string | null;
+  } | null;
 }
 
 interface ConversationListProps {
-  activeId: string | null
-  onSelect: (id: string) => void
+  activeId: string | null;
+  onSelect: (id: string) => void;
 }
 
 export function ConversationList({ activeId, onSelect }: ConversationListProps) {
-  const { t } = useTranslation()
-  const { showToast } = useToast()
-  const [convs, setConvs] = useState<Conversation[]>([])
-  const [showNewConv, setShowNewConv] = useState(false)
-  const [input, setInput] = useState("")
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState("")
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [convs, setConvs] = useState<Conversation[]>([]);
+  const [showNewConv, setShowNewConv] = useState(false);
+  const [input, setInput] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isOnline()) {
       getCachedConversations().then((cached) => {
-        if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"))
-      })
-      return
+        if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"));
+      });
+      return;
     }
     api<Conversation[]>("/api/conversations")
       .then((convs) => {
-        const filtered = convs.filter((c) => c.type === "dm")
-        setConvs(filtered)
-        cacheConversations(filtered)
+        const filtered = convs.filter((c) => c.type === "dm");
+        setConvs(filtered);
+        cacheConversations(filtered);
       })
       .catch(() => {
         getCachedConversations().then((cached) => {
-          if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"))
-          else showToast(t("chat.loadError"))
-        })
-      })
-  }, [])
+          if (cached.length > 0) setConvs(cached.filter((c: any) => c.type === "dm"));
+          else showToast(t("chat.loadError"));
+        });
+      });
+  }, []);
 
   const createConversation = async () => {
-    const q = input.trim()
-    if (!q) return
+    const q = input.trim();
+    if (!q) return;
 
-    setCreating(true)
-    setError("")
+    setCreating(true);
+    setError("");
 
     try {
-      let userId = q
+      let userId = q;
 
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) {
-        const lookup = await api<{ id: string }>("/api/friends/lookup?q=" + encodeURIComponent(q))
-        userId = lookup.id
+        const lookup = await api<{ id: string }>("/api/friends/lookup?q=" + encodeURIComponent(q));
+        userId = lookup.id;
       }
 
       const conv = await api<Conversation>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [userId] }),
-      })
-      setConvs((prev) => [conv, ...prev.filter((c) => c.id !== conv.id)])
-      onSelect(conv.id)
-      setShowNewConv(false)
-      setInput("")
+      });
+      setConvs((prev) => [conv, ...prev.filter((c) => c.id !== conv.id)]);
+      onSelect(conv.id);
+      setShowNewConv(false);
+      setInput("");
     } catch (err: any) {
-      setError(err?.message || t("chat.userNotFound"))
+      setError(err?.message || t("chat.userNotFound"));
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -200,5 +200,5 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
         </div>
       )}
     </div>
-  )
+  );
 }

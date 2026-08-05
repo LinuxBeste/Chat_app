@@ -1,6 +1,6 @@
-import pino from "pino"
+import pino from "pino";
 
-const isProduction = process.env.NODE_ENV === "production"
+const isProduction = process.env.NODE_ENV === "production";
 
 export const logger = pino({
   level: process.env.LOG_LEVEL ?? (isProduction ? "info" : "debug"),
@@ -29,8 +29,8 @@ export const logger = pino({
     err: pino.stdSerializers.err,
     error: pino.stdSerializers.err,
   },
-})
+});
 
 export function createContextLogger(context: string) {
-  return logger.child({ context })
+  return logger.child({ context });
 }

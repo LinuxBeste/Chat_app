@@ -1,61 +1,61 @@
-import { useState, useEffect, useRef } from "react"
-import { api, apiFormData, resolveAssetUrl } from "../../lib/api"
-import { useAuth } from "../../lib/auth-context"
-import { useTranslation } from "react-i18next"
-import { useToast } from "../../lib/toast-context"
-import { Camera, Copy, Loader2 } from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import { api, apiFormData, resolveAssetUrl } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
+import { useTranslation } from "react-i18next";
+import { useToast } from "../../lib/toast-context";
+import { Camera, Copy, Loader2 } from "lucide-react";
 
 export function ProfilePage() {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [displayName, setDisplayName] = useState("")
-  const [bio, setBio] = useState("")
-  const [avatar, setAvatar] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const { showToast } = useToast()
-  const [copied, setCopied] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api<{ displayName: string | null; bio?: string; avatar?: string | null }>("/api/users/me")
       .then((u) => {
-        setDisplayName(u.displayName ?? "")
-        setBio(u.bio ?? "")
-        setAvatar(u.avatar ?? null)
+        setDisplayName(u.displayName ?? "");
+        setBio(u.bio ?? "");
+        setAvatar(u.avatar ?? null);
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       await api("/api/users/me", {
         method: "PUT",
         body: JSON.stringify({ displayName, bio }),
-      })
-      showToast(t("profile.saveSuccess"), "success")
+      });
+      showToast(t("profile.saveSuccess"), "success");
     } catch (err: any) {
-      showToast(err?.message ?? t("profile.saveError"))
+      showToast(err?.message ?? t("profile.saveError"));
     }
-    setSaving(false)
-  }
+    setSaving(false);
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
     try {
-      const formData = new FormData()
-      formData.append("avatar", file)
-      const res = await apiFormData<{ avatar: string }>("/api/users/avatar", formData)
-      setAvatar(res.avatar)
-      showToast(t("profile.avatarSuccess"), "success")
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await apiFormData<{ avatar: string }>("/api/users/avatar", formData);
+      setAvatar(res.avatar);
+      showToast(t("profile.avatarSuccess"), "success");
     } catch (err: any) {
-      showToast(err?.message ?? t("profile.avatarError"))
+      showToast(err?.message ?? t("profile.avatarError"));
     }
-    setUploading(false)
-  }
+    setUploading(false);
+  };
 
   return (
     <div className="flex h-full items-start justify-center overflow-y-auto p-8">
@@ -94,9 +94,9 @@ export function ProfilePage() {
           </div>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(user?.id ?? "")
-              setCopied(true)
-              setTimeout(() => setCopied(false), 2000)
+              navigator.clipboard.writeText(user?.id ?? "");
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
             }}
             className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer shrink-0"
           >
@@ -135,5 +135,5 @@ export function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

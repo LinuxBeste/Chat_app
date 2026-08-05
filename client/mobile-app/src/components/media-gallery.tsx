@@ -1,20 +1,20 @@
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity } from "react-native"
-import { useTheme } from "../lib/theme-context"
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { useTheme } from "../lib/theme-context";
 
 interface MediaItem {
-  id: string
-  url: string
-  type: string
-  fileName: string
+  id: string;
+  url: string;
+  type: string;
+  fileName: string;
 }
 
 interface MediaGalleryProps {
-  media: MediaItem[]
-  onClose: () => void
+  media: MediaItem[];
+  onClose: () => void;
 }
 
 export function MediaGallery({ media, onClose }: MediaGalleryProps) {
-  const { c } = useTheme()
+  const { c } = useTheme();
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
       <View style={[s.header, { borderBottomColor: c.borderLight }]}>
@@ -40,7 +40,7 @@ export function MediaGallery({ media, onClose }: MediaGalleryProps) {
         )}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -64,4 +64,4 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   fileIcon: { fontSize: 28 },
-})
+});

@@ -1,112 +1,112 @@
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useTranslation } from "react-i18next"
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react"
-import { wsClient } from "../../lib/ws"
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { wsClient } from "../../lib/ws";
 
 interface CallOverlayProps {
-  conversationId: string
-  targetUserId: string
-  direction: "incoming" | "outgoing"
-  onEnd: () => void
+  conversationId: string;
+  targetUserId: string;
+  direction: "incoming" | "outgoing";
+  onEnd: () => void;
 }
 
 export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: CallOverlayProps) {
-  const { t } = useTranslation()
-  const [muted, setMuted] = useState(false)
-  const [videoOff, setVideoOff] = useState(false)
-  const [duration, setDuration] = useState(0)
-  const [connected, setConnected] = useState(false)
-  const localRef = useRef<HTMLVideoElement>(null)
-  const remoteRef = useRef<HTMLVideoElement>(null)
-  const pcRef = useRef<RTCPeerConnection | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
-  const sessionIdRef = useRef<string | null>(null)
+  const { t } = useTranslation();
+  const [muted, setMuted] = useState(false);
+  const [videoOff, setVideoOff] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [connected, setConnected] = useState(false);
+  const localRef = useRef<HTMLVideoElement>(null);
+  const remoteRef = useRef<HTMLVideoElement>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const sessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] })
-    pcRef.current = pc
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    pcRef.current = pc;
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        wsClient.send("call:ice-candidate", { sessionId: sessionIdRef.current, candidate: e.candidate.toJSON() })
+        wsClient.send("call:ice-candidate", { sessionId: sessionIdRef.current, candidate: e.candidate.toJSON() });
       }
-    }
+    };
 
     pc.ontrack = (e) => {
-      if (remoteRef.current) remoteRef.current.srcObject = e.streams[0]
-    }
+      if (remoteRef.current) remoteRef.current.srcObject = e.streams[0];
+    };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") setConnected(true)
-      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") onEnd()
-    }
+      if (pc.connectionState === "connected") setConnected(true);
+      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") onEnd();
+    };
 
     return () => {
-      pc.close()
-      clearInterval(timerRef.current)
-    }
-  }, [conversationId, onEnd])
+      pc.close();
+      clearInterval(timerRef.current);
+    };
+  }, [conversationId, onEnd]);
 
   const startCall = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-    if (localRef.current) localRef.current.srcObject = stream
-    stream.getTracks().forEach((t) => pcRef.current?.addTrack(t, stream))
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    if (localRef.current) localRef.current.srcObject = stream;
+    stream.getTracks().forEach((t) => pcRef.current?.addTrack(t, stream));
 
-    const offer = await pcRef.current!.createOffer()
-    await pcRef.current!.setLocalDescription(offer)
-    wsClient.send("call:offer", { targetUserId, conversationId, sdp: offer })
+    const offer = await pcRef.current!.createOffer();
+    await pcRef.current!.setLocalDescription(offer);
+    wsClient.send("call:offer", { targetUserId, conversationId, sdp: offer });
 
-    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
-  }, [targetUserId, conversationId])
+    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+  }, [targetUserId, conversationId]);
 
   useEffect(() => {
-    if (direction === "outgoing") startCall()
-  }, [direction, startCall])
+    if (direction === "outgoing") startCall();
+  }, [direction, startCall]);
 
   const answerCall = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-    if (localRef.current) localRef.current.srcObject = stream
-    stream.getTracks().forEach((t) => pcRef.current?.addTrack(t, stream))
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    if (localRef.current) localRef.current.srcObject = stream;
+    stream.getTracks().forEach((t) => pcRef.current?.addTrack(t, stream));
 
-    const answer = await pcRef.current!.createAnswer()
-    await pcRef.current!.setLocalDescription(answer)
-    wsClient.send("call:answer", { sessionId: sessionIdRef.current, sdp: answer })
+    const answer = await pcRef.current!.createAnswer();
+    await pcRef.current!.setLocalDescription(answer);
+    wsClient.send("call:answer", { sessionId: sessionIdRef.current, sdp: answer });
 
-    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
-  }, [conversationId])
+    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+  }, [conversationId]);
 
   useEffect(() => {
     const unsubOffer = wsClient.on("call:offer", async (data) => {
-      sessionIdRef.current = data.sessionId as string
+      sessionIdRef.current = data.sessionId as string;
       if (data.conversationId === conversationId) {
-        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit))
+        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit));
       }
-    })
+    });
     const unsubAnswer = wsClient.on("call:answer", async (data) => {
       if (data.sessionId === sessionIdRef.current) {
-        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit))
+        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(data.sdp as RTCSessionDescriptionInit));
       }
-    })
+    });
     const unsubIce = wsClient.on("call:ice-candidate", async (data) => {
       if (data.sessionId === sessionIdRef.current) {
-        await pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate as RTCIceCandidateInit))
+        await pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate as RTCIceCandidateInit));
       }
-    })
+    });
     return () => {
-      unsubOffer()
-      unsubAnswer()
-      unsubIce()
-    }
-  }, [conversationId])
+      unsubOffer();
+      unsubAnswer();
+      unsubIce();
+    };
+  }, [conversationId]);
 
   const endCall = () => {
-    pcRef.current?.close()
-    clearInterval(timerRef.current)
-    wsClient.send("call:end", { sessionId: sessionIdRef.current })
-    onEnd()
-  }
+    pcRef.current?.close();
+    clearInterval(timerRef.current);
+    wsClient.send("call:end", { sessionId: sessionIdRef.current });
+    onEnd();
+  };
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div
@@ -179,5 +179,5 @@ export function CallOverlay({ conversationId, targetUserId, direction, onEnd }: 
         </button>
       </div>
     </div>
-  )
+  );
 }

@@ -1,69 +1,69 @@
-import { useState, useEffect, useCallback } from "react"
-import { View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity } from "react-native"
-import { api } from "../lib/api"
-import { useAuth } from "../lib/auth-context"
-import { useTheme } from "../lib/theme-context"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { Phone, PhoneIncoming, PhoneMissed, Video, User } from "lucide-react-native"
+import { useState, useEffect, useCallback } from "react";
+import { View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity } from "react-native";
+import { api } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
+import { useTheme } from "../lib/theme-context";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Phone, PhoneIncoming, PhoneMissed, Video, User } from "lucide-react-native";
 
 interface Call {
-  id: string
-  callerId: string
-  calleeId: string
-  status: string
-  duration: number | null
-  createdAt: string
-  type?: string
+  id: string;
+  callerId: string;
+  calleeId: string;
+  status: string;
+  duration: number | null;
+  createdAt: string;
+  type?: string;
 }
 
-const AVATAR_COLORS = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"]
+const AVATAR_COLORS = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"];
 
 function colorFor(id: string): string {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
 export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) => void }) {
-  const { t } = useTranslation()
-  const { c } = useTheme()
-  const insets = useSafeAreaInsets()
+  const { t } = useTranslation();
+  const { c } = useTheme();
+  const insets = useSafeAreaInsets();
 
-  const { user } = useAuth()
-  const [calls, setCalls] = useState<Call[]>([])
-  const [refreshing, setRefreshing] = useState(false)
+  const { user } = useAuth();
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(() => {
     api<Call[]>("/api/calls")
       .then(setCalls)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    if (now.getTime() - d.getTime() < 86400000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    return d.toLocaleDateString()
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    if (now.getTime() - d.getTime() < 86400000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString();
+  };
 
   const getCallInfo = (call: Call) => {
-    const me = user?.id
-    if (call.callerId === me) return { label: t("calls.outgoing"), color: "#22C55E" }
-    if (call.calleeId === me && call.status !== "missed") return { label: t("calls.incoming"), color: "#22C55E" }
-    if (call.calleeId === me) return { label: t("calls.missed"), color: "#EF4444" }
-    return { label: t("calls.missed"), color: "#EF4444" }
-  }
+    const me = user?.id;
+    if (call.callerId === me) return { label: t("calls.outgoing"), color: "#22C55E" };
+    if (call.calleeId === me && call.status !== "missed") return { label: t("calls.incoming"), color: "#22C55E" };
+    if (call.calleeId === me) return { label: t("calls.missed"), color: "#EF4444" };
+    return { label: t("calls.missed"), color: "#EF4444" };
+  };
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -75,11 +75,11 @@ export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) =>
         keyExtractor={(c) => c.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
-          const info = getCallInfo(item)
-          const isOutgoing = item.callerId === user?.id
-          const peerId = isOutgoing ? item.calleeId : item.callerId
-          const CallIcon = isOutgoing ? Phone : item.status === "missed" ? PhoneMissed : PhoneIncoming
-          const isVideo = item.type === "video"
+          const info = getCallInfo(item);
+          const isOutgoing = item.callerId === user?.id;
+          const peerId = isOutgoing ? item.calleeId : item.callerId;
+          const CallIcon = isOutgoing ? Phone : item.status === "missed" ? PhoneMissed : PhoneIncoming;
+          const isVideo = item.type === "video";
           return (
             <View style={[s.item, { borderBottomColor: c.borderLight }]}>
               <View style={[s.avatar, { backgroundColor: colorFor(peerId) }]}>
@@ -106,12 +106,12 @@ export function CallsScreen({ onStartCall }: { onStartCall?: (userId: string) =>
                 <Phone size={16} color={c.accent} />
               </TouchableOpacity>
             </View>
-          )
+          );
         }}
         ListEmptyComponent={<Text style={[s.empty, { color: c.textMuted }]}>{t("calls.noCalls")}</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -152,4 +152,4 @@ const s = StyleSheet.create({
     marginLeft: 10,
   },
   empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
-})
+});

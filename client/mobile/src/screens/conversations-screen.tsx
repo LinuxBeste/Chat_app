@@ -1,23 +1,23 @@
-import { useState, useEffect } from "react"
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native"
-import { api } from "../lib/api"
-import { useAuth } from "../lib/auth-context"
+import { useState, useEffect } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { api } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
 
 interface Conv {
-  id: string
-  type: string
-  name: string | null
+  id: string;
+  type: string;
+  name: string | null;
 }
 
 export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => void }) {
-  const [convs, setConvs] = useState<Conv[]>([])
-  const { logout } = useAuth()
+  const [convs, setConvs] = useState<Conv[]>([]);
+  const { logout } = useAuth();
 
   useEffect(() => {
     api<Conv[]>("/api/conversations")
       .then(setConvs)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   return (
     <View style={s.container}>
@@ -40,7 +40,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
         )}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -70,4 +70,4 @@ const s = StyleSheet.create({
   },
   avatarText: { color: "#F0F0F0", fontSize: 16, fontWeight: "600" },
   name: { color: "#F0F0F0", fontSize: 16 },
-})
+});

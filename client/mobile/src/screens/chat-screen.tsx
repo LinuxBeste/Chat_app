@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,16 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-} from "react-native"
-import { api } from "../lib/api"
-import { wsClient } from "../lib/ws"
+} from "react-native";
+import { api } from "../lib/api";
+import { wsClient } from "../lib/ws";
 
 interface Msg {
-  id: string
-  content: string
-  senderId: string
-  createdAt: string
-  sender: { username: string }
+  id: string;
+  content: string;
+  senderId: string;
+  createdAt: string;
+  sender: { username: string };
 }
 
 export function ChatScreen({
@@ -25,34 +25,34 @@ export function ChatScreen({
   userId,
   onBack,
 }: {
-  conversationId: string
-  userId: string
-  onBack: () => void
+  conversationId: string;
+  userId: string;
+  onBack: () => void;
 }) {
-  const [messages, setMessages] = useState<Msg[]>([])
-  const [input, setInput] = useState("")
-  const flatRef = useRef<FlatList>(null)
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const flatRef = useRef<FlatList>(null);
 
   useEffect(() => {
     api<Msg[]>(`/api/conversations/${conversationId}/messages`)
       .then(setMessages)
-      .catch(() => {})
-  }, [conversationId])
+      .catch(() => {});
+  }, [conversationId]);
 
   useEffect(() => {
     const unsub = wsClient.on("message:new", (data) => {
-      if (data.conversationId === conversationId) setMessages((p) => [...p, data as unknown as Msg])
-    })
+      if (data.conversationId === conversationId) setMessages((p) => [...p, data as unknown as Msg]);
+    });
     return () => {
-      unsub()
-    }
-  }, [conversationId])
+      unsub();
+    };
+  }, [conversationId]);
 
   const send = () => {
-    if (!input.trim()) return
-    wsClient.send("message:send", { conversationId, content: input.trim() })
-    setInput("")
-  }
+    if (!input.trim()) return;
+    wsClient.send("message:send", { conversationId, content: input.trim() });
+    setInput("");
+  };
 
   return (
     <KeyboardAvoidingView
@@ -74,7 +74,7 @@ export function ChatScreen({
         contentContainerStyle={{ padding: 16 }}
         onContentSizeChange={() => flatRef.current?.scrollToEnd()}
         renderItem={({ item }) => {
-          const me = item.senderId === userId
+          const me = item.senderId === userId;
           return (
             <View style={[s.bubbleWrap, me ? s.me : s.them]}>
               <View style={[s.bubble, me ? s.bubbleMe : s.bubbleThem]}>
@@ -84,7 +84,7 @@ export function ChatScreen({
                 </Text>
               </View>
             </View>
-          )
+          );
         }}
       />
       <View style={s.inputRow}>
@@ -101,7 +101,7 @@ export function ChatScreen({
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -148,4 +148,4 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   sendText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
-})
+});

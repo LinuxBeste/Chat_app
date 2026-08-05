@@ -1,60 +1,60 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { wsClient } from "../../lib/ws"
-import { useTheme } from "../../lib/theme-context"
-import { Circle, Check } from "lucide-react"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { wsClient } from "../../lib/ws";
+import { useTheme } from "../../lib/theme-context";
+import { Circle, Check } from "lucide-react";
 
 const statuses = [
   { value: "online", label: "Online", color: "text-online" },
   { value: "away", label: "Away", color: "text-away" },
   { value: "busy", label: "Busy", color: "text-busy" },
   { value: "offline", label: "Offline", color: "text-text-muted" },
-] as const
+] as const;
 
 export function StatusSelector() {
-  const { themeConfig } = useTheme()
-  const [open, setOpen] = useState(false)
-  const [customStatus, setCustomStatus] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [currentStatus, setCurrentStatus] = useState("online")
-  const [displayStatus, setDisplayStatus] = useState("Online")
+  const { themeConfig } = useTheme();
+  const [open, setOpen] = useState(false);
+  const [customStatus, setCustomStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState("online");
+  const [displayStatus, setDisplayStatus] = useState("Online");
 
-  const statusEmoji = themeConfig?.statusEmoji
+  const statusEmoji = themeConfig?.statusEmoji;
 
   useEffect(() => {
     api<{ status: string; customStatus: string | null }>("/api/users/me")
       .then((u) => {
-        setCurrentStatus(u.status)
-        setCustomStatus(u.customStatus ?? "")
-        setDisplayStatus(u.customStatus || (statuses.find((s) => s.value === u.status)?.label ?? "Online"))
+        setCurrentStatus(u.status);
+        setCustomStatus(u.customStatus ?? "");
+        setDisplayStatus(u.customStatus || (statuses.find((s) => s.value === u.status)?.label ?? "Online"));
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const setStatus = async (value: string) => {
-    setCurrentStatus(value)
-    const s = statuses.find((s) => s.value === value)
-    setDisplayStatus(s?.label ?? value)
+    setCurrentStatus(value);
+    const s = statuses.find((s) => s.value === value);
+    setDisplayStatus(s?.label ?? value);
     await api("/api/users/me", {
       method: "PUT",
       body: JSON.stringify({ status: value, customStatus: "" }),
-    }).catch(() => {})
-    wsClient.send("presence:status", { status: value })
-    setOpen(false)
-  }
+    }).catch(() => {});
+    wsClient.send("presence:status", { status: value });
+    setOpen(false);
+  };
 
   const saveCustomStatus = async () => {
-    setSaving(true)
-    setDisplayStatus(customStatus)
+    setSaving(true);
+    setDisplayStatus(customStatus);
     await api("/api/users/me", {
       method: "PUT",
       body: JSON.stringify({ customStatus }),
-    }).catch(() => {})
-    setSaving(false)
-    setOpen(false)
-  }
+    }).catch(() => {});
+    setSaving(false);
+    setOpen(false);
+  };
 
-  const activeStatus = statuses.find((s) => s.value === currentStatus) ?? statuses[3]
+  const activeStatus = statuses.find((s) => s.value === currentStatus) ?? statuses[3];
 
   return (
     <div className="relative">
@@ -114,5 +114,5 @@ export function StatusSelector() {
         </>
       )}
     </div>
-  )
+  );
 }

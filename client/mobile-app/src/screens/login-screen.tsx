@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   View,
   Text,
@@ -10,85 +10,85 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
-} from "react-native"
-import { MessageSquare, Eye, EyeOff, Globe, Server, Sun, Moon } from "lucide-react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useAuth } from "../lib/auth-context"
-import { useTheme } from "../lib/theme-context"
-import { defaultServerUrl, getServerUrl, resetServerUrl, setServerUrl } from "../lib/server-config"
-import { useTranslation } from "react-i18next"
-import { supportedLanguages } from "../lib/i18n/index"
+} from "react-native";
+import { MessageSquare, Eye, EyeOff, Globe, Server, Sun, Moon } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../lib/auth-context";
+import { useTheme } from "../lib/theme-context";
+import { defaultServerUrl, getServerUrl, resetServerUrl, setServerUrl } from "../lib/server-config";
+import { useTranslation } from "react-i18next";
+import { supportedLanguages } from "../lib/i18n/index";
 
 export function LoginScreen() {
-  const { t, i18n } = useTranslation()
-  const { login, register } = useAuth()
-  const { mode: theme, toggle: toggleTheme, c } = useTheme()
-  const insets = useSafeAreaInsets()
-  const [mode, setMode] = useState<"login" | "register">("login")
-  const [username, setUsername] = useState("")
-  const [credential, setCredential] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [showLangPicker, setShowLangPicker] = useState(false)
-  const [showServerPopup, setShowServerPopup] = useState(false)
-  const [serverUrlInput, setServerUrlInput] = useState("")
+  const { t, i18n } = useTranslation();
+  const { login, register } = useAuth();
+  const { mode: theme, toggle: toggleTheme, c } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [credential, setCredential] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [showServerPopup, setShowServerPopup] = useState(false);
+  const [serverUrlInput, setServerUrlInput] = useState("");
 
   const openServerPopup = async () => {
-    setServerUrlInput(await getServerUrl())
-    setShowServerPopup(true)
-  }
+    setServerUrlInput(await getServerUrl());
+    setShowServerPopup(true);
+  };
 
   const saveServerUrl = async () => {
-    await setServerUrl(serverUrlInput)
-    setShowServerPopup(false)
-  }
+    await setServerUrl(serverUrlInput);
+    setShowServerPopup(false);
+  };
 
   const resetServerUrlInput = async () => {
-    await resetServerUrl()
-    setServerUrlInput(await getServerUrl())
-  }
+    await resetServerUrl();
+    setServerUrlInput(await getServerUrl());
+  };
 
   const handleSubmit = async () => {
-    setError("")
+    setError("");
     if (mode === "login") {
       if (!credential.trim()) {
-        setError(t("auth.emailOrUsername") + " " + t("common.required"))
-        return
+        setError(t("auth.emailOrUsername") + " " + t("common.required"));
+        return;
       }
     } else {
       if (!username.trim()) {
-        setError(t("auth.username") + " " + t("common.required"))
-        return
+        setError(t("auth.username") + " " + t("common.required"));
+        return;
       }
       if (!credential.trim()) {
-        setError(t("auth.email") + " " + t("common.required"))
-        return
+        setError(t("auth.email") + " " + t("common.required"));
+        return;
       }
     }
     if (!password.trim()) {
-      setError(t("auth.password") + " " + t("common.required"))
-      return
+      setError(t("auth.password") + " " + t("common.required"));
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      if (mode === "login") await login(credential, password)
-      else await register(username, credential, password)
+      if (mode === "login") await login(credential, password);
+      else await register(username, credential, password);
     } catch (e: any) {
-      const msg = e?.message
+      const msg = e?.message;
       if (msg?.includes("Failed to fetch") || msg?.includes("Network")) {
-        setError(t("auth.networkError"))
+        setError(t("auth.networkError"));
       } else if (msg?.includes("401")) {
-        setError(t("auth.invalidCredentials"))
+        setError(t("auth.invalidCredentials"));
       } else {
-        setError(msg || t("auth.somethingWentWrong"))
+        setError(msg || t("auth.somethingWentWrong"));
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView style={[st.container, { backgroundColor: c.bg, paddingTop: insets.top }]} behavior="padding">
@@ -190,8 +190,8 @@ export function LoginScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              setMode(mode === "login" ? "register" : "login")
-              setError("")
+              setMode(mode === "login" ? "register" : "login");
+              setError("");
             }}
             style={st.switchBtn}
             disabled={loading}
@@ -216,8 +216,8 @@ export function LoginScreen() {
                 key={lang.code}
                 style={[st.langItem, { borderBottomColor: c.border }, i18n.language === lang.code && st.langItemActive]}
                 onPress={() => {
-                  i18n.changeLanguage(lang.code)
-                  setShowLangPicker(false)
+                  i18n.changeLanguage(lang.code);
+                  setShowLangPicker(false);
                 }}
               >
                 <Text style={[st.langNative, { color: c.text }, i18n.language === lang.code && st.langNativeActive]}>
@@ -266,7 +266,7 @@ export function LoginScreen() {
         </View>
       </Modal>
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const st = StyleSheet.create({
@@ -371,4 +371,4 @@ const st = StyleSheet.create({
   },
   serverBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, backgroundColor: "#6C8CFF" },
   serverBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
-})
+});

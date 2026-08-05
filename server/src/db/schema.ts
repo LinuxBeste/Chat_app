@@ -1,9 +1,9 @@
-import { pgTable, uuid, text, timestamp, pgEnum, integer, index, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, uuid, text, timestamp, pgEnum, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 
-export const conversationTypeEnum = pgEnum("conversation_type", ["dm", "group", "channel"])
-export const messageTypeEnum = pgEnum("message_type", ["text", "image", "file"])
-export const friendStatusEnum = pgEnum("friend_status", ["pending", "accepted", "blocked"])
-export const userStatusEnum = pgEnum("user_status", ["online", "away", "busy", "offline"])
+export const conversationTypeEnum = pgEnum("conversation_type", ["dm", "group", "channel"]);
+export const messageTypeEnum = pgEnum("message_type", ["text", "image", "file"]);
+export const friendStatusEnum = pgEnum("friend_status", ["pending", "accepted", "blocked"]);
+export const userStatusEnum = pgEnum("user_status", ["online", "away", "busy", "offline"]);
 
 export const users = pgTable(
   "users",
@@ -23,7 +23,7 @@ export const users = pgTable(
   (table) => ({
     displayNameIdx: index("users_display_name_idx").on(table.displayName),
   }),
-)
+);
 
 export const conversations = pgTable(
   "conversations",
@@ -38,7 +38,7 @@ export const conversations = pgTable(
   (table) => ({
     createdByIdx: index("conversations_created_by_idx").on(table.createdBy),
   }),
-)
+);
 
 export const participants = pgTable(
   "participants",
@@ -55,7 +55,7 @@ export const participants = pgTable(
   (table) => ({
     convUserUnique: uniqueIndex("participants_conv_user_idx").on(table.conversationId, table.userId),
   }),
-)
+);
 
 export const messages = pgTable(
   "messages",
@@ -80,7 +80,7 @@ export const messages = pgTable(
     senderIdIdx: index("messages_sender_id_idx").on(table.senderId),
     createdAtIdx: index("messages_created_at_idx").on(table.createdAt),
   }),
-)
+);
 
 export const friends = pgTable(
   "friends",
@@ -99,7 +99,7 @@ export const friends = pgTable(
     friendIdIdx: index("friends_friend_id_idx").on(table.friendId),
     statusIdx: index("friends_status_idx").on(table.status),
   }),
-)
+);
 
 export const attachments = pgTable(
   "attachments",
@@ -118,7 +118,7 @@ export const attachments = pgTable(
     messageIdIdx: index("attachments_message_id_idx").on(table.messageId),
     conversationIdIdx: index("attachments_conversation_id_idx").on(table.conversationId),
   }),
-)
+);
 
 export const publicKeys = pgTable(
   "public_keys",
@@ -135,7 +135,7 @@ export const publicKeys = pgTable(
   (table) => ({
     userDeviceUnique: uniqueIndex("public_keys_user_device_idx").on(table.userId, table.deviceId),
   }),
-)
+);
 
 export const refreshTokens = pgTable(
   "refresh_tokens",
@@ -151,7 +151,7 @@ export const refreshTokens = pgTable(
   (table) => ({
     userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const emailVerificationTokens = pgTable(
   "email_verification_tokens",
@@ -169,7 +169,7 @@ export const emailVerificationTokens = pgTable(
     userIdIdx: index("email_verification_tokens_user_id_idx").on(table.userId),
     tokenIdx: index("email_verification_tokens_token_idx").on(table.token),
   }),
-)
+);
 
 export const blocks = pgTable(
   "blocks",
@@ -185,7 +185,7 @@ export const blocks = pgTable(
   (table) => ({
     userBlockedUnique: uniqueIndex("blocks_user_blocked_idx").on(table.userId, table.blockedUserId),
   }),
-)
+);
 
 export const messageReads = pgTable(
   "message_reads",
@@ -201,7 +201,7 @@ export const messageReads = pgTable(
   (table) => ({
     msgUserUnique: uniqueIndex("message_reads_msg_user_idx").on(table.messageId, table.userId),
   }),
-)
+);
 
 export const reports = pgTable(
   "reports",
@@ -220,7 +220,7 @@ export const reports = pgTable(
     reportedByIdx: index("reports_reported_by_idx").on(table.reportedBy),
     targetUserIdIdx: index("reports_target_user_id_idx").on(table.targetUserId),
   }),
-)
+);
 
 export const bans = pgTable(
   "bans",
@@ -243,7 +243,7 @@ export const bans = pgTable(
     convUserUnique: uniqueIndex("bans_conv_user_idx").on(table.conversationId, table.userId),
     userIdIdx: index("bans_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const mutes = pgTable(
   "mutes",
@@ -262,7 +262,7 @@ export const mutes = pgTable(
     convUserUnique: uniqueIndex("mutes_conv_user_idx").on(table.conversationId, table.userId),
     userIdIdx: index("mutes_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const pinnedMessages = pgTable(
   "pinned_messages",
@@ -283,7 +283,7 @@ export const pinnedMessages = pgTable(
     convMsgUnique: uniqueIndex("pinned_messages_conv_msg_idx").on(table.conversationId, table.messageId),
     pinnedByIdx: index("pinned_messages_pinned_by_idx").on(table.pinnedBy),
   }),
-)
+);
 
 export const reactions = pgTable(
   "reactions",
@@ -298,11 +298,15 @@ export const reactions = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    messageUserEmojiUnique: uniqueIndex("reactions_message_user_emoji_idx").on(table.messageId, table.userId, table.emoji),
+    messageUserEmojiUnique: uniqueIndex("reactions_message_user_emoji_idx").on(
+      table.messageId,
+      table.userId,
+      table.emoji,
+    ),
     messageIdIdx: index("reactions_message_id_idx").on(table.messageId),
     userIdIdx: index("reactions_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const webhooks = pgTable(
   "webhooks",
@@ -318,7 +322,7 @@ export const webhooks = pgTable(
   (table) => ({
     userIdIdx: index("webhooks_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const notifications = pgTable(
   "notifications",
@@ -338,7 +342,7 @@ export const notifications = pgTable(
     userIdIdx: index("notifications_user_id_idx").on(table.userId),
     createdAtIdx: index("notifications_created_at_idx").on(table.createdAt),
   }),
-)
+);
 
 export const totpSecrets = pgTable("totp_secrets", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -348,7 +352,7 @@ export const totpSecrets = pgTable("totp_secrets", {
   secret: text("secret").notNull(),
   verified: text("verified").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
 
 export const loginHistory = pgTable(
   "login_history",
@@ -366,7 +370,7 @@ export const loginHistory = pgTable(
     userIdIdx: index("login_history_user_id_idx").on(table.userId),
     createdAtIdx: index("login_history_created_at_idx").on(table.createdAt),
   }),
-)
+);
 
 export const events = pgTable(
   "events",
@@ -387,7 +391,7 @@ export const events = pgTable(
   (table) => ({
     conversationIdIdx: index("events_conversation_id_idx").on(table.conversationId),
   }),
-)
+);
 
 export const eventRsvps = pgTable(
   "event_rsvps",
@@ -405,7 +409,7 @@ export const eventRsvps = pgTable(
     eventUserUnique: uniqueIndex("event_rsvps_event_user_idx").on(table.eventId, table.userId),
     userIdIdx: index("event_rsvps_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const communities = pgTable(
   "communities",
@@ -421,7 +425,7 @@ export const communities = pgTable(
   (table) => ({
     ownerIdIdx: index("communities_owner_id_idx").on(table.ownerId),
   }),
-)
+);
 
 export const communityMembers = pgTable(
   "community_members",
@@ -439,7 +443,7 @@ export const communityMembers = pgTable(
     communityUserUnique: uniqueIndex("community_members_community_user_idx").on(table.communityId, table.userId),
     userIdIdx: index("community_members_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const communityChannels = pgTable(
   "community_channels",
@@ -455,7 +459,7 @@ export const communityChannels = pgTable(
   (table) => ({
     communityIdIdx: index("community_channels_community_id_idx").on(table.communityId),
   }),
-)
+);
 
 export const communityVoiceChannels = pgTable(
   "community_voice_channels",
@@ -470,7 +474,7 @@ export const communityVoiceChannels = pgTable(
   (table) => ({
     communityIdIdx: index("community_voice_channels_community_id_idx").on(table.communityId),
   }),
-)
+);
 
 export const communityInvites = pgTable(
   "community_invites",
@@ -491,7 +495,7 @@ export const communityInvites = pgTable(
   (table) => ({
     communityIdIdx: index("community_invites_community_id_idx").on(table.communityId),
   }),
-)
+);
 
 export const userPreferences = pgTable(
   "user_preferences",
@@ -506,7 +510,7 @@ export const userPreferences = pgTable(
   (table) => ({
     userIdIdx: index("user_preferences_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const userThemes = pgTable(
   "user_themes",
@@ -524,7 +528,7 @@ export const userThemes = pgTable(
   (table) => ({
     userIdIdx: index("user_themes_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const fileFolders = pgTable(
   "file_folders",
@@ -541,7 +545,7 @@ export const fileFolders = pgTable(
     userIdIdx: index("file_folders_user_id_idx").on(table.userId),
     parentIdIdx: index("file_folders_parent_id_idx").on(table.parentId),
   }),
-)
+);
 
 export const fileFolderMembers = pgTable(
   "file_folder_members",
@@ -559,7 +563,7 @@ export const fileFolderMembers = pgTable(
     folderUserUnique: uniqueIndex("file_folder_members_folder_user_idx").on(table.folderId, table.userId),
     userIdIdx: index("file_folder_members_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const filePermissions = pgTable(
   "file_permissions",
@@ -577,7 +581,7 @@ export const filePermissions = pgTable(
     fileUserUnique: uniqueIndex("file_permissions_file_user_idx").on(table.fileId, table.userId),
     userIdIdx: index("file_permissions_user_id_idx").on(table.userId),
   }),
-)
+);
 
 export const calls = pgTable(
   "calls",
@@ -597,4 +601,4 @@ export const calls = pgTable(
     callerIdIdx: index("calls_caller_id_idx").on(table.callerId),
     calleeIdIdx: index("calls_callee_id_idx").on(table.calleeId),
   }),
-)
+);

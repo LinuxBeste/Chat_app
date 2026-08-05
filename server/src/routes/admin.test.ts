@@ -1,20 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import request from "supertest"
-import app from "../app.js"
-import { verifyToken } from "../lib/jwt.js"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import request from "supertest";
+import app from "../app.js";
+import { verifyToken } from "../lib/jwt.js";
 
-vi.mock("../lib/redis.js", () => ({ getRedis: vi.fn(() => null) }))
+vi.mock("../lib/redis.js", () => ({ getRedis: vi.fn(() => null) }));
 
 const { ADMIN_ID, OWNER_ID, mockData, queryQueue } = vi.hoisted(() => {
-  const ADMIN_ID = "admin-1"
-  const OWNER_ID = "owner-1"
+  const ADMIN_ID = "admin-1";
+  const OWNER_ID = "owner-1";
   return {
     ADMIN_ID,
     OWNER_ID,
     mockData: { current: [] as any[] },
     queryQueue: [] as any[][],
-  }
-})
+  };
+});
 
 vi.mock("../config.js", () => ({
   config: {
@@ -35,21 +35,21 @@ vi.mock("../config.js", () => ({
       ownerUserId: OWNER_ID,
     },
   },
-}))
+}));
 
 vi.mock("../lib/db.js", () => {
   const chain: any = {
     then: (resolve: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).then(resolve)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).then(resolve);
     },
     catch: (reject: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).catch(reject)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).catch(reject);
     },
     finally: (handler: any) => {
-      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current
-      return Promise.resolve(data).finally(handler)
+      const data = queryQueue.length > 0 ? queryQueue.shift()! : mockData.current;
+      return Promise.resolve(data).finally(handler);
     },
     from: vi.fn(() => chain),
     where: vi.fn(() => chain),
@@ -59,7 +59,7 @@ vi.mock("../lib/db.js", () => {
     returning: vi.fn(() => chain),
     values: vi.fn(() => chain),
     set: vi.fn(() => chain),
-  }
+  };
   return {
     db: {
       select: vi.fn(() => chain),
@@ -67,25 +67,25 @@ vi.mock("../lib/db.js", () => {
       update: vi.fn(() => chain),
       delete: vi.fn(() => chain),
     },
-  }
-})
+  };
+});
 
-vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }))
+vi.mock("../lib/jwt.js", () => ({ verifyToken: vi.fn() }));
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  vi.mocked(verifyToken).mockReturnValue({ userId: ADMIN_ID, username: "admin" })
-  mockData.current = []
-  queryQueue.length = 0
-})
+  vi.clearAllMocks();
+  vi.mocked(verifyToken).mockReturnValue({ userId: ADMIN_ID, username: "admin" });
+  mockData.current = [];
+  queryQueue.length = 0;
+});
 
 describe("GET /api/admin/stats", () => {
   it("returns stats with all counts", async () => {
-    queryQueue.push([{ value: 10 }], [{ value: 5 }], [{ value: 100 }], [{ value: 2 }], [{ value: 1 }])
-    queryQueue.push([{ value: 3 }], [{ value: 4 }], [{ value: 20 }])
+    queryQueue.push([{ value: 10 }], [{ value: 5 }], [{ value: 100 }], [{ value: 2 }], [{ value: 1 }]);
+    queryQueue.push([{ value: 3 }], [{ value: 4 }], [{ value: 20 }]);
 
-    const res = await request(app).get("/api/admin/stats").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
+    const res = await request(app).get("/api/admin/stats").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       users: 10,
       conversations: 5,
@@ -95,9 +95,9 @@ describe("GET /api/admin/stats", () => {
       registrationsToday: 3,
       onlineUsers: 4,
       messagesToday: 20,
-    })
-  })
-})
+    });
+  });
+});
 
 describe("GET /api/admin/users", () => {
   it("returns paginated users", async () => {
@@ -112,13 +112,13 @@ describe("GET /api/admin/users", () => {
       createdAt: "2024-01-01",
       suspendedUntil: null,
       suspensionReason: null,
-    }
-    queryQueue.push([userRow], [{ value: 1 }])
-    const res = await request(app).get("/api/admin/users").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body.total).toBeDefined()
-  })
-})
+    };
+    queryQueue.push([userRow], [{ value: 1 }]);
+    const res = await request(app).get("/api/admin/users").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeDefined();
+  });
+});
 
 describe("GET /api/admin/users/:id", () => {
   it("returns user details", async () => {
@@ -135,49 +135,49 @@ describe("GET /api/admin/users/:id", () => {
         emailVerified: "true",
         createdAt: "2024-01-01",
       },
-    ])
-    queryQueue.push([{ value: 5 }], [{ value: 2 }], [])
+    ]);
+    queryQueue.push([{ value: 5 }], [{ value: 2 }], []);
 
-    const res = await request(app).get("/api/admin/users/u1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("username", "alice")
-    expect(res.body).toHaveProperty("messageCount", 5)
-    expect(res.body).toHaveProperty("conversationCount", 2)
-  })
+    const res = await request(app).get("/api/admin/users/u1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("username", "alice");
+    expect(res.body).toHaveProperty("messageCount", 5);
+    expect(res.body).toHaveProperty("conversationCount", 2);
+  });
 
   it("returns 404 for nonexistent user", async () => {
-    const res = await request(app).get("/api/admin/users/nonexistent").set("Authorization", "Bearer token")
-    expect(res.status).toBe(404)
-  })
-})
+    const res = await request(app).get("/api/admin/users/nonexistent").set("Authorization", "Bearer token");
+    expect(res.status).toBe(404);
+  });
+});
 
 describe("PUT /api/admin/users/:id/suspend", () => {
   it("suspends a user", async () => {
     const res = await request(app)
       .put("/api/admin/users/u1/suspend")
       .set("Authorization", "Bearer token")
-      .send({ suspended: true })
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "User suspended")
-  })
+      .send({ suspended: true });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "User suspended");
+  });
 
   it("unsuspends a user", async () => {
     const res = await request(app)
       .put("/api/admin/users/u1/suspend")
       .set("Authorization", "Bearer token")
-      .send({ suspended: false })
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "User unsuspended")
-  })
-})
+      .send({ suspended: false });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "User unsuspended");
+  });
+});
 
 describe("DELETE /api/admin/users/:id", () => {
   it("deletes a user", async () => {
-    const res = await request(app).delete("/api/admin/users/u1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "User deleted")
-  })
-})
+    const res = await request(app).delete("/api/admin/users/u1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "User deleted");
+  });
+});
 
 describe("GET /api/admin/reports", () => {
   it("returns paginated reports", async () => {
@@ -188,7 +188,7 @@ describe("GET /api/admin/reports", () => {
       reason: "spam",
       status: "open",
       createdAt: "2024-01-01",
-    }
+    };
     queryQueue.push(
       [reportRow],
       [{ value: 1 }],
@@ -196,77 +196,77 @@ describe("GET /api/admin/reports", () => {
         { id: "u1", username: "alice" },
         { id: "u2", username: "bob" },
       ],
-    )
-    const res = await request(app).get("/api/admin/reports").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body.total).toBeDefined()
-  })
-})
+    );
+    const res = await request(app).get("/api/admin/reports").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeDefined();
+  });
+});
 
 describe("PUT /api/admin/reports/:id", () => {
   it("resolves a report", async () => {
     const res = await request(app)
       .put("/api/admin/reports/r1")
       .set("Authorization", "Bearer token")
-      .send({ status: "resolved" })
-    expect(res.status).toBe(200)
-  })
+      .send({ status: "resolved" });
+    expect(res.status).toBe(200);
+  });
 
   it("returns 400 for invalid status", async () => {
     const res = await request(app)
       .put("/api/admin/reports/r1")
       .set("Authorization", "Bearer token")
-      .send({ status: "invalid" })
-    expect(res.status).toBe(400)
-  })
-})
+      .send({ status: "invalid" });
+    expect(res.status).toBe(400);
+  });
+});
 
 describe("GET /api/admin/bans", () => {
   it("returns paginated bans", async () => {
-    const banRow = { id: "b1", userId: "u2", bannedBy: "u1", reason: "spam", expiresAt: null, createdAt: "2024-01-01" }
-    queryQueue.push([banRow], [{ value: 1 }])
-    const res = await request(app).get("/api/admin/bans").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body.total).toBeDefined()
-  })
-})
+    const banRow = { id: "b1", userId: "u2", bannedBy: "u1", reason: "spam", expiresAt: null, createdAt: "2024-01-01" };
+    queryQueue.push([banRow], [{ value: 1 }]);
+    const res = await request(app).get("/api/admin/bans").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeDefined();
+  });
+});
 
 describe("DELETE /api/admin/bans/:id", () => {
   it("removes a ban", async () => {
-    const res = await request(app).delete("/api/admin/bans/b1").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("message", "Ban removed")
-  })
-})
+    const res = await request(app).delete("/api/admin/bans/b1").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("message", "Ban removed");
+  });
+});
 
 describe("GET /api/admin/activity", () => {
   it("returns activity feed", async () => {
-    mockData.current = []
-    const res = await request(app).get("/api/admin/activity").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(Array.isArray(res.body)).toBe(true)
-  })
-})
+    mockData.current = [];
+    const res = await request(app).get("/api/admin/activity").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+});
 
 describe("GET /api/admin/admins", () => {
   it("returns owner and admin IDs", async () => {
-    const res = await request(app).get("/api/admin/admins").set("Authorization", "Bearer token")
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty("ownerId")
-    expect(res.body).toHaveProperty("adminIds")
-  })
-})
+    const res = await request(app).get("/api/admin/admins").set("Authorization", "Bearer token");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("ownerId");
+    expect(res.body).toHaveProperty("adminIds");
+  });
+});
 
 describe("auth guards", () => {
   it("returns 401 without auth", async () => {
-    const res = await request(app).get("/api/admin/stats")
-    expect(res.status).toBe(401)
-  })
+    const res = await request(app).get("/api/admin/stats");
+    expect(res.status).toBe(401);
+  });
 
   it("returns 403 for non-admin user", async () => {
-    vi.mocked(verifyToken).mockReturnValue({ userId: "non-admin", username: "test" })
-    const res = await request(app).get("/api/admin/stats").set("Authorization", "Bearer token")
-    expect(res.status).toBe(403)
-    expect(res.body).toHaveProperty("error", "Admin access required")
-  })
-})
+    vi.mocked(verifyToken).mockReturnValue({ userId: "non-admin", username: "test" });
+    const res = await request(app).get("/api/admin/stats").set("Authorization", "Bearer token");
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty("error", "Admin access required");
+  });
+});

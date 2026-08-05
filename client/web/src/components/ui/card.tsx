@@ -1,8 +1,8 @@
-import { forwardRef } from "react"
-import { cn } from "../../lib/utils"
+import { forwardRef } from "react";
+import { cn } from "../../lib/utils";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  hover?: boolean
+  hover?: boolean;
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(({ className, hover = false, children, ...props }, ref) => (
@@ -17,20 +17,20 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({ className, hover = false, 
   >
     {children}
   </div>
-))
-Card.displayName = "Card"
+));
+Card.displayName = "Card";
 
 const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("mb-5 flex items-center justify-between", className)} {...props} />
-))
-CardHeader.displayName = "CardHeader"
+));
+CardHeader.displayName = "CardHeader";
 
 const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3 ref={ref} className={cn("text-base font-semibold text-text-primary", className)} {...props} />
   ),
-)
-CardTitle.displayName = "CardTitle"
+);
+CardTitle.displayName = "CardTitle";
 
-export { Card, CardHeader, CardTitle }
-export type { CardProps }
+export { Card, CardHeader, CardTitle };
+export type { CardProps };

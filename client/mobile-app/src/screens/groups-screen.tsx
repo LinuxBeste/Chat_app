@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,89 +10,89 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
-} from "react-native"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTheme } from "../lib/theme-context"
-import { Search, Plus, X, Users, MessageSquare } from "lucide-react-native"
+} from "react-native";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../lib/theme-context";
+import { Search, Plus, X, Users, MessageSquare } from "lucide-react-native";
 
 interface Group {
-  id: string
-  name: string | null
-  type: string
-  participantCount?: number
+  id: string;
+  name: string | null;
+  type: string;
+  participantCount?: number;
 }
 
 interface UserResult {
-  id: string
-  username: string
-  displayName?: string
+  id: string;
+  username: string;
+  displayName?: string;
 }
 
 export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [groups, setGroups] = useState<Group[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [groupName, setGroupName] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<UserResult[]>([])
-  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set())
-  const [searching, setSearching] = useState(false)
-  const [joinModal, setJoinModal] = useState(false)
-  const [inviteCode, setInviteCode] = useState("")
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<UserResult[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  const [searching, setSearching] = useState(false);
+  const [joinModal, setJoinModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
 
   const load = useCallback(() => {
     api<Group[]>("/api/conversations")
       .then((convs) => {
-        setGroups(convs.filter((c: any) => c.type === "group"))
+        setGroups(convs.filter((c: any) => c.type === "group"));
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (searchQuery.length < 2) {
-      setSearchResults([])
-      return
+      setSearchResults([]);
+      return;
     }
-    setSearching(true)
+    setSearching(true);
     const timer = setTimeout(() => {
       api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
         .then(setSearchResults)
         .catch(() => {})
-        .finally(() => setSearching(false))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const toggleParticipant = (id: string) => {
     setSelectedParticipants((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(id)) {
-        next.delete(id)
+        next.delete(id);
       } else {
-        next.add(id)
+        next.add(id);
       }
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   const createGroup = async () => {
-    if (!groupName.trim()) return
+    if (!groupName.trim()) return;
     try {
       await api("/api/conversations", {
         method: "POST",
@@ -101,14 +101,14 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
           name: groupName.trim(),
           participantIds: Array.from(selectedParticipants),
         }),
-      })
-      setGroupName("")
-      setSelectedParticipants(new Set())
-      setSearchQuery("")
-      setModalVisible(false)
-      load()
+      });
+      setGroupName("");
+      setSelectedParticipants(new Set());
+      setSearchQuery("");
+      setModalVisible(false);
+      load();
     } catch {}
-  }
+  };
 
   const deleteGroup = (id: string) => {
     Alert.alert(t("groups.deleteGroup"), "", [
@@ -119,11 +119,11 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
         onPress: () => {
           api(`/api/conversations/${id}`, { method: "DELETE" })
             .then(load)
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -168,9 +168,9 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
               <Text style={[s.modalTitle, { color: c.text }]}>{t("groups.newGroup")}</Text>
               <TouchableOpacity
                 onPress={() => {
-                  setModalVisible(false)
-                  setSelectedParticipants(new Set())
-                  setSearchQuery("")
+                  setModalVisible(false);
+                  setSelectedParticipants(new Set());
+                  setSearchQuery("");
                 }}
               >
                 <X size={20} color={c.textSecondary} />
@@ -197,7 +197,7 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
             {selectedParticipants.size > 0 && (
               <View style={s.chipRow}>
                 {Array.from(selectedParticipants).map((id) => {
-                  const user = searchResults.find((u) => u.id === id)
+                  const user = searchResults.find((u) => u.id === id);
                   return (
                     <TouchableOpacity
                       key={id}
@@ -207,7 +207,7 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
                       <Text style={s.chipText}>{user?.username || id.slice(0, 6)}</Text>
                       <X size={12} color="#E8E8F0" />
                     </TouchableOpacity>
-                  )
+                  );
                 })}
               </View>
             )}
@@ -236,9 +236,9 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
             <View style={s.modalActions}>
               <TouchableOpacity
                 onPress={() => {
-                  setModalVisible(false)
-                  setSelectedParticipants(new Set())
-                  setSearchQuery("")
+                  setModalVisible(false);
+                  setSelectedParticipants(new Set());
+                  setSearchQuery("");
                 }}
                 style={s.cancelBtn}
               >
@@ -273,15 +273,15 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={async () => {
-                  if (!inviteCode.trim()) return
+                  if (!inviteCode.trim()) return;
                   try {
                     await api("/api/conversations/join", {
                       method: "POST",
                       body: JSON.stringify({ code: inviteCode.trim() }),
-                    })
-                    setJoinModal(false)
-                    setInviteCode("")
-                    load()
+                    });
+                    setJoinModal(false);
+                    setInviteCode("");
+                    load();
                   } catch {}
                 }}
                 style={[s.confirmBtn, { backgroundColor: c.accent }]}
@@ -293,7 +293,7 @@ export function GroupsScreen({ onSelectChat }: { onSelectChat?: (id: string) => 
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -380,4 +380,4 @@ const s = StyleSheet.create({
   cancelText: { fontSize: 15 },
   confirmBtn: { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
   confirmText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});

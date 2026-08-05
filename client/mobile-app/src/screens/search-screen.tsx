@@ -1,53 +1,53 @@
-import { useState, useCallback, useRef } from "react"
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from "react-native"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTheme } from "../lib/theme-context"
+import { useState, useCallback, useRef } from "react";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../lib/theme-context";
 
 interface SearchResult {
-  id: string
-  content: string
-  conversationId: string
-  senderUsername: string
-  createdAt: string
+  id: string;
+  content: string;
+  conversationId: string;
+  senderUsername: string;
+  createdAt: string;
 }
 
 export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelect: (convId: string) => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [searching, setSearching] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
-    setSearching(true)
+    setSearching(true);
     try {
-      const data = await api<SearchResult[]>(`/api/productivity/search?q=${encodeURIComponent(q)}`)
-      setResults(data)
+      const data = await api<SearchResult[]>(`/api/productivity/search?q=${encodeURIComponent(q)}`);
+      setResults(data);
     } catch {
-      setResults([])
+      setResults([]);
     } finally {
-      setSearching(false)
+      setSearching(false);
     }
-  }, [])
+  }, []);
 
   const handleChange = (v: string) => {
-    setQuery(v)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setQuery(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!v.trim()) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
-    debounceRef.current = setTimeout(() => search(v), 300)
-  }
+    debounceRef.current = setTimeout(() => search(v), 300);
+  };
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -87,7 +87,7 @@ export function SearchScreen({ onBack, onSelect }: { onBack: () => void; onSelec
         }
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -115,4 +115,4 @@ const s = StyleSheet.create({
   content: { fontSize: 15, marginTop: 2 },
   date: { fontSize: 11, marginTop: 4 },
   empty: { textAlign: "center", marginTop: 60, fontSize: 15 },
-})
+});

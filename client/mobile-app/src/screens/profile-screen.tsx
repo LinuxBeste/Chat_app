@@ -1,46 +1,46 @@
-import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform } from "react-native"
-import { api, uploadFile } from "../lib/api"
-import { useAuth } from "../lib/auth-context"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import * as ImagePicker from "expo-image-picker"
-import * as Clipboard from "expo-clipboard"
-import { wsClient } from "../lib/ws"
-import { useTheme } from "../lib/theme-context"
+import { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform } from "react-native";
+import { api, uploadFile } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import * as Clipboard from "expo-clipboard";
+import { wsClient } from "../lib/ws";
+import { useTheme } from "../lib/theme-context";
 
 const STATUS_OPTIONS = [
   { key: "online", label: "Online", color: "#22C55E" },
   { key: "away", label: "Away", color: "#EAB308" },
   { key: "busy", label: "Busy", color: "#EF4444" },
   { key: "offline", label: "Offline", color: "#8888A0" },
-]
+];
 
 export function ProfileScreen({ onBack }: { onBack: () => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const { user, logout } = useAuth()
-  const [displayName, setDisplayName] = useState(user?.displayName || "")
-  const [bio, setBio] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [customStatus, setCustomStatus] = useState(user?.customStatus || "")
-  const [status, setStatus] = useState(user?.status || "online")
+  const { user, logout } = useAuth();
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [bio, setBio] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [customStatus, setCustomStatus] = useState(user?.customStatus || "");
+  const [status, setStatus] = useState(user?.status || "online");
 
   useEffect(() => {
     api("/api/users/me")
       .then((u: any) => {
-        setDisplayName(u.displayName || "")
-        setBio(u.bio || "")
-        setStatus(u.status || "online")
-        setCustomStatus(u.customStatus || "")
+        setDisplayName(u.displayName || "");
+        setBio(u.bio || "");
+        setStatus(u.status || "online");
+        setCustomStatus(u.customStatus || "");
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const saveProfile = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       await api("/api/users/me", {
         method: "PUT",
@@ -50,31 +50,31 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
           status,
           customStatus: customStatus.trim() || undefined,
         }),
-      })
-      wsClient.send("presence:status", { status })
-      Alert.alert(t("common.success"), t("profile.save"))
+      });
+      wsClient.send("presence:status", { status });
+      Alert.alert(t("common.success"), t("profile.save"));
     } catch (e: any) {
-      Alert.alert(t("common.error"), e.message)
+      Alert.alert(t("common.error"), e.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const pickAvatar = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: false })
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: false });
       if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0]
+        const file = result.assets[0];
         await uploadFile({
           uri: file.uri,
           name: "avatar.jpg",
           type: file.mimeType || "image/jpeg",
           path: "/api/users/avatar",
           fieldName: "avatar",
-        })
+        });
       }
     } catch {}
-  }
+  };
 
   return (
     <ScrollView style={[s.container, { backgroundColor: c.bg }]} contentContainerStyle={s.content}>
@@ -160,8 +160,8 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
           <TouchableOpacity
             style={[s.idRow, { backgroundColor: c.inputBg, borderColor: c.border }]}
             onPress={() => {
-              Clipboard.setStringAsync(user?.id || "")
-              Alert.alert("Copied!")
+              Clipboard.setStringAsync(user?.id || "");
+              Alert.alert("Copied!");
             }}
           >
             <Text style={[s.idText, { color: c.textSecondary }]}>{user?.id}</Text>
@@ -173,7 +173,7 @@ export function ProfileScreen({ onBack }: { onBack: () => void }) {
         </TouchableOpacity>
       </View>
     </ScrollView>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -233,4 +233,4 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   statusChipText: { fontSize: 13, fontWeight: "500" },
-})
+});

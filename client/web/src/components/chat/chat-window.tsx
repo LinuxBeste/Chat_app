@@ -1,18 +1,18 @@
-import { ConversationList } from "./conversation-list"
-import { useTranslation } from "react-i18next"
-import { ChatArea } from "./chat-area"
-import { useAuth } from "../../lib/auth-context"
+import { ConversationList } from "./conversation-list";
+import { useTranslation } from "react-i18next";
+import { ChatArea } from "./chat-area";
+import { useAuth } from "../../lib/auth-context";
 
 interface ChatWindowProps {
-  activeConversationId: string | null
-  onConversationChange: (id: string | null) => void
+  activeConversationId: string | null;
+  onConversationChange: (id: string | null) => void;
 }
 
 export function ChatWindow({ activeConversationId, onConversationChange }: ChatWindowProps) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
+  const { t } = useTranslation();
+  const { user } = useAuth();
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <div className="flex h-full">
@@ -34,5 +34,5 @@ export function ChatWindow({ activeConversationId, onConversationChange }: ChatW
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,13 @@ import {
   Modal,
   Alert,
   ScrollView,
-} from "react-native"
-import { api } from "../lib/api"
-import { wsClient } from "../lib/ws"
-import { useTheme } from "../lib/theme-context"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import * as Clipboard from "expo-clipboard"
+} from "react-native";
+import { api } from "../lib/api";
+import { wsClient } from "../lib/ws";
+import { useTheme } from "../lib/theme-context";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import {
   Plus,
   X,
@@ -34,172 +34,172 @@ import {
   Pencil,
   Trash2,
   Check,
-} from "lucide-react-native"
-import { useAuth } from "../lib/auth-context"
+} from "lucide-react-native";
+import { useAuth } from "../lib/auth-context";
 
 interface Channel {
-  id: string
-  name: string
-  topic?: string
+  id: string;
+  name: string;
+  topic?: string;
 }
 
 interface VoiceChannel {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface Member {
-  id: string
-  userId: string
-  username?: string
-  role: string
+  id: string;
+  userId: string;
+  username?: string;
+  role: string;
 }
 
 interface Invite {
-  id: string
-  communityId?: string
-  code: string
-  useCount: number
-  maxUses: number | null
-  expiresAt: string | null
+  id: string;
+  communityId?: string;
+  code: string;
+  useCount: number;
+  maxUses: number | null;
+  expiresAt: string | null;
 }
 
 interface Community {
-  id: string
-  name: string
-  description?: string
-  ownerId?: string
-  memberCount?: number
-  role?: string
-  channels?: Channel[]
-  voiceChannels?: VoiceChannel[]
-  members?: Member[]
+  id: string;
+  name: string;
+  description?: string;
+  ownerId?: string;
+  memberCount?: number;
+  role?: string;
+  channels?: Channel[];
+  voiceChannels?: VoiceChannel[];
+  members?: Member[];
 }
 
 export function CommunitiesScreen() {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
-  const { c } = useTheme()
-  const { user } = useAuth()
-  const [communities, setCommunities] = useState<Community[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [createModal, setCreateModal] = useState(false)
-  const [joinModal, setJoinModal] = useState(false)
-  const [name, setName] = useState("")
-  const [desc, setDesc] = useState("")
-  const [inviteCode, setInviteCode] = useState("")
-  const [selected, setSelected] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Record<string, Community>>({})
-  const [chModal, setChModal] = useState(false)
-  const [chName, setChName] = useState("")
-  const [chType, setChType] = useState<"text" | "voice">("text")
-  const [chCommunityId, setChCommunityId] = useState<string | null>(null)
-  const [invites, setInvites] = useState<Record<string, Invite[]>>({})
-  const [copiedInvite, setCopiedInvite] = useState<string | null>(null)
+  const { c } = useTheme();
+  const { user } = useAuth();
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
+  const [joinModal, setJoinModal] = useState(false);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, Community>>({});
+  const [chModal, setChModal] = useState(false);
+  const [chName, setChName] = useState("");
+  const [chType, setChType] = useState<"text" | "voice">("text");
+  const [chCommunityId, setChCommunityId] = useState<string | null>(null);
+  const [invites, setInvites] = useState<Record<string, Invite[]>>({});
+  const [copiedInvite, setCopiedInvite] = useState<string | null>(null);
   const [joinedVoice, setJoinedVoice] = useState<{
-    channelId: string
-    communityName: string
-    channelName: string
-  } | null>(null)
-  const [manageCommunity, setManageCommunity] = useState<Community | null>(null)
-  const [manageName, setManageName] = useState("")
-  const [manageDesc, setManageDesc] = useState("")
-  const [savingManage, setSavingManage] = useState(false)
-  const [saveMsg, setSaveMsg] = useState("")
+    channelId: string;
+    communityName: string;
+    channelName: string;
+  } | null>(null);
+  const [manageCommunity, setManageCommunity] = useState<Community | null>(null);
+  const [manageName, setManageName] = useState("");
+  const [manageDesc, setManageDesc] = useState("");
+  const [savingManage, setSavingManage] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
 
   const load = useCallback(() => {
     api<Community[]>("/api/communities")
       .then(setCommunities)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const loadDetail = async (id: string) => {
     try {
       const [detail, inviteList] = await Promise.all([
         api<Community>(`/api/communities/${id}`),
         api<Invite[]>(`/api/communities/${id}/invites`).catch(() => []),
-      ])
-      setExpanded((p) => ({ ...p, [id]: detail }))
-      setInvites((p) => ({ ...p, [id]: inviteList }))
+      ]);
+      setExpanded((p) => ({ ...p, [id]: detail }));
+      setInvites((p) => ({ ...p, [id]: inviteList }));
       if (manageCommunity?.id === id) {
-        setManageCommunity(detail)
-        setManageName(detail.name || "")
-        setManageDesc(detail.description || "")
+        setManageCommunity(detail);
+        setManageName(detail.name || "");
+        setManageDesc(detail.description || "");
       }
     } catch {}
-  }
+  };
 
   const toggleExpand = (item: Community) => {
     if (selected === item.id) {
-      setSelected(null)
+      setSelected(null);
     } else {
-      setSelected(item.id)
-      loadDetail(item.id)
+      setSelected(item.id);
+      loadDetail(item.id);
     }
-  }
+  };
 
   const create = async () => {
-    if (!name.trim()) return
+    if (!name.trim()) return;
     try {
       await api("/api/communities", {
         method: "POST",
         body: JSON.stringify({ name: name.trim(), description: desc.trim() }),
-      })
-      setName("")
-      setDesc("")
-      setCreateModal(false)
-      load()
+      });
+      setName("");
+      setDesc("");
+      setCreateModal(false);
+      load();
     } catch {}
-  }
+  };
 
   const join = async () => {
-    if (!inviteCode.trim()) return
+    if (!inviteCode.trim()) return;
     try {
-      await api(`/api/communities/join/${inviteCode.trim()}`, { method: "POST" })
-      setInviteCode("")
-      setJoinModal(false)
-      load()
+      await api(`/api/communities/join/${inviteCode.trim()}`, { method: "POST" });
+      setInviteCode("");
+      setJoinModal(false);
+      load();
     } catch {}
-  }
+  };
 
   const openManage = (item: Community) => {
-    setManageCommunity(item)
-    setManageName(item.name || "")
-    setManageDesc(item.description || "")
-    setSaveMsg("")
-    loadDetail(item.id)
-  }
+    setManageCommunity(item);
+    setManageName(item.name || "");
+    setManageDesc(item.description || "");
+    setSaveMsg("");
+    loadDetail(item.id);
+  };
 
   const saveManage = async () => {
-    if (!manageCommunity || !manageName.trim()) return
-    setSavingManage(true)
-    setSaveMsg("")
+    if (!manageCommunity || !manageName.trim()) return;
+    setSavingManage(true);
+    setSaveMsg("");
     try {
       await api(`/api/communities/${manageCommunity.id}`, {
         method: "PUT",
         body: JSON.stringify({ name: manageName.trim(), description: manageDesc.trim() }),
-      })
-      setSaveMsg("Saved")
-      load()
-      loadDetail(manageCommunity.id)
-      setTimeout(() => setSaveMsg(""), 2000)
+      });
+      setSaveMsg("Saved");
+      load();
+      loadDetail(manageCommunity.id);
+      setTimeout(() => setSaveMsg(""), 2000);
     } catch {
-      setSaveMsg("Failed to save")
+      setSaveMsg("Failed to save");
     } finally {
-      setSavingManage(false)
+      setSavingManage(false);
     }
-  }
+  };
 
   const deleteCommunity = (id: string) => {
     Alert.alert("Delete Community", "Are you sure? This cannot be undone.", [
@@ -210,15 +210,15 @@ export function CommunitiesScreen() {
         onPress: () => {
           api(`/api/communities/${id}`, { method: "DELETE" })
             .then(() => {
-              load()
-              setSelected(null)
-              setManageCommunity(null)
+              load();
+              setSelected(null);
+              setManageCommunity(null);
             })
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const leaveCommunity = (id: string) => {
     Alert.alert("Leave Community", "Are you sure you want to leave?", [
@@ -229,80 +229,80 @@ export function CommunitiesScreen() {
         onPress: () => {
           api(`/api/communities/${id}/leave`, { method: "POST" })
             .then(() => {
-              load()
-              setSelected(null)
+              load();
+              setSelected(null);
             })
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const openChModal = (communityId: string, type: "text" | "voice") => {
-    setChCommunityId(communityId)
-    setChType(type)
-    setChName("")
-    setChModal(true)
-  }
+    setChCommunityId(communityId);
+    setChType(type);
+    setChName("");
+    setChModal(true);
+  };
 
   const createChannel = async () => {
-    if (!chName.trim() || !chCommunityId) return
+    if (!chName.trim() || !chCommunityId) return;
     try {
       const endpoint =
-        chType === "text" ? `/api/communities/${chCommunityId}/channels` : `/api/communities/${chCommunityId}/voice`
-      await api(endpoint, { method: "POST", body: JSON.stringify({ name: chName.trim() }) })
-      setChModal(false)
-      loadDetail(chCommunityId)
+        chType === "text" ? `/api/communities/${chCommunityId}/channels` : `/api/communities/${chCommunityId}/voice`;
+      await api(endpoint, { method: "POST", body: JSON.stringify({ name: chName.trim() }) });
+      setChModal(false);
+      loadDetail(chCommunityId);
     } catch {}
-  }
+  };
 
   const deleteChannel = async (communityId: string, channelId: string, isVoice: boolean) => {
     try {
       await api(isVoice ? `/api/communities/voice/${channelId}` : `/api/communities/channels/${channelId}`, {
         method: "DELETE",
-      })
-      loadDetail(communityId)
+      });
+      loadDetail(communityId);
     } catch {}
-  }
+  };
 
   const removeMember = async (communityId: string, userId: string) => {
     try {
-      await api(`/api/communities/${communityId}/members/${userId}`, { method: "DELETE" })
-      loadDetail(communityId)
+      await api(`/api/communities/${communityId}/members/${userId}`, { method: "DELETE" });
+      loadDetail(communityId);
     } catch {}
-  }
+  };
 
   const changeRole = async (communityId: string, userId: string, role: string) => {
     try {
       await api(`/api/communities/${communityId}/members/${userId}/role`, {
         method: "PUT",
         body: JSON.stringify({ role }),
-      })
-      loadDetail(communityId)
+      });
+      loadDetail(communityId);
     } catch {}
-  }
+  };
 
   const createInvite = async (communityId: string) => {
     try {
-      await api(`/api/communities/${communityId}/invites`, { method: "POST" })
-      loadDetail(communityId)
+      await api(`/api/communities/${communityId}/invites`, { method: "POST" });
+      loadDetail(communityId);
     } catch {}
-  }
+  };
 
   const joinVoiceChannel = (channel: VoiceChannel, community: Community) => {
-    wsClient.send("voice:join", { channelId: channel.id })
-    setJoinedVoice({ channelId: channel.id, communityName: community.name, channelName: channel.name })
-  }
+    wsClient.send("voice:join", { channelId: channel.id });
+    setJoinedVoice({ channelId: channel.id, communityName: community.name, channelName: channel.name });
+  };
 
   const leaveVoiceChannel = () => {
     if (joinedVoice) {
-      wsClient.send("voice:leave", { channelId: joinedVoice.channelId })
-      setJoinedVoice(null)
+      wsClient.send("voice:leave", { channelId: joinedVoice.channelId });
+      setJoinedVoice(null);
     }
-  }
+  };
 
   const ChannelList = ({ community, manage }: { community: Community; manage?: boolean }) => {
-    const isAdmin = manage || community.role === "owner" || community.role === "admin"
+    const isAdmin = manage || community.role === "owner" || community.role === "admin";
     return (
       <View style={st.section}>
         <View style={st.sectionHeader}>
@@ -343,11 +343,11 @@ export function CommunitiesScreen() {
           ))
         )}
       </View>
-    )
-  }
+    );
+  };
 
   const VoiceChannelList = ({ community, manage }: { community: Community; manage?: boolean }) => {
-    const isAdmin = manage || community.role === "owner" || community.role === "admin"
+    const isAdmin = manage || community.role === "owner" || community.role === "admin";
     return (
       <View style={st.section}>
         <View style={st.sectionHeader}>
@@ -383,12 +383,12 @@ export function CommunitiesScreen() {
           ))
         )}
       </View>
-    )
-  }
+    );
+  };
 
   const ManagePage = () => {
-    if (!manageCommunity) return null
-    const mc = manageCommunity
+    if (!manageCommunity) return null;
+    const mc = manageCommunity;
     return (
       <Modal visible animationType="slide" onRequestClose={() => setManageCommunity(null)}>
         <View style={[st.container, { backgroundColor: c.bg }]}>
@@ -517,9 +517,9 @@ export function CommunitiesScreen() {
                     </Text>
                     <TouchableOpacity
                       onPress={() => {
-                        Clipboard.setStringAsync(inv.code)
-                        setCopiedInvite(inv.id)
-                        setTimeout(() => setCopiedInvite(null), 2000)
+                        Clipboard.setStringAsync(inv.code);
+                        setCopiedInvite(inv.id);
+                        setTimeout(() => setCopiedInvite(null), 2000);
                       }}
                       style={{ flexShrink: 0, padding: 4 }}
                     >
@@ -542,8 +542,8 @@ export function CommunitiesScreen() {
           </ScrollView>
         </View>
       </Modal>
-    )
-  }
+    );
+  };
 
   return (
     <View style={[st.container, { backgroundColor: c.bg }]}>
@@ -563,9 +563,9 @@ export function CommunitiesScreen() {
         keyExtractor={(c) => c.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
-          const detail = expanded[item.id]
-          const isOwner = item.role === "owner"
-          const isExpanded = selected === item.id
+          const detail = expanded[item.id];
+          const isOwner = item.role === "owner";
+          const isExpanded = selected === item.id;
           return (
             <View>
               <TouchableOpacity
@@ -645,7 +645,7 @@ export function CommunitiesScreen() {
                 </View>
               )}
             </View>
-          )
+          );
         }}
         ListEmptyComponent={<Text style={[st.empty, { color: c.textMuted }]}>{t("communities.noCommunities")}</Text>}
       />
@@ -744,7 +744,7 @@ export function CommunitiesScreen() {
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 const st = StyleSheet.create({
@@ -873,4 +873,4 @@ const st = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 24,
   },
-})
+});

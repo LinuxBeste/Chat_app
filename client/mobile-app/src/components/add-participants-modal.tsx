@@ -1,47 +1,47 @@
-import { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Modal } from "react-native"
-import { api } from "../lib/api"
-import { useTheme } from "../lib/theme-context"
+import { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Modal } from "react-native";
+import { api } from "../lib/api";
+import { useTheme } from "../lib/theme-context";
 
 interface User {
-  id: string
-  username: string
-  displayName?: string
+  id: string;
+  username: string;
+  displayName?: string;
 }
 
 interface AddParticipantsModalProps {
-  visible: boolean
-  conversationId: string
-  onClose: () => void
+  visible: boolean;
+  conversationId: string;
+  onClose: () => void;
 }
 
 export function AddParticipantsModal({ visible, conversationId, onClose }: AddParticipantsModalProps) {
-  const { c } = useTheme()
-  const [search, setSearch] = useState("")
-  const [results, setResults] = useState<User[]>([])
+  const { c } = useTheme();
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<User[]>([]);
 
   const searchUsers = async (q: string) => {
-    setSearch(q)
+    setSearch(q);
     if (!q.trim()) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
     try {
-      const data = await api<User[]>(`/api/users/search?q=${encodeURIComponent(q)}`)
-      setResults(data)
+      const data = await api<User[]>(`/api/users/search?q=${encodeURIComponent(q)}`);
+      setResults(data);
     } catch {
-      setResults([])
+      setResults([]);
     }
-  }
+  };
 
   const addParticipant = async (userId: string) => {
     try {
       await api(`/api/conversations/${conversationId}/participants`, {
         method: "POST",
         body: JSON.stringify({ userId }),
-      })
+      });
     } catch {}
-  }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -75,7 +75,7 @@ export function AddParticipantsModal({ visible, conversationId, onClose }: AddPa
         </View>
       </View>
     </Modal>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -106,4 +106,4 @@ const s = StyleSheet.create({
   addBtn: { fontSize: 14, fontWeight: "600" },
   closeBtn: { marginTop: 16, alignItems: "center", padding: 8 },
   closeText: { fontSize: 15 },
-})
+});

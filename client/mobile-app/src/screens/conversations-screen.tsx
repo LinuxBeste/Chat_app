@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,102 +9,102 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-} from "react-native"
-import { api } from "../lib/api"
-import { useAuth } from "../lib/auth-context"
-import { wsClient } from "../lib/ws"
-import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTheme } from "../lib/theme-context"
-import { AvatarImage } from "../components/ui/avatar-image"
-import { Search, Plus, X } from "lucide-react-native"
+} from "react-native";
+import { api } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
+import { wsClient } from "../lib/ws";
+import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../lib/theme-context";
+import { AvatarImage } from "../components/ui/avatar-image";
+import { Search, Plus, X } from "lucide-react-native";
 
 interface Conv {
-  id: string
-  type: string
-  name: string | null
-  avatar?: string
-  lastMessage?: { content: string; createdAt: string; sender: { username: string; displayName?: string } } | null
-  participants?: { id: string; username: string; avatar?: string; status?: string }[]
+  id: string;
+  type: string;
+  name: string | null;
+  avatar?: string;
+  lastMessage?: { content: string; createdAt: string; sender: { username: string; displayName?: string } } | null;
+  participants?: { id: string; username: string; avatar?: string; status?: string }[];
   otherUser?: {
-    id: string
-    username: string
-    displayName?: string
-    avatar?: string
-    status?: string
-    customStatus?: string
-  }
-  unreadCount?: number
+    id: string;
+    username: string;
+    displayName?: string;
+    avatar?: string;
+    status?: string;
+    customStatus?: string;
+  };
+  unreadCount?: number;
 }
 
-const avatarPalette = ["#5B8DEF", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#E5A13C"]
+const avatarPalette = ["#5B8DEF", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#E5A13C"];
 
 const avatarColor = (name: string) => {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
-  return avatarPalette[h % avatarPalette.length]
-}
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return avatarPalette[h % avatarPalette.length];
+};
 
 interface SearchUser {
-  id: string
-  username: string
-  avatar?: string
-  status?: string
+  id: string;
+  username: string;
+  avatar?: string;
+  status?: string;
 }
 
 export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [convs, setConvs] = useState<Conv[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const { user } = useAuth()
-  const [showNewDM, setShowNewDM] = useState(false)
-  const [userSearchQuery, setUserSearchQuery] = useState("")
-  const [userResults, setUserResults] = useState<SearchUser[]>([])
-  const [searchingUsers, setSearchingUsers] = useState(false)
+  const [convs, setConvs] = useState<Conv[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const [showNewDM, setShowNewDM] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userResults, setUserResults] = useState<SearchUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const convs = await api<Conv[]>("/api/conversations")
-      setConvs(convs)
-      cacheSet(offlineKeys.conversations, convs)
+      const convs = await api<Conv[]>("/api/conversations");
+      setConvs(convs);
+      cacheSet(offlineKeys.conversations, convs);
     } catch {
-      const cached = await cacheGet<Conv[]>(offlineKeys.conversations)
-      if (cached) setConvs(cached)
+      const cached = await cacheGet<Conv[]>(offlineKeys.conversations);
+      if (cached) setConvs(cached);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     cacheGet<Conv[]>(offlineKeys.conversations).then((cached) => {
-      if (cached) setConvs(cached)
-    })
-    load()
-  }, [load])
+      if (cached) setConvs(cached);
+    });
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (convs.length > 0) {
-      cacheSet(offlineKeys.conversations, convs)
+      cacheSet(offlineKeys.conversations, convs);
     }
-  }, [convs])
+  }, [convs]);
 
   useEffect(() => {
     if (userSearchQuery.length < 2) {
-      setUserResults([])
-      return
+      setUserResults([]);
+      return;
     }
-    setSearchingUsers(true)
+    setSearchingUsers(true);
     const timer = setTimeout(() => {
       api<SearchUser[]>(`/api/users/search?q=${encodeURIComponent(userSearchQuery)}`)
         .then((users) => setUserResults(users.filter((u) => u.id !== user!.id)))
         .catch(() => {})
-        .finally(() => setSearchingUsers(false))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [userSearchQuery])
+        .finally(() => setSearchingUsers(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearchQuery]);
 
   useEffect(() => {
     const unsub1 = wsClient.on("message:new", (data: any) => {
@@ -124,56 +124,56 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                 : c,
             )
             .sort((a, b) => {
-              const aTime = a.lastMessage?.createdAt || ""
-              const bTime = b.lastMessage?.createdAt || ""
-              return bTime.localeCompare(aTime)
+              const aTime = a.lastMessage?.createdAt || "";
+              const bTime = b.lastMessage?.createdAt || "";
+              return bTime.localeCompare(aTime);
             }),
-        )
+        );
       }
-    })
-    const unsub2 = wsClient.on("_connected", load)
+    });
+    const unsub2 = wsClient.on("_connected", load);
     return () => {
-      unsub1()
-      unsub2()
-    }
-  }, [load])
+      unsub1();
+      unsub2();
+    };
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const startDM = async (userId: string) => {
     try {
       const conv = await api<any>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [userId] }),
-      })
-      setShowNewDM(false)
-      setUserSearchQuery("")
-      setUserResults([])
-      onSelect(conv.id)
+      });
+      setShowNewDM(false);
+      setUserSearchQuery("");
+      setUserResults([]);
+      onSelect(conv.id);
     } catch {}
-  }
+  };
 
   const formatTime = (iso: string) => {
-    const d = new Date(iso)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    if (diff < 60000) return "now"
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`
-    return d.toLocaleDateString()
-  }
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+    return d.toLocaleDateString();
+  };
 
-  const dms = convs.filter((c) => c.type === "dm")
+  const dms = convs.filter((c) => c.type === "dm");
   const filtered = searchQuery
     ? dms.filter((c) => {
-        const searchable = c.type === "dm" ? (c.otherUser?.displayName ?? c.otherUser?.username ?? "") : c.name || ""
-        return searchable.toLowerCase().includes(searchQuery.toLowerCase())
+        const searchable = c.type === "dm" ? (c.otherUser?.displayName ?? c.otherUser?.username ?? "") : c.name || "";
+        return searchable.toLowerCase().includes(searchQuery.toLowerCase());
       })
-    : dms
+    : dms;
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -225,12 +225,12 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
                     online: c.success,
                     away: c.warning,
                     busy: c.danger,
-                  }
+                  };
                   return (
                     <View
                       style={[s.statusDot, { backgroundColor: statusColors[item.otherUser!.status] || c.textMuted }]}
                     />
-                  )
+                  );
                 })()}
             </View>
             <View style={s.itemContent}>
@@ -286,9 +286,9 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
               <Text style={[s.modalTitle, { color: c.text }]}>New Message</Text>
               <TouchableOpacity
                 onPress={() => {
-                  setShowNewDM(false)
-                  setUserSearchQuery("")
-                  setUserResults([])
+                  setShowNewDM(false);
+                  setUserSearchQuery("");
+                  setUserResults([]);
                 }}
               >
                 <X size={20} color={c.textSecondary} />
@@ -330,7 +330,7 @@ export function ConversationsScreen({ onSelect }: { onSelect: (id: string) => vo
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -447,4 +447,4 @@ const s = StyleSheet.create({
   },
   userAvatarText: { fontSize: 16, fontWeight: "600" },
   userName: { fontSize: 15 },
-})
+});

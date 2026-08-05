@@ -1,56 +1,56 @@
-import { useState, useEffect } from "react"
-import { useTranslation } from "react-i18next"
-import { api, resolveAssetUrl } from "../../lib/api"
-import { useAuth } from "../../lib/auth-context"
-import { ChatArea } from "../chat/chat-area"
-import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { api, resolveAssetUrl } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
+import { ChatArea } from "../chat/chat-area";
+import { Plus, Users, X, Search, UserPlus, Trash2, MessageSquare } from "lucide-react";
 
 interface Group {
-  id: string
-  type: string
-  name: string | null
-  avatar: string | null
-  createdAt: string
-  createdBy: string
+  id: string;
+  type: string;
+  name: string | null;
+  avatar: string | null;
+  createdAt: string;
+  createdBy: string;
 }
 
 interface UserResult {
-  id: string
-  username: string
-  displayName: string | null
+  id: string;
+  username: string;
+  displayName: string | null;
 }
 
 export function GroupsPage() {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [groups, setGroups] = useState<Group[]>([])
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const [showCreate, setShowCreate] = useState(false)
-  const [createName, setCreateName] = useState("")
-  const [createSearchQuery, setCreateSearchQuery] = useState("")
-  const [createSearchResults, setCreateSearchResults] = useState<UserResult[]>([])
-  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set())
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createSearchQuery, setCreateSearchQuery] = useState("");
+  const [createSearchResults, setCreateSearchResults] = useState<UserResult[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     api<Group[]>("/api/conversations")
       .then((convs) => {
-        setGroups(convs.filter((c) => c.type === "group"))
+        setGroups(convs.filter((c) => c.type === "group"));
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const deleteGroup = async (id: string) => {
     try {
-      await api(`/api/conversations/${id}`, { method: "DELETE" })
-      setGroups((prev) => prev.filter((g) => g.id !== id))
-      if (selectedGroupId === id) setSelectedGroupId(null)
+      await api(`/api/conversations/${id}`, { method: "DELETE" });
+      setGroups((prev) => prev.filter((g) => g.id !== id));
+      if (selectedGroupId === id) setSelectedGroupId(null);
     } catch {
       /* ignore */
     }
-  }
+  };
 
   const createGroup = async () => {
-    if (!createName.trim()) return
+    if (!createName.trim()) return;
     const conv = await api<Group>("/api/conversations", {
       method: "POST",
       body: JSON.stringify({
@@ -58,30 +58,30 @@ export function GroupsPage() {
         name: createName.trim(),
         participantIds: Array.from(selectedParticipants),
       }),
-    }).catch(() => null)
+    }).catch(() => null);
     if (conv) {
-      setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)])
-      setSelectedGroupId(conv.id)
-      setCreateName("")
-      setCreateSearchQuery("")
-      setCreateSearchResults([])
-      setSelectedParticipants(new Set())
-      setShowCreate(false)
+      setGroups((prev) => [conv, ...prev.filter((g) => g.id !== conv.id)]);
+      setSelectedGroupId(conv.id);
+      setCreateName("");
+      setCreateSearchQuery("");
+      setCreateSearchResults([]);
+      setSelectedParticipants(new Set());
+      setShowCreate(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (!createSearchQuery || createSearchQuery.length < 1) {
-      setCreateSearchResults([])
-      return
+      setCreateSearchResults([]);
+      return;
     }
     const timer = setTimeout(() => {
       api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(createSearchQuery)}`)
         .then(setCreateSearchResults)
-        .catch(() => setCreateSearchResults([]))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [createSearchQuery])
+        .catch(() => setCreateSearchResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [createSearchQuery]);
 
   return (
     <div className="flex h-full">
@@ -122,8 +122,8 @@ export function GroupsPage() {
               {g.createdBy === user?.id && (
                 <button
                   onClick={(e) => {
-                    e.stopPropagation()
-                    deleteGroup(g.id)
+                    e.stopPropagation();
+                    deleteGroup(g.id);
                   }}
                   className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer shrink-0"
                   title={t("common.delete")}
@@ -151,10 +151,10 @@ export function GroupsPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
           onClick={() => {
-            setShowCreate(false)
-            setCreateSearchQuery("")
-            setCreateSearchResults([])
-            setSelectedParticipants(new Set())
+            setShowCreate(false);
+            setCreateSearchQuery("");
+            setCreateSearchResults([]);
+            setSelectedParticipants(new Set());
           }}
         >
           <div
@@ -165,10 +165,10 @@ export function GroupsPage() {
               <h3 className="text-sm font-semibold text-text-primary">{t("groups.createGroup")}</h3>
               <button
                 onClick={() => {
-                  setShowCreate(false)
-                  setCreateSearchQuery("")
-                  setCreateSearchResults([])
-                  setSelectedParticipants(new Set())
+                  setShowCreate(false);
+                  setCreateSearchQuery("");
+                  setCreateSearchResults([]);
+                  setSelectedParticipants(new Set());
                 }}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
               >
@@ -193,7 +193,7 @@ export function GroupsPage() {
             {selectedParticipants.size > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {Array.from(selectedParticipants).map((id) => {
-                  const u = createSearchResults.find((r) => r.id === id)
+                  const u = createSearchResults.find((r) => r.id === id);
                   return (
                     <span
                       key={id}
@@ -203,9 +203,9 @@ export function GroupsPage() {
                       <button
                         onClick={() =>
                           setSelectedParticipants((prev) => {
-                            const next = new Set(prev)
-                            next.delete(id)
-                            return next
+                            const next = new Set(prev);
+                            next.delete(id);
+                            return next;
                           })
                         }
                         className="hover:text-accent-hover cursor-pointer"
@@ -213,7 +213,7 @@ export function GroupsPage() {
                         <X className="h-3 w-3" />
                       </button>
                     </span>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -251,5 +251,5 @@ export function GroupsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

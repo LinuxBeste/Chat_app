@@ -7,52 +7,55 @@ import {
   nativeImage,
   safeStorage,
   shell,
-} from "electron"
-import { join } from "path"
-import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs"
+} from "electron";
+import { join } from "path";
+import { readFileSync, existsSync, writeFileSync, unlinkSync } from "fs";
 
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const WEB_DIST = join(__dirname, "..", "..", "web", "dist")
+const WEB_DIST = join(__dirname, "..", "..", "web", "dist");
 
-const isDev = !app.isPackaged
-const isMac = process.platform === "darwin"
-const APP_NAME = "Chat App"
+const isDev = !app.isPackaged;
+const isMac = process.platform === "darwin";
+const APP_NAME = "Chat App";
 
-app.name = APP_NAME
+app.name = APP_NAME;
 
-let mainWindow: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null;
 
 function loadWindowState(): { width: number; height: number; x?: number; y?: number } {
   try {
-    const statePath = join(app.getPath("userData"), "window-state.json")
-    if (existsSync(statePath)) return JSON.parse(readFileSync(statePath, "utf-8"))
+    const statePath = join(app.getPath("userData"), "window-state.json");
+    if (existsSync(statePath)) return JSON.parse(readFileSync(statePath, "utf-8"));
   } catch {
     /* ignore */
   }
-  return { width: 1200, height: 800 }
+  return { width: 1200, height: 800 };
 }
 
 function saveWindowState() {
-  if (saveTimeout) clearTimeout(saveTimeout)
+  if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
-    if (!mainWindow) return
+    if (!mainWindow) return;
     try {
-      const bounds = mainWindow.getBounds()
-      const statePath = join(app.getPath("userData"), "window-state.json")
-      writeFileSync(statePath, JSON.stringify({ width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }))
+      const bounds = mainWindow.getBounds();
+      const statePath = join(app.getPath("userData"), "window-state.json");
+      writeFileSync(
+        statePath,
+        JSON.stringify({ width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }),
+      );
     } catch {
       /* ignore */
     }
-  }, 300)
+  }, 300);
 }
 
 function menuAction(action: string) {
-  mainWindow?.webContents.send("menu:action", action)
+  mainWindow?.webContents.send("menu:action", action);
 }
 
 function buildMenu() {
-  const isMacOrLinux = ["darwin", "linux"].includes(process.platform)
+  const isMacOrLinux = ["darwin", "linux"].includes(process.platform);
   const chatSubmenu: MenuItemConstructorOptions[] = [
     {
       label: "New Conversation",
@@ -86,7 +89,7 @@ function buildMenu() {
       accelerator: "CmdOrCtrl+K",
       click: () => menuAction("search"),
     },
-  ]
+  ];
   const navigateSubmenu: MenuItemConstructorOptions[] = [
     {
       label: "Friends",
@@ -124,7 +127,7 @@ function buildMenu() {
       accelerator: "CmdOrCtrl+,",
       click: () => menuAction("go-settings"),
     },
-  ]
+  ];
   const viewSubmenu: MenuItemConstructorOptions[] = [
     { role: "reload" as const },
     { role: "forceReload" as const },
@@ -146,7 +149,7 @@ function buildMenu() {
       accelerator: "CmdOrCtrl+D",
       click: () => menuAction("toggle-dark-mode"),
     },
-  ]
+  ];
   const helpSubmenu: MenuItemConstructorOptions[] = [
     {
       label: "About",
@@ -161,7 +164,7 @@ function buildMenu() {
       label: "Report Issue",
       click: () => shell.openExternal("https://github.com/LinuxBeste/Chat_app/issues"),
     },
-  ]
+  ];
   return Menu.buildFromTemplate([
     ...(isMacOrLinux
       ? [
@@ -215,11 +218,11 @@ function buildMenu() {
       label: "Help",
       submenu: helpSubmenu,
     },
-  ])
+  ]);
 }
 
 function createWindow() {
-  const state = loadWindowState()
+  const state = loadWindowState();
 
   mainWindow = new BrowserWindow({
     width: state.width,
@@ -235,127 +238,127 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
     },
-  })
+  });
 
-  mainWindow.setMenu(buildMenu())
-  mainWindow.once("ready-to-show", () => mainWindow?.show())
+  mainWindow.setMenu(buildMenu());
+  mainWindow.once("ready-to-show", () => mainWindow?.show());
 
   if (isDev) {
-    mainWindow.loadURL("http://localhost:5173")
+    mainWindow.loadURL("http://localhost:5173");
   } else {
-    mainWindow.loadFile(join(WEB_DIST, "index.html"))
+    mainWindow.loadFile(join(WEB_DIST, "index.html"));
   }
 
   mainWindow.on("closed", () => {
-    mainWindow = null
-  })
-  mainWindow.on("resize", saveWindowState)
-  mainWindow.on("move", saveWindowState)
+    mainWindow = null;
+  });
+  mainWindow.on("resize", saveWindowState);
+  mainWindow.on("move", saveWindowState);
 }
 
 app.whenReady().then(() => {
-  createWindow()
+  createWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit()
-})
+  if (process.platform !== "darwin") app.quit();
+});
 
-ipcMain.handle("get-user-data-path", () => app.getPath("userData"))
-ipcMain.handle("get-app-version", () => app.getVersion())
+ipcMain.handle("get-user-data-path", () => app.getPath("userData"));
+ipcMain.handle("get-app-version", () => app.getVersion());
 
-const KEY_FILE = "e2ee-keypair.enc"
-const CONV_KEYS_FILE = "e2ee-conv-keys.enc"
-const DEVICE_ID_FILE = "e2ee-device-id.enc"
+const KEY_FILE = "e2ee-keypair.enc";
+const CONV_KEYS_FILE = "e2ee-conv-keys.enc";
+const DEVICE_ID_FILE = "e2ee-device-id.enc";
 
-const scopedFile = (base: string, id?: string) => join(app.getPath("userData"), id ? `${base}-${id}.enc` : base)
+const scopedFile = (base: string, id?: string) => join(app.getPath("userData"), id ? `${base}-${id}.enc` : base);
 
-ipcMain.handle("e2ee:is-available", () => safeStorage.isEncryptionAvailable())
+ipcMain.handle("e2ee:is-available", () => safeStorage.isEncryptionAvailable());
 
 ipcMain.handle("e2ee:store-keypair", async (_event, keypairJson: string, id?: string) => {
   try {
-    if (!safeStorage.isEncryptionAvailable()) return false
-    const encrypted = safeStorage.encryptString(keypairJson)
-    writeFileSync(scopedFile(KEY_FILE, id), encrypted)
-    return true
+    if (!safeStorage.isEncryptionAvailable()) return false;
+    const encrypted = safeStorage.encryptString(keypairJson);
+    writeFileSync(scopedFile(KEY_FILE, id), encrypted);
+    return true;
   } catch {
-    return false
+    return false;
   }
-})
+});
 
 ipcMain.handle("e2ee:get-keypair", async (_event, id?: string) => {
   try {
-    const path = scopedFile(KEY_FILE, id)
-    if (!existsSync(path)) return null
-    const encrypted = readFileSync(path)
-    return safeStorage.decryptString(encrypted)
+    const path = scopedFile(KEY_FILE, id);
+    if (!existsSync(path)) return null;
+    const encrypted = readFileSync(path);
+    return safeStorage.decryptString(encrypted);
   } catch {
-    return null
+    return null;
   }
-})
+});
 
 ipcMain.handle("e2ee:delete-keypair", async (_event, id?: string) => {
   try {
-    const path = scopedFile(KEY_FILE, id)
-    if (existsSync(path)) unlinkSync(path)
+    const path = scopedFile(KEY_FILE, id);
+    if (existsSync(path)) unlinkSync(path);
   } catch {
     /* ignore */
   }
-})
+});
 
 ipcMain.handle("e2ee:store-device-id", async (_event, id: string, deviceId: string) => {
   try {
-    if (!safeStorage.isEncryptionAvailable()) return false
-    const encrypted = safeStorage.encryptString(deviceId)
-    writeFileSync(scopedFile(DEVICE_ID_FILE, id), encrypted)
-    return true
+    if (!safeStorage.isEncryptionAvailable()) return false;
+    const encrypted = safeStorage.encryptString(deviceId);
+    writeFileSync(scopedFile(DEVICE_ID_FILE, id), encrypted);
+    return true;
   } catch {
-    return false
+    return false;
   }
-})
+});
 
 ipcMain.handle("e2ee:get-device-id", async (_event, id?: string) => {
   try {
-    const path = scopedFile(DEVICE_ID_FILE, id)
-    if (!existsSync(path)) return null
-    const encrypted = readFileSync(path)
-    return safeStorage.decryptString(encrypted)
+    const path = scopedFile(DEVICE_ID_FILE, id);
+    if (!existsSync(path)) return null;
+    const encrypted = readFileSync(path);
+    return safeStorage.decryptString(encrypted);
   } catch {
-    return null
+    return null;
   }
-})
+});
 
 ipcMain.handle("e2ee:store-conv-keys", async (_event, dataJson: string, id?: string) => {
   try {
-    if (!safeStorage.isEncryptionAvailable()) return false
-    const encrypted = safeStorage.encryptString(dataJson)
-    writeFileSync(scopedFile(CONV_KEYS_FILE, id), encrypted)
-    return true
+    if (!safeStorage.isEncryptionAvailable()) return false;
+    const encrypted = safeStorage.encryptString(dataJson);
+    writeFileSync(scopedFile(CONV_KEYS_FILE, id), encrypted);
+    return true;
   } catch {
-    return false
+    return false;
   }
-})
+});
 
 ipcMain.handle("e2ee:get-conv-keys", async (_event, id?: string) => {
   try {
-    const path = scopedFile(CONV_KEYS_FILE, id)
-    if (!existsSync(path)) return null
-    const encrypted = readFileSync(path)
-    return safeStorage.decryptString(encrypted)
+    const path = scopedFile(CONV_KEYS_FILE, id);
+    if (!existsSync(path)) return null;
+    const encrypted = readFileSync(path);
+    return safeStorage.decryptString(encrypted);
   } catch {
-    return null
+    return null;
   }
-})
+});
 
 ipcMain.handle("e2ee:delete-conv-keys", async (_event, id?: string) => {
   try {
-    const path = scopedFile(CONV_KEYS_FILE, id)
-    if (existsSync(path)) unlinkSync(path)
+    const path = scopedFile(CONV_KEYS_FILE, id);
+    if (existsSync(path)) unlinkSync(path);
   } catch {
     /* ignore */
   }
-})
+});

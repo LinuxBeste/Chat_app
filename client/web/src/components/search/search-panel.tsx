@@ -1,36 +1,36 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { Search, MessageSquare, X } from "lucide-react"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { Search, MessageSquare, X } from "lucide-react";
 
 interface SearchResult {
-  id: string
-  content: string
-  createdAt: string
-  senderUsername: string
-  conversationId: string
+  id: string;
+  content: string;
+  createdAt: string;
+  senderUsername: string;
+  conversationId: string;
 }
 
 interface SearchPanelProps {
-  query: string
-  onChange: (query: string) => void
-  onClose: () => void
+  query: string;
+  onChange: (query: string) => void;
+  onClose: () => void;
 }
 
 export function SearchPanel({ query, onChange, onClose }: SearchPanelProps) {
-  const [results, setResults] = useState<SearchResult[]>([])
+  const [results, setResults] = useState<SearchResult[]>([]);
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
     const timer = setTimeout(() => {
       api<SearchResult[]>(`/api/productivity/search?q=${encodeURIComponent(query)}`)
         .then(setResults)
-        .catch(() => setResults([]))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [query])
+        .catch(() => setResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   return (
     <div className="absolute top-full left-0 right-0 mt-2 z-30 max-w-md">
@@ -40,8 +40,8 @@ export function SearchPanel({ query, onChange, onClose }: SearchPanelProps) {
           <p className="flex-1 text-sm text-text-primary truncate">{query}</p>
           <button
             onClick={() => {
-              onChange("")
-              onClose()
+              onChange("");
+              onClose();
             }}
             className="text-text-muted hover:text-text-primary cursor-pointer"
             aria-label="Close search"
@@ -72,5 +72,5 @@ export function SearchPanel({ query, onChange, onClose }: SearchPanelProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

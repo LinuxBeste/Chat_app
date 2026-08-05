@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native"
+import { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import {
   Phone,
   Mic,
@@ -13,50 +13,50 @@ import {
   PhoneOutgoing,
   User,
   X,
-} from "lucide-react-native"
-import { wsClient } from "../lib/ws"
-import { AvatarImage } from "./ui/avatar-image"
+} from "lucide-react-native";
+import { wsClient } from "../lib/ws";
+import { AvatarImage } from "./ui/avatar-image";
 
 interface CallOverlayProps {
-  conversationId: string
-  type: "voice" | "video"
-  onEnd: () => void
-  incoming?: boolean
-  name?: string
-  avatar?: string | null
+  conversationId: string;
+  type: "voice" | "video";
+  onEnd: () => void;
+  incoming?: boolean;
+  name?: string;
+  avatar?: string | null;
 }
 
-const AVATAR_COLORS = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"]
+const AVATAR_COLORS = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"];
 
 function colorFor(name: string): string {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
 export function CallOverlay({ conversationId, type, onEnd, incoming, name, avatar }: CallOverlayProps) {
-  const [muted, setMuted] = useState(false)
-  const [videoOn, setVideoOn] = useState(type === "video")
-  const [speakerOn, setSpeakerOn] = useState(true)
-  const [duration, setDuration] = useState(0)
-  const [connected, setConnected] = useState(!incoming)
-  const pulse = useRef(new Animated.Value(0)).current
+  const [muted, setMuted] = useState(false);
+  const [videoOn, setVideoOn] = useState(type === "video");
+  const [speakerOn, setSpeakerOn] = useState(true);
+  const [duration, setDuration] = useState(0);
+  const [connected, setConnected] = useState(!incoming);
+  const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!incoming) {
-      wsClient.send("call:offer", { conversationId, type })
+      wsClient.send("call:offer", { conversationId, type });
     }
-    const unsub1 = wsClient.on("call:answered", () => setConnected(true))
+    const unsub1 = wsClient.on("call:answered", () => setConnected(true));
     const unsub2 = wsClient.on("call:ended", (data: any) => {
-      if (data.sessionId === conversationId) onEnd()
-    })
-    const timer = setInterval(() => setDuration((d) => d + 1), 1000)
+      if (data.sessionId === conversationId) onEnd();
+    });
+    const timer = setInterval(() => setDuration((d) => d + 1), 1000);
     return () => {
-      unsub1()
-      unsub2()
-      clearInterval(timer)
-    }
-  }, [conversationId])
+      unsub1();
+      unsub2();
+      clearInterval(timer);
+    };
+  }, [conversationId]);
 
   useEffect(() => {
     if (!connected) {
@@ -65,39 +65,39 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
           Animated.timing(pulse, { toValue: 1, duration: 1100, useNativeDriver: true }),
           Animated.timing(pulse, { toValue: 0, duration: 1100, useNativeDriver: true }),
         ]),
-      )
-      loop.start()
-      return () => loop.stop()
+      );
+      loop.start();
+      return () => loop.stop();
     }
-    pulse.setValue(0)
-  }, [connected])
+    pulse.setValue(0);
+  }, [connected]);
 
   const endCall = () => {
-    wsClient.send("call:end", { sessionId: conversationId })
-    onEnd()
-  }
+    wsClient.send("call:end", { sessionId: conversationId });
+    onEnd();
+  };
 
   const answerCall = () => {
-    wsClient.send("call:answer", { conversationId })
-    setConnected(true)
-  }
+    wsClient.send("call:answer", { conversationId });
+    setConnected(true);
+  };
 
-  const toggleMute = () => setMuted(!muted)
-  const toggleVideo = () => setVideoOn(!videoOn)
-  const toggleSpeaker = () => setSpeakerOn(!speakerOn)
+  const toggleMute = () => setMuted(!muted);
+  const toggleVideo = () => setVideoOn(!videoOn);
+  const toggleSpeaker = () => setSpeakerOn(!speakerOn);
 
   const formatDuration = (s: number) => {
-    const m = Math.floor(s / 60)
-    const sec = s % 60
-    return `${m}:${sec.toString().padStart(2, "0")}`
-  }
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
 
-  const displayName = name || "Call"
-  const avatarBg = colorFor(displayName)
+  const displayName = name || "Call";
+  const avatarBg = colorFor(displayName);
 
-  const statusText = incoming && !connected ? "Incoming call" : connected ? formatDuration(duration) : "Ringing…"
-  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] })
-  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] })
+  const statusText = incoming && !connected ? "Incoming call" : connected ? formatDuration(duration) : "Ringing…";
+  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] });
+  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] });
 
   return (
     <View style={[s.container, type === "video" && s.containerVideo]}>
@@ -218,7 +218,7 @@ export function CallOverlay({ conversationId, type, onEnd, incoming, name, avata
         )}
       </View>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -297,4 +297,4 @@ const s = StyleSheet.create({
   },
   endBtn: { backgroundColor: "#EF4444", borderWidth: 1, borderColor: "#EF4444" },
   answerBtn: { backgroundColor: "#22C55E", borderWidth: 1, borderColor: "#22C55E" },
-})
+});

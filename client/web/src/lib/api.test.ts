@@ -1,25 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { api, setTokens, NetworkError, refreshAccess } from "./api"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { api, setTokens, NetworkError, refreshAccess } from "./api";
 
 describe("api", () => {
   beforeEach(() => {
-    localStorage.clear()
-  })
+    localStorage.clear();
+  });
 
   afterEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
   it("makes a GET request with auth header", async () => {
-    setTokens("access-123", "refresh-456")
+    setTokens("access-123", "refresh-456");
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: () => Promise.resolve({}),
-    })
-    vi.stubGlobal("fetch", fetchMock)
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-    await api("/api/conversations")
+    await api("/api/conversations");
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/conversations"),
@@ -28,8 +28,8 @@ describe("api", () => {
           Authorization: "Bearer access-123",
         }),
       }),
-    )
-  })
+    );
+  });
 
   it("throws on non-ok response", async () => {
     vi.stubGlobal(
@@ -39,13 +39,13 @@ describe("api", () => {
         status: 400,
         json: () => Promise.resolve({ error: "Bad request" }),
       }),
-    )
+    );
 
-    await expect(api("/api/test")).rejects.toThrow("Bad request")
-  })
+    await expect(api("/api/test")).rejects.toThrow("Bad request");
+  });
 
   it("returns data on success", async () => {
-    const data = { id: "1", name: "test" }
+    const data = { id: "1", name: "test" };
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -53,11 +53,11 @@ describe("api", () => {
         status: 200,
         json: () => Promise.resolve(data),
       }),
-    )
+    );
 
-    const result = await api("/api/test")
-    expect(result).toEqual(data)
-  })
+    const result = await api("/api/test");
+    expect(result).toEqual(data);
+  });
 
   it("returns undefined on 204", async () => {
     vi.stubGlobal(
@@ -67,83 +67,83 @@ describe("api", () => {
         status: 204,
         json: () => Promise.resolve(),
       }),
-    )
+    );
 
-    const result = await api("/api/delete")
-    expect(result).toBeUndefined()
-  })
+    const result = await api("/api/delete");
+    expect(result).toBeUndefined();
+  });
 
   it("auto-refreshes token on 401", async () => {
-    setTokens("old-token", "refresh-token")
+    setTokens("old-token", "refresh-token");
 
-    let callCount = 0
+    let callCount = 0;
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url.includes("auth/refresh")) {
         return Promise.resolve({
           ok: true,
           status: 200,
           json: () => Promise.resolve({ accessToken: "new-token", refreshToken: "new-refresh" }),
-        })
+        });
       }
-      callCount++
+      callCount++;
       if (callCount === 1) {
         return Promise.resolve({
           ok: false,
           status: 401,
           json: () => Promise.resolve({}),
-        })
+        });
       }
       return Promise.resolve({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: "data" }),
-      })
-    })
-    vi.stubGlobal("fetch", fetchMock)
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-    const result = await api("/api/data")
-    expect(result).toEqual({ id: "data" })
-    expect(localStorage.getItem("accessToken")).toBe("new-token")
-  })
+    const result = await api("/api/data");
+    expect(result).toEqual({ id: "data" });
+    expect(localStorage.getItem("accessToken")).toBe("new-token");
+  });
 
   it("throws NetworkError when fetch rejects", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")))
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
-    await expect(api("/api/data")).rejects.toThrow(NetworkError)
-  })
+    await expect(api("/api/data")).rejects.toThrow(NetworkError);
+  });
 
   it("does not clear tokens when refresh fails due to network error", async () => {
-    setTokens("old-token", "refresh-token")
+    setTokens("old-token", "refresh-token");
 
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url.includes("auth/refresh")) {
-        return Promise.reject(new TypeError("Failed to fetch"))
+        return Promise.reject(new TypeError("Failed to fetch"));
       }
       return Promise.resolve({
         ok: false,
         status: 401,
         json: () => Promise.resolve({}),
-      })
-    })
-    vi.stubGlobal("fetch", fetchMock)
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-    await expect(api("/api/data")).rejects.toThrow(NetworkError)
-    expect(localStorage.getItem("accessToken")).toBe("old-token")
-    expect(localStorage.getItem("refreshToken")).toBe("refresh-token")
-  })
+    await expect(api("/api/data")).rejects.toThrow(NetworkError);
+    expect(localStorage.getItem("accessToken")).toBe("old-token");
+    expect(localStorage.getItem("refreshToken")).toBe("refresh-token");
+  });
 
   it("refreshAccess returns null on network failure without clearing tokens", async () => {
-    setTokens("old-token", "refresh-token")
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")))
+    setTokens("old-token", "refresh-token");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
-    const result = await refreshAccess()
-    expect(result).toBeNull()
-    expect(localStorage.getItem("accessToken")).toBe("old-token")
-    expect(localStorage.getItem("refreshToken")).toBe("refresh-token")
-  })
+    const result = await refreshAccess();
+    expect(result).toBeNull();
+    expect(localStorage.getItem("accessToken")).toBe("old-token");
+    expect(localStorage.getItem("refreshToken")).toBe("refresh-token");
+  });
 
   it("refreshAccess clears tokens when server rejects the refresh token", async () => {
-    setTokens("old-token", "refresh-token")
+    setTokens("old-token", "refresh-token");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -151,11 +151,11 @@ describe("api", () => {
         status: 401,
         json: () => Promise.resolve({}),
       }),
-    )
+    );
 
-    const result = await refreshAccess()
-    expect(result).toBeNull()
-    expect(localStorage.getItem("accessToken")).toBeNull()
-    expect(localStorage.getItem("refreshToken")).toBeNull()
-  })
-})
+    const result = await refreshAccess();
+    expect(result).toBeNull();
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(localStorage.getItem("refreshToken")).toBeNull();
+  });
+});

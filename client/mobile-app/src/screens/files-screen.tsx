@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,56 +12,56 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-} from "react-native"
-import { api, uploadFile as uploadToServer } from "../lib/api"
-import * as DocumentPicker from "expo-document-picker"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import * as Clipboard from "expo-clipboard"
-import * as WebBrowser from "expo-web-browser"
-import { resolveFileUrl } from "../lib/file-url"
-import { isTextFile } from "../lib/file-types"
-import { FileText, Folder, X, Film, Music, Archive, Download, Users, Copy } from "lucide-react-native"
-import { Linking } from "react-native"
-import { useTheme } from "../lib/theme-context"
+} from "react-native";
+import { api, uploadFile as uploadToServer } from "../lib/api";
+import * as DocumentPicker from "expo-document-picker";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
+import * as WebBrowser from "expo-web-browser";
+import { resolveFileUrl } from "../lib/file-url";
+import { isTextFile } from "../lib/file-types";
+import { FileText, Folder, X, Film, Music, Archive, Download, Users, Copy } from "lucide-react-native";
+import { Linking } from "react-native";
+import { useTheme } from "../lib/theme-context";
 
 interface FileEntry {
-  id: string
-  name?: string
-  filename?: string
-  type?: string
-  mimeType?: string
-  size: number
-  url?: string
-  folderId?: string
-  createdAt?: string
+  id: string;
+  name?: string;
+  filename?: string;
+  type?: string;
+  mimeType?: string;
+  size: number;
+  url?: string;
+  folderId?: string;
+  createdAt?: string;
 }
 
 interface FolderEntry {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export function FilesScreen() {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [files, setFiles] = useState<FileEntry[]>([])
-  const [folders, setFolders] = useState<FolderEntry[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [folderModal, setFolderModal] = useState(false)
-  const [folderName, setFolderName] = useState("")
-  const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null)
-  const [renameName, setRenameName] = useState("")
-  const [activeFolder, setActiveFolder] = useState<string | null>(null)
-  const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
-  const [previewText, setPreviewText] = useState<string | null>(null)
-  const [previewTextLoading, setPreviewTextLoading] = useState(false)
-  const [previewTextError, setPreviewTextError] = useState(false)
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({})
-  const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null)
-  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [folders, setFolders] = useState<FolderEntry[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [folderModal, setFolderModal] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null);
+  const [renameName, setRenameName] = useState("");
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<FileEntry | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewTextLoading, setPreviewTextLoading] = useState(false);
+  const [previewTextError, setPreviewTextError] = useState(false);
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null);
+  const [showMoveModal, setShowMoveModal] = useState(false);
 
   const load = useCallback(() => {
     api<FileEntry[]>("/api/files/list")
@@ -74,47 +74,47 @@ export function FilesScreen() {
           })),
         ),
       )
-      .catch(() => {})
+      .catch(() => {});
     api<FolderEntry[]>("/api/files/folders")
       .then(setFolders)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
-  const filteredFiles = activeFolder ? files.filter((f) => f.folderId === activeFolder) : files
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const filteredFiles = activeFolder ? files.filter((f) => f.folderId === activeFolder) : files;
 
   useEffect(() => {
-    const missing = files.filter((f) => f.url && !resolvedUrls[f.id])
-    if (missing.length === 0) return
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    const missing = files.filter((f) => f.url && !resolvedUrls[f.id]);
+    if (missing.length === 0) return;
     Promise.all(missing.map(async (f) => ({ id: f.id, url: (await resolveFileUrl(f.url)) || "" }))).then((pairs) => {
       setResolvedUrls((prev) => {
-        const next = { ...prev }
-        for (const p of pairs) if (p.url) next[p.id] = p.url
-        return next
-      })
-    })
+        const next = { ...prev };
+        for (const p of pairs) if (p.url) next[p.id] = p.url;
+        return next;
+      });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files])
+  }, [files]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   const uploadFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
       if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0]
-        await uploadToServer({ uri: file.uri, name: file.name, type: file.mimeType || undefined })
-        load()
+        const file = result.assets[0];
+        await uploadToServer({ uri: file.uri, name: file.name, type: file.mimeType || undefined });
+        load();
       }
     } catch {}
-  }
+  };
 
   const deleteFolder = (id: string) => {
     Alert.alert("Delete Folder", "Are you sure?", [
@@ -125,21 +125,21 @@ export function FilesScreen() {
         onPress: () => {
           api(`/api/files/folders/${id}`, { method: "DELETE" })
             .then(load)
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const createFolder = async () => {
-    if (!folderName.trim()) return
+    if (!folderName.trim()) return;
     try {
-      await api("/api/files/folders", { method: "POST", body: JSON.stringify({ name: folderName.trim() }) })
-      setFolderName("")
-      setFolderModal(false)
-      load()
+      await api("/api/files/folders", { method: "POST", body: JSON.stringify({ name: folderName.trim() }) });
+      setFolderName("");
+      setFolderModal(false);
+      load();
     } catch {}
-  }
+  };
 
   const deleteFile = (id: string) => {
     Alert.alert(t("common.delete"), "", [
@@ -150,130 +150,130 @@ export function FilesScreen() {
         onPress: () => {
           api(`/api/files/${id}`, { method: "DELETE" })
             .then(load)
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const renameFile = async () => {
-    if (!renameTarget || !renameName.trim()) return
+    if (!renameTarget || !renameName.trim()) return;
     try {
       await api(`/api/files/${renameTarget.id}/rename`, {
         method: "PUT",
         body: JSON.stringify({ filename: renameName.trim() }),
-      })
-      setRenameTarget(null)
-      load()
+      });
+      setRenameTarget(null);
+      load();
     } catch {}
-  }
+  };
 
   const moveFile = async (folderId: string | null) => {
-    if (!moveTarget) return
+    if (!moveTarget) return;
     try {
-      await api(`/api/files/${moveTarget.id}/move`, { method: "PUT", body: JSON.stringify({ folderId }) })
-      setMoveTarget(null)
-      setShowMoveModal(false)
-      load()
+      await api(`/api/files/${moveTarget.id}/move`, { method: "PUT", body: JSON.stringify({ folderId }) });
+      setMoveTarget(null);
+      setShowMoveModal(false);
+      load();
     } catch {}
-  }
+  };
 
-  const [folderMembers, setFolderMembers] = useState<{ userId: string; permission: string }[]>([])
-  const [showFolderMembers, setShowFolderMembers] = useState<string | null>(null)
-  const [addMemberId, setAddMemberId] = useState("")
+  const [folderMembers, setFolderMembers] = useState<{ userId: string; permission: string }[]>([]);
+  const [showFolderMembers, setShowFolderMembers] = useState<string | null>(null);
+  const [addMemberId, setAddMemberId] = useState("");
 
   const loadFolderMembers = async (folderId: string) => {
     try {
-      const members = await api<{ userId: string; permission: string }[]>(`/api/files/folders/${folderId}/members`)
-      setFolderMembers(members)
+      const members = await api<{ userId: string; permission: string }[]>(`/api/files/folders/${folderId}/members`);
+      setFolderMembers(members);
     } catch {}
-  }
+  };
 
   const addFolderMember = async () => {
-    if (!addMemberId.trim() || !showFolderMembers) return
+    if (!addMemberId.trim() || !showFolderMembers) return;
     try {
       await api(`/api/files/folders/${showFolderMembers}/members`, {
         method: "POST",
         body: JSON.stringify({ userId: addMemberId.trim(), permission: "read" }),
-      })
-      setAddMemberId("")
-      loadFolderMembers(showFolderMembers)
+      });
+      setAddMemberId("");
+      loadFolderMembers(showFolderMembers);
     } catch {}
-  }
+  };
 
   const removeFolderMember = async (userId: string) => {
-    if (!showFolderMembers) return
+    if (!showFolderMembers) return;
     try {
-      await api(`/api/files/folders/${showFolderMembers}/members/${userId}`, { method: "DELETE" })
-      setFolderMembers((prev) => prev.filter((m) => m.userId !== userId))
+      await api(`/api/files/folders/${showFolderMembers}/members/${userId}`, { method: "DELETE" });
+      setFolderMembers((prev) => prev.filter((m) => m.userId !== userId));
     } catch {}
-  }
+  };
 
   const openPreview = (item: FileEntry) => {
-    setPreviewFile(item)
-    setPreviewText(null)
-    setPreviewTextError(false)
-    if (!isTextFile(item.type, item.name)) return
-    setPreviewTextLoading(true)
+    setPreviewFile(item);
+    setPreviewText(null);
+    setPreviewTextError(false);
+    if (!isTextFile(item.type, item.name)) return;
+    setPreviewTextLoading(true);
     resolveFileUrl(item.url)
       .then((abs) => {
         if (!abs) {
-          setPreviewTextLoading(false)
-          setPreviewTextError(true)
-          return null
+          setPreviewTextLoading(false);
+          setPreviewTextError(true);
+          return null;
         }
         return fetch(abs)
           .then((r) => {
-            if (!r.ok) throw new Error(String(r.status))
-            return r.text()
+            if (!r.ok) throw new Error(String(r.status));
+            return r.text();
           })
           .then((text) => {
-            setPreviewText(text)
-            setPreviewTextLoading(false)
-          })
+            setPreviewText(text);
+            setPreviewTextLoading(false);
+          });
       })
       .catch(() => {
-        setPreviewTextLoading(false)
-        setPreviewTextError(true)
-      })
-  }
+        setPreviewTextLoading(false);
+        setPreviewTextError(true);
+      });
+  };
 
   const openPdf = async (item: FileEntry) => {
-    const abs = await resolveFileUrl(item.url)
-    if (abs) await WebBrowser.openBrowserAsync(abs)
-  }
+    const abs = await resolveFileUrl(item.url);
+    if (abs) await WebBrowser.openBrowserAsync(abs);
+  };
 
   const openExternal = async (item: FileEntry) => {
-    const abs = await resolveFileUrl(item.url)
-    if (abs) await Linking.openURL(abs)
-  }
+    const abs = await resolveFileUrl(item.url);
+    if (abs) await Linking.openURL(abs);
+  };
 
   const handleFileLongPress = (item: FileEntry) => {
     Alert.alert(item.name ?? item.filename ?? "File", "", [
       {
         text: "Rename",
         onPress: () => {
-          setRenameTarget(item)
-          setRenameName(item.name ?? item.filename ?? "File")
+          setRenameTarget(item);
+          setRenameName(item.name ?? item.filename ?? "File");
         },
       },
       {
         text: "Move to folder",
         onPress: () => {
-          setMoveTarget(item)
-          setShowMoveModal(true)
+          setMoveTarget(item);
+          setShowMoveModal(true);
         },
       },
       { text: "Delete", style: "destructive", onPress: () => deleteFile(item.id) },
       { text: "Cancel", style: "cancel" },
-    ])
-  }
+    ]);
+  };
 
   const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -321,8 +321,8 @@ export function FilesScreen() {
                 <TouchableOpacity
                   style={{ marginLeft: 4 }}
                   onPress={() => {
-                    setShowFolderMembers(showFolderMembers === f.id ? null : f.id)
-                    loadFolderMembers(f.id)
+                    setShowFolderMembers(showFolderMembers === f.id ? null : f.id);
+                    loadFolderMembers(f.id);
                   }}
                 >
                   <Users size={14} color={c.textMuted} />
@@ -337,15 +337,15 @@ export function FilesScreen() {
         keyExtractor={(f) => f.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}
         renderItem={({ item }) => {
-          const isImage = item.type?.startsWith("image/")
-          const isVideo = item.type?.startsWith("video/")
-          const isAudio = item.type?.startsWith("audio/")
+          const isImage = item.type?.startsWith("image/");
+          const isVideo = item.type?.startsWith("video/");
+          const isAudio = item.type?.startsWith("audio/");
           const isArchive =
             item.type?.includes("zip") ||
             item.type?.includes("tar") ||
             item.type?.includes("rar") ||
-            item.type?.includes("7z")
-          const FileTypeIcon = isVideo ? Film : isAudio ? Music : isArchive ? Archive : FileText
+            item.type?.includes("7z");
+          const FileTypeIcon = isVideo ? Film : isAudio ? Music : isArchive ? Archive : FileText;
           return (
             <TouchableOpacity
               style={[s.item, { borderBottomColor: c.borderLight }]}
@@ -369,7 +369,7 @@ export function FilesScreen() {
                 <X size={16} color="#EF4444" />
               </TouchableOpacity>
             </TouchableOpacity>
-          )
+          );
         }}
         ListEmptyComponent={<Text style={[s.empty, { color: c.textMuted }]}>{t("files.noFiles")}</Text>}
       />
@@ -561,7 +561,7 @@ export function FilesScreen() {
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -667,4 +667,4 @@ const s = StyleSheet.create({
     marginTop: 20,
   },
   downloadBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});

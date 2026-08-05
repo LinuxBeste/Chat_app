@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Dimensions } from "react-native"
-import { Search, X } from "lucide-react-native"
-import { useTheme } from "../lib/theme-context"
+import { useState, useMemo } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Dimensions } from "react-native";
+import { Search, X } from "lucide-react-native";
+import { useTheme } from "../lib/theme-context";
 
 const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
   {
@@ -536,7 +536,7 @@ const EMOJI_CATEGORIES: { name: string; emojis: string[] }[] = [
       "❌",
     ],
   },
-]
+];
 
 const EMOJI_NAMES: Record<string, string[]> = {
   "😀": ["grinning", "happy", "smile"],
@@ -1026,42 +1026,42 @@ const EMOJI_NAMES: Record<string, string[]> = {
   "⏺️": ["record"],
   "✅": ["check", "check mark"],
   "❌": ["cross mark", "wrong"],
-}
+};
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window")
-const COL_COUNT = 8
-const EMOJI_SIZE = (SCREEN_WIDTH - 64) / COL_COUNT
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const COL_COUNT = 8;
+const EMOJI_SIZE = (SCREEN_WIDTH - 64) / COL_COUNT;
 
 export function EmojiPicker({
   visible,
   onSelect,
   onClose,
 }: {
-  visible: boolean
-  onSelect: (emoji: string) => void
-  onClose: () => void
+  visible: boolean;
+  onSelect: (emoji: string) => void;
+  onClose: () => void;
 }) {
-  const [activeCategory, setActiveCategory] = useState(0)
-  const [searchQuery, setSearchQuery] = useState("")
-  const { c } = useTheme()
+  const [activeCategory, setActiveCategory] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { c } = useTheme();
 
-  const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), [])
+  const allEmojis = useMemo(() => EMOJI_CATEGORIES.flatMap((c) => c.emojis), []);
 
   const filteredEmojis = useMemo(() => {
-    if (!searchQuery) return null
-    const q = searchQuery.toLowerCase()
+    if (!searchQuery) return null;
+    const q = searchQuery.toLowerCase();
     return allEmojis.filter((emoji) => {
-      const names = EMOJI_NAMES[emoji] || []
-      return names.some((name) => name.includes(q)) || emoji === q
-    })
-  }, [searchQuery, allEmojis])
+      const names = EMOJI_NAMES[emoji] || [];
+      return names.some((name) => name.includes(q)) || emoji === q;
+    });
+  }, [searchQuery, allEmojis]);
 
-  const displayEmojis = filteredEmojis ?? EMOJI_CATEGORIES[activeCategory].emojis
+  const displayEmojis = filteredEmojis ?? EMOJI_CATEGORIES[activeCategory].emojis;
 
   const handleSelect = (emoji: string) => {
-    onSelect(emoji)
-    onClose()
-  }
+    onSelect(emoji);
+    onClose();
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -1075,8 +1075,8 @@ export function EmojiPicker({
               placeholderTextColor={c.textMuted}
               value={searchQuery}
               onChangeText={(v) => {
-                setSearchQuery(v)
-                setActiveCategory(0)
+                setSearchQuery(v);
+                setActiveCategory(0);
               }}
             />
             {searchQuery ? (
@@ -1122,7 +1122,7 @@ export function EmojiPicker({
         </View>
       </TouchableOpacity>
     </Modal>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -1153,4 +1153,4 @@ const s = StyleSheet.create({
   item: { width: EMOJI_SIZE, height: EMOJI_SIZE, justifyContent: "center", alignItems: "center" },
   emoji: { fontSize: 24 },
   noResults: { textAlign: "center", paddingVertical: 32, fontSize: 13 },
-})
+});

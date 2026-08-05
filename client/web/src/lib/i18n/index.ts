@@ -1,10 +1,10 @@
-import i18n from "i18next"
-import { initReactI18next } from "react-i18next"
-import en from "./locales/en.json"
-import de from "./locales/de.json"
-import fr from "./locales/fr.json"
-import es from "./locales/es.json"
-import ja from "./locales/ja.json"
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import en from "./locales/en.json";
+import de from "./locales/de.json";
+import fr from "./locales/fr.json";
+import es from "./locales/es.json";
+import ja from "./locales/ja.json";
 
 export const supportedLanguages = [
   { code: "en", name: "English", native: "English" },
@@ -23,7 +23,7 @@ export const supportedLanguages = [
   { code: "hi", name: "Hindi", native: "हिन्दी" },
   { code: "tr", name: "Turkish", native: "Türkçe" },
   { code: "sv", name: "Swedish", native: "Svenska" },
-]
+];
 
 const resources: Record<string, { translation: any }> = {
   en: { translation: en },
@@ -31,11 +31,11 @@ const resources: Record<string, { translation: any }> = {
   fr: { translation: fr },
   es: { translation: es },
   ja: { translation: ja },
-}
+};
 
 for (const lang of supportedLanguages) {
   if (!resources[lang.code]) {
-    resources[lang.code] = { translation: en }
+    resources[lang.code] = { translation: en };
   }
 }
 
@@ -46,6 +46,6 @@ i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
-})
+});
 
-export default i18n
+export default i18n;

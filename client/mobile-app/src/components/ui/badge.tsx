@@ -1,17 +1,17 @@
-import { View, Text, StyleSheet } from "react-native"
+import { View, Text, StyleSheet } from "react-native";
 
 interface BadgeProps {
-  count: number
-  size?: "sm" | "md"
+  count: number;
+  size?: "sm" | "md";
 }
 
 export function Badge({ count, size = "sm" }: BadgeProps) {
-  if (count <= 0) return null
+  if (count <= 0) return null;
   return (
     <View style={[s.badge, size === "md" && s.md]}>
       <Text style={[s.text, size === "md" && s.textMd]}>{count > 99 ? "99+" : count}</Text>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -27,4 +27,4 @@ const s = StyleSheet.create({
   md: { minWidth: 22, height: 22, borderRadius: 11 },
   text: { color: "#FFFFFF", fontSize: 10, fontWeight: "700" },
   textMd: { fontSize: 12 },
-})
+});

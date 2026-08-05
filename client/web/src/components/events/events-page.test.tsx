@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { EventsPage } from "./events-page"
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { EventsPage } from "./events-page";
 
-const now = new Date()
-const futureDate = new Date(now.getTime() + 86400000).toISOString()
-const pastDate = new Date(now.getTime() - 86400000).toISOString()
+const now = new Date();
+const futureDate = new Date(now.getTime() + 86400000).toISOString();
+const pastDate = new Date(now.getTime() - 86400000).toISOString();
 
 const mockEvents = [
   {
@@ -30,65 +30,65 @@ const mockEvents = [
     createdAt: now.toISOString(),
     rsvps: [],
   },
-]
+];
 
 vi.mock("../../lib/api", () => ({
   api: vi.fn(),
-}))
+}));
 
-import { api } from "../../lib/api"
+import { api } from "../../lib/api";
 
 describe("EventsPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(api).mockResolvedValue(mockEvents)
-  })
+    vi.clearAllMocks();
+    vi.mocked(api).mockResolvedValue(mockEvents);
+  });
 
   it("renders the Events heading", async () => {
-    render(<EventsPage />)
-    expect(screen.getByText("Events")).toBeInTheDocument()
-  })
+    render(<EventsPage />);
+    expect(screen.getByText("Events")).toBeInTheDocument();
+  });
 
   it("shows upcoming events", async () => {
-    render(<EventsPage />)
+    render(<EventsPage />);
     await waitFor(() => {
-      expect(screen.getByText("Team Standup")).toBeInTheDocument()
-    })
-    expect(screen.getByText("Upcoming")).toBeInTheDocument()
-  })
+      expect(screen.getByText("Team Standup")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Upcoming")).toBeInTheDocument();
+  });
 
   it("shows past events", async () => {
-    render(<EventsPage />)
+    render(<EventsPage />);
     await waitFor(() => {
-      expect(screen.getByText("Past Event")).toBeInTheDocument()
-    })
-    expect(screen.getByText("Past")).toBeInTheDocument()
-  })
+      expect(screen.getByText("Past Event")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Past")).toBeInTheDocument();
+  });
 
   it("shows 'Select an event or create one' initially", async () => {
-    render(<EventsPage />)
-    expect(screen.getByText("Select an event or create one")).toBeInTheDocument()
-  })
+    render(<EventsPage />);
+    expect(screen.getByText("Select an event or create one")).toBeInTheDocument();
+  });
 
   it("opens create event dialog on button click", async () => {
-    const user = userEvent.setup()
-    vi.mocked(api).mockResolvedValue([])
-    render(<EventsPage />)
-    await user.click(screen.getByLabelText("Create event"))
-    expect(screen.getByText("Create Event")).toBeInTheDocument()
-  })
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValue([]);
+    render(<EventsPage />);
+    await user.click(screen.getByLabelText("Create event"));
+    expect(screen.getByText("Create Event")).toBeInTheDocument();
+  });
 
   it("shows RSVP section when event is selected", async () => {
-    const user = userEvent.setup()
-    vi.mocked(api).mockResolvedValueOnce(mockEvents)
-    vi.mocked(api).mockResolvedValueOnce(mockEvents[0])
-    render(<EventsPage />)
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValueOnce(mockEvents);
+    vi.mocked(api).mockResolvedValueOnce(mockEvents[0]);
+    render(<EventsPage />);
     await waitFor(() => {
-      expect(screen.getByText("Team Standup")).toBeInTheDocument()
-    })
-    await user.click(screen.getByText("Team Standup"))
+      expect(screen.getByText("Team Standup")).toBeInTheDocument();
+    });
+    await user.click(screen.getByText("Team Standup"));
     await waitFor(() => {
-      expect(screen.getByText("RSVP")).toBeInTheDocument()
-    })
-  })
-})
+      expect(screen.getByText("RSVP")).toBeInTheDocument();
+    });
+  });
+});

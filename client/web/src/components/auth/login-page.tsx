@@ -1,35 +1,35 @@
-import { useState } from "react"
-import { useTranslation } from "react-i18next"
-import { useAuth } from "../../lib/auth-context"
-import { useTheme } from "../../lib/theme-context"
-import i18n, { supportedLanguages } from "../../lib/i18n"
-import { Eye, EyeOff, Sun, Moon, Globe } from "lucide-react"
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../lib/auth-context";
+import { useTheme } from "../../lib/theme-context";
+import i18n, { supportedLanguages } from "../../lib/i18n";
+import { Eye, EyeOff, Sun, Moon, Globe } from "lucide-react";
 
 export function LoginPage() {
-  const { t } = useTranslation()
-  const { login, register } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const [mode, setMode] = useState<"login" | "register">("login")
-  const [username, setUsername] = useState("")
-  const [credential, setCredential] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [showLangPicker, setShowLangPicker] = useState(false)
+  const { t } = useTranslation();
+  const { login, register } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [credential, setCredential] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
     try {
       if (mode === "login") {
-        await login(credential, password)
+        await login(credential, password);
       } else {
-        await register(username, credential, password)
+        await register(username, credential, password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("auth.somethingWentWrong"))
+      setError(err instanceof Error ? err.message : t("auth.somethingWentWrong"));
     }
-  }
+  };
 
   return (
     <div className="flex h-screen items-center justify-center bg-bg-primary">
@@ -53,8 +53,8 @@ export function LoginPage() {
                     <button
                       key={lang.code}
                       onClick={() => {
-                        i18n.changeLanguage(lang.code)
-                        setShowLangPicker(false)
+                        i18n.changeLanguage(lang.code);
+                        setShowLangPicker(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer ${
                         i18n.language === lang.code ? "text-accent bg-accent/5" : "text-text-primary hover:bg-white/5"
@@ -159,5 +159,5 @@ export function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

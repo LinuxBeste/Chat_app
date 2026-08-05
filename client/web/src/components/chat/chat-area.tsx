@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useTranslation } from "react-i18next"
-import { MessageInput, type AttachmentData } from "./message-input"
-import { CallOverlay } from "./call-overlay"
-import { AddParticipantsModal } from "./add-participants-modal"
-import { Avatar } from "../ui/avatar"
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { MessageInput, type AttachmentData } from "./message-input";
+import { CallOverlay } from "./call-overlay";
+import { AddParticipantsModal } from "./add-participants-modal";
+import { Avatar } from "../ui/avatar";
 import {
   Phone,
   Video,
@@ -27,13 +27,13 @@ import {
   BellOff,
   Flag,
   Camera,
-} from "lucide-react"
-import { api, apiFormData, resolveAssetUrl } from "../../lib/api"
+} from "lucide-react";
+import { api, apiFormData, resolveAssetUrl } from "../../lib/api";
 
 function displayName(url: string, attachment?: Attachment): string {
-  if (attachment?.filename) return attachment.filename
-  const name = url.split("/").pop() || "file"
-  return name.replace(/^\d+-\d+-/, "")
+  if (attachment?.filename) return attachment.filename;
+  const name = url.split("/").pop() || "file";
+  return name.replace(/^\d+-\d+-/, "");
 }
 
 const TEXT_PREVIEW_EXT = new Set([
@@ -64,136 +64,136 @@ const TEXT_PREVIEW_EXT = new Set([
   "java",
   "c",
   "h",
-])
+]);
 
 function isTextPreview(content: string, attachment?: Attachment): boolean {
-  if (attachment?.mimeType?.startsWith("text/")) return true
-  const ext = displayName(content, attachment).split(".").pop()?.toLowerCase() ?? ""
-  return TEXT_PREVIEW_EXT.has(ext)
+  if (attachment?.mimeType?.startsWith("text/")) return true;
+  const ext = displayName(content, attachment).split(".").pop()?.toLowerCase() ?? "";
+  return TEXT_PREVIEW_EXT.has(ext);
 }
 
 async function downloadAttachment(msg: Message): Promise<void> {
-  const res = await fetch(resolveAssetUrl(msg.content)!)
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = displayName(msg.content, msg.attachment)
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  const res = await fetch(resolveAssetUrl(msg.content)!);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = displayName(msg.content, msg.attachment);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
-import { useToast } from "../../lib/toast-context"
-import { wsClient } from "../../lib/ws"
-import { useNav } from "../layout/dashboard-layout"
-import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db"
-import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline"
+import { useToast } from "../../lib/toast-context";
+import { wsClient } from "../../lib/ws";
+import { useNav } from "../layout/dashboard-layout";
+import { cacheMessages as cacheMessagesDB, getCachedMessages as getCachedMessagesDB } from "../../lib/offline-db";
+import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages, cacheMessages } from "../../lib/offline";
 import {
   encryptMessage,
   decryptMessage,
   stripEncryptionPrefix,
   isEncrypted,
   getOrCreateDeviceId,
-} from "../../lib/crypto"
+} from "../../lib/crypto";
 
 interface Attachment {
-  id: string
-  url: string
-  filename: string
-  mimeType: string
-  size: number
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
 }
 
 interface Message {
-  id: string
-  content: string
-  type: string
-  messageType?: string
-  senderId: string
-  createdAt: string
-  editedAt: string | null
-  deletedAt?: string | null
-  encrypted?: string
-  keyId?: string
+  id: string;
+  content: string;
+  type: string;
+  messageType?: string;
+  senderId: string;
+  createdAt: string;
+  editedAt: string | null;
+  deletedAt?: string | null;
+  encrypted?: string;
+  keyId?: string;
   sender: {
-    username: string
-    displayName: string | null
-    avatar: string | null
-  }
-  attachment?: Attachment
+    username: string;
+    displayName: string | null;
+    avatar: string | null;
+  };
+  attachment?: Attachment;
 }
 
 interface Member {
-  id: string
-  username: string
-  displayName: string | null
-  avatar: string | null
-  status: string
-  role: string
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatar: string | null;
+  status: string;
+  role: string;
 }
 
 interface ConversationInfo {
-  id: string
-  type: string
-  name: string | null
-  avatar: string | null
-  createdBy: string
-  members: Member[]
+  id: string;
+  type: string;
+  name: string | null;
+  avatar: string | null;
+  createdBy: string;
+  members: Member[];
 }
 
 interface ChatAreaProps {
-  conversationId: string
-  currentUserId: string
-  onLeave?: () => void
+  conversationId: string;
+  currentUserId: string;
+  onLeave?: () => void;
 }
 
 export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaProps) {
-  const { t } = useTranslation()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [convInfo, setConvInfo] = useState<ConversationInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [callState, setCallState] = useState<{ targetUserId: string; direction: "incoming" | "outgoing" } | null>(null)
-  const [menuMessageId, setMenuMessageId] = useState<string | null>(null)
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
-  const [showAddPeople, setShowAddPeople] = useState(false)
-  const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null)
-  const [friendStatus, setFriendStatus] = useState<string | null>(null)
-  const [addingFriend, setAddingFriend] = useState(false)
-  const [blocked, setBlocked] = useState(false)
-  const [showConvMenu, setShowConvMenu] = useState(false)
-  const [renaming, setRenaming] = useState(false)
-  const [renameText, setRenameText] = useState("")
-  const [filePreview, setFilePreview] = useState<Message | null>(null)
-  const [previewText, setPreviewText] = useState<string | null>(null)
-  const renameInputRef = useRef<HTMLInputElement>(null)
-  const editInputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [convInfo, setConvInfo] = useState<ConversationInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [callState, setCallState] = useState<{ targetUserId: string; direction: "incoming" | "outgoing" } | null>(null);
+  const [menuMessageId, setMenuMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [showAddPeople, setShowAddPeople] = useState(false);
+  const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
+  const [friendStatus, setFriendStatus] = useState<string | null>(null);
+  const [addingFriend, setAddingFriend] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [showConvMenu, setShowConvMenu] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameText, setRenameText] = useState("");
+  const [filePreview, setFilePreview] = useState<Message | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
-  const [offline, setOffline] = useState(!checkOnline())
-  const messagesRef = useRef(messages)
-  messagesRef.current = messages
+  const [offline, setOffline] = useState(!checkOnline());
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   useEffect(() => {
     return subscribeToOnlineStatus(
       () => setOffline(false),
       () => setOffline(true),
-    )
-  }, [])
+    );
+  }, []);
 
   useEffect(() => {
-    setLoading(true)
+    setLoading(true);
     if (offline) {
       getCachedMessagesDB(conversationId).then((cached) => {
-        const cleaned = (cached as Message[]).filter((m) => !m.deletedAt)
-        cacheMessages(conversationId, cleaned)
+        const cleaned = (cached as Message[]).filter((m) => !m.deletedAt);
+        cacheMessages(conversationId, cleaned);
         if (cleaned.length > 0) {
-          setMessages(cleaned)
-          setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+          setMessages(cleaned);
+          setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] });
         }
-        setLoading(false)
-      })
-      return
+        setLoading(false);
+      });
+      return;
     }
     Promise.all([
       api<Message[]>(`/api/conversations/${conversationId}/messages`),
@@ -203,161 +203,161 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         const decrypted = await Promise.all(
           msgs.map(async (m) => {
             if (m.encrypted === "true" && isEncrypted(m.content)) {
-              const senderKey = await getSenderKey(m.senderId, m.keyId)
+              const senderKey = await getSenderKey(m.senderId, m.keyId);
               const plain = await decryptMessage(
                 conversationId,
                 stripEncryptionPrefix(m.content),
                 senderKey ?? undefined,
                 currentUserId,
-              )
-              if (plain) return { ...m, content: plain, encrypted: "true" }
+              );
+              if (plain) return { ...m, content: plain, encrypted: "true" };
             }
-            return m
+            return m;
           }),
-        )
-        setMessages(decrypted)
-        setConvInfo(info)
-        cacheMessagesDB(conversationId, decrypted)
-        cacheMessages(conversationId, decrypted)
+        );
+        setMessages(decrypted);
+        setConvInfo(info);
+        cacheMessagesDB(conversationId, decrypted);
+        cacheMessages(conversationId, decrypted);
       })
       .catch(() => {
         getCachedMessagesDB(conversationId).then((cached) => {
-          const cleaned = (cached as Message[]).filter((m) => !m.deletedAt)
-          cacheMessages(conversationId, cleaned)
+          const cleaned = (cached as Message[]).filter((m) => !m.deletedAt);
+          cacheMessages(conversationId, cleaned);
           if (cleaned.length > 0) {
-            setMessages(cleaned)
-            setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] })
+            setMessages(cleaned);
+            setConvInfo({ id: conversationId, type: "group", name: null, avatar: null, createdBy: "", members: [] });
           } else {
-            showToast(t("chat.loadError"))
+            showToast(t("chat.loadError"));
           }
-        })
+        });
       })
-      .finally(() => setLoading(false))
-  }, [conversationId])
+      .finally(() => setLoading(false));
+  }, [conversationId]);
 
-  const isDm = convInfo?.type === "dm" || (!convInfo?.type && conversationId.length > 0)
-  const otherUserId = isDm ? convInfo?.members.find((m) => m.id !== currentUserId)?.id : null
+  const isDm = convInfo?.type === "dm" || (!convInfo?.type && conversationId.length > 0);
+  const otherUserId = isDm ? convInfo?.members.find((m) => m.id !== currentUserId)?.id : null;
 
-  const senderKeyCache = useRef<Map<string, string>>(new Map())
+  const senderKeyCache = useRef<Map<string, string>>(new Map());
 
   // Fetch the exact key that encrypted a message (by the sender's device keyId),
   // falling back to the sender's latest key for legacy messages without a keyId.
   const getSenderKey = useCallback(async (userId: string, keyId?: string, force = false): Promise<string | null> => {
-    const cacheKey = `${userId}:${keyId ?? ""}`
-    if (!force && senderKeyCache.current.has(cacheKey)) return senderKeyCache.current.get(cacheKey)!
+    const cacheKey = `${userId}:${keyId ?? ""}`;
+    if (!force && senderKeyCache.current.has(cacheKey)) return senderKeyCache.current.get(cacheKey)!;
     try {
       if (keyId) {
-        const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/${keyId}`)
-        if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
-        return res.publicKey
+        const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/${keyId}`);
+        if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey);
+        return res.publicKey;
       }
       // Legacy messages (no keyId) were always encrypted with the sender's
       // legacy device key; fall back to their latest key if it is gone.
-      const legacy = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/legacy`)
+      const legacy = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}/legacy`);
       if (legacy.publicKey) {
-        senderKeyCache.current.set(cacheKey, legacy.publicKey)
-        return legacy.publicKey
+        senderKeyCache.current.set(cacheKey, legacy.publicKey);
+        return legacy.publicKey;
       }
-      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`)
-      if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey)
-      return res.publicKey
+      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${userId}`);
+      if (res.publicKey) senderKeyCache.current.set(cacheKey, res.publicKey);
+      return res.publicKey;
     } catch {
-      return null
+      return null;
     }
-  }, [])
+  }, []);
 
   const getTheirPublicKey = useCallback(async (): Promise<string | null> => {
-    if (!otherUserId) return null
+    if (!otherUserId) return null;
     try {
-      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${otherUserId}`)
-      return res.publicKey
+      const res = await api<{ publicKey: string }>(`/api/e2ee/key/${otherUserId}`);
+      return res.publicKey;
     } catch {
-      return null
+      return null;
     }
-  }, [otherUserId])
+  }, [otherUserId]);
 
   useEffect(() => {
-    senderKeyCache.current = new Map()
-  }, [conversationId])
+    senderKeyCache.current = new Map();
+  }, [conversationId]);
 
-  const { setActiveConversationId, setView } = useNav()
-  const currentMember = convInfo?.members.find((m) => m.id === currentUserId)
-  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
-  const isGroup = convInfo?.type === "group" || convInfo?.type === "channel"
-  const otherSender = messages.find((m) => m.senderId !== currentUserId)
-  const otherMember = !isGroup ? convInfo?.members.find((m) => m.id !== currentUserId) : undefined
+  const { setActiveConversationId, setView } = useNav();
+  const currentMember = convInfo?.members.find((m) => m.id === currentUserId);
+  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin";
+  const isGroup = convInfo?.type === "group" || convInfo?.type === "channel";
+  const otherSender = messages.find((m) => m.senderId !== currentUserId);
+  const otherMember = !isGroup ? convInfo?.members.find((m) => m.id !== currentUserId) : undefined;
   const dmName =
     otherSender?.sender?.displayName ??
     otherSender?.sender?.username ??
     otherMember?.displayName ??
     otherMember?.username ??
-    t("chat.dmConversation")
-  const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase()
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
-  const stickToBottom = useRef(true)
+    t("chat.dmConversation");
+  const dmInitial = (otherSender?.sender?.username ?? otherMember?.username ?? "?")[0].toUpperCase();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const el = listRef.current
-    if (el && typeof el.scrollTo === "function") el.scrollTo({ top: el.scrollHeight, behavior })
-    else if (el) el.scrollTop = el.scrollHeight
-  }, [])
+    const el = listRef.current;
+    if (el && typeof el.scrollTo === "function") el.scrollTo({ top: el.scrollHeight, behavior });
+    else if (el) el.scrollTop = el.scrollHeight;
+  }, []);
 
   useEffect(() => {
-    stickToBottom.current = true
-    scrollToBottom("auto")
-  }, [conversationId, scrollToBottom])
+    stickToBottom.current = true;
+    scrollToBottom("auto");
+  }, [conversationId, scrollToBottom]);
 
   useEffect(() => {
-    if (stickToBottom.current) scrollToBottom("smooth")
-  }, [messages, scrollToBottom])
+    if (stickToBottom.current) scrollToBottom("smooth");
+  }, [messages, scrollToBottom]);
 
   const handleScroll = () => {
-    const el = listRef.current
-    if (!el) return
-    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-  }
+    const el = listRef.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   useEffect(() => {
     if (filePreview && isTextPreview(filePreview.content, filePreview.attachment)) {
       fetch(resolveAssetUrl(filePreview.content)!)
         .then((r) => r.text())
         .then(setPreviewText)
-        .catch(() => setPreviewText(null))
+        .catch(() => setPreviewText(null));
     } else {
-      setPreviewText(null)
+      setPreviewText(null);
     }
-  }, [filePreview])
+  }, [filePreview]);
 
   const handleRemoveParticipant = async (userId: string) => {
     try {
-      await api(`/api/conversations/${conversationId}/participants/${userId}`, { method: "DELETE" })
-      setConvInfo((prev) => (prev ? { ...prev, members: prev.members.filter((m) => m.id !== userId) } : prev))
-      setShowMemberMenu(null)
+      await api(`/api/conversations/${conversationId}/participants/${userId}`, { method: "DELETE" });
+      setConvInfo((prev) => (prev ? { ...prev, members: prev.members.filter((m) => m.id !== userId) } : prev));
+      setShowMemberMenu(null);
     } catch {
       /* ignore */
     }
-  }
+  };
 
   useEffect(() => {
     const unsubNew = wsClient.on("message:new", async (data: any) => {
       if (data.conversationId === conversationId) {
-        let content = data.content
+        let content = data.content;
         if (data.encrypted === "true" && isEncrypted(content)) {
-          const senderKey = await getSenderKey(data.senderId, data.keyId)
+          const senderKey = await getSenderKey(data.senderId, data.keyId);
           let decrypted = await decryptMessage(
             conversationId,
             stripEncryptionPrefix(content),
             senderKey ?? undefined,
             currentUserId,
-          )
+          );
           if (!decrypted) {
-            const fresh = await getSenderKey(data.senderId, data.keyId, true)
+            const fresh = await getSenderKey(data.senderId, data.keyId, true);
             if (fresh) {
-              decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, currentUserId)
+              decrypted = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, currentUserId);
             }
           }
-          if (decrypted) content = decrypted
+          if (decrypted) content = decrypted;
         }
         const msg: Message = {
           id: data.id,
@@ -369,147 +369,147 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           sender: data.sender,
           attachment: data.attachment,
           encrypted: data.encrypted,
-        }
+        };
         setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev
-          const next = [...prev, msg]
-          cacheMessages(conversationId, next)
-          return next
-        })
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          cacheMessages(conversationId, next);
+          return next;
+        });
       }
-    })
+    });
     const unsubEdited = wsClient.on("message:edited", (data) => {
       if (data.conversationId === conversationId) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === data.id ? { ...m, content: data.content as string, editedAt: data.editedAt as string } : m,
           ),
-        )
+        );
       }
-    })
+    });
     const unsubDeleted = wsClient.on("message:deleted", (data) => {
       if (data.conversationId === conversationId) {
         setMessages((prev) => {
           const next = prev.map((m) =>
             m.id === data.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m,
-          )
+          );
           cacheMessages(
             conversationId,
             next.filter((m) => !m.deletedAt),
-          )
-          return next
-        })
+          );
+          return next;
+        });
       }
-    })
+    });
     return () => {
-      unsubNew()
-      unsubEdited()
-      unsubDeleted()
-    }
-  }, [conversationId])
+      unsubNew();
+      unsubEdited();
+      unsubDeleted();
+    };
+  }, [conversationId]);
 
   useEffect(() => {
     const unsub = wsClient.on("call:offer", (data) => {
       if (data.conversationId === conversationId) {
-        setCallState({ targetUserId: data.callerId as string, direction: "incoming" })
+        setCallState({ targetUserId: data.callerId as string, direction: "incoming" });
       }
-    })
+    });
     return () => {
-      unsub()
-    }
-  }, [conversationId])
+      unsub();
+    };
+  }, [conversationId]);
 
   useEffect(() => {
     if (editingMessageId && editInputRef.current) {
-      editInputRef.current.focus()
+      editInputRef.current.focus();
     }
-  }, [editingMessageId])
+  }, [editingMessageId]);
 
   useEffect(() => {
     if (!isGroup && otherSender) {
-      const otherId = otherSender.senderId
+      const otherId = otherSender.senderId;
       api<{ status: string }>(`/api/friends/status/${otherId}`)
         .then((res) => setFriendStatus(res.status))
-        .catch(() => setFriendStatus(null))
+        .catch(() => setFriendStatus(null));
       api<{ blockedUserId: string }[]>("/api/privacy/blocks")
         .then((list) => setBlocked(list.some((b) => b.blockedUserId === otherId)))
-        .catch(() => setBlocked(false))
+        .catch(() => setBlocked(false));
     } else {
-      setFriendStatus(null)
-      setBlocked(false)
+      setFriendStatus(null);
+      setBlocked(false);
     }
-  }, [conversationId, messages])
+  }, [conversationId, messages]);
 
-  const { showToast } = useToast()
+  const { showToast } = useToast();
 
   const handleAddFriend = async () => {
-    if (!otherSender || addingFriend) return
-    setAddingFriend(true)
+    if (!otherSender || addingFriend) return;
+    setAddingFriend(true);
     try {
       await api("/api/friends/requests", {
         method: "POST",
         body: JSON.stringify({ friendId: otherSender.senderId }),
-      })
-      setFriendStatus("pending")
-      showToast(t("chat.friendRequestSent"), "success")
+      });
+      setFriendStatus("pending");
+      showToast(t("chat.friendRequestSent"), "success");
     } catch (err: any) {
       if (err?.message?.includes("already exists")) {
-        setFriendStatus("pending")
-        showToast(t("chat.friendRequestExists"))
+        setFriendStatus("pending");
+        showToast(t("chat.friendRequestExists"));
       } else {
-        showToast(err?.message ?? t("chat.friendRequestError"))
+        showToast(err?.message ?? t("chat.friendRequestError"));
       }
     } finally {
-      setAddingFriend(false)
+      setAddingFriend(false);
     }
-  }
+  };
 
   const handleBlockUser = useCallback(async () => {
-    if (!otherSender) return
+    if (!otherSender) return;
     try {
       await api("/api/privacy/blocks", {
         method: "POST",
         body: JSON.stringify({ userId: otherSender.senderId }),
-      })
-      setBlocked(true)
-      setShowConvMenu(false)
-      showToast(t("chat.userBlocked"), "success")
+      });
+      setBlocked(true);
+      setShowConvMenu(false);
+      showToast(t("chat.userBlocked"), "success");
     } catch {
-      showToast(t("chat.blockError"))
+      showToast(t("chat.blockError"));
     }
-  }, [otherSender, showToast, t])
+  }, [otherSender, showToast, t]);
 
   const handleUnblockUser = useCallback(async () => {
-    if (!otherSender) return
+    if (!otherSender) return;
     try {
-      await api(`/api/privacy/blocks/${otherSender.senderId}`, { method: "DELETE" })
-      setBlocked(false)
-      setShowConvMenu(false)
-      showToast(t("chat.userUnblocked"), "success")
+      await api(`/api/privacy/blocks/${otherSender.senderId}`, { method: "DELETE" });
+      setBlocked(false);
+      setShowConvMenu(false);
+      showToast(t("chat.userUnblocked"), "success");
     } catch {
-      showToast(t("chat.unblockError"))
+      showToast(t("chat.unblockError"));
     }
-  }, [otherSender, showToast, t])
+  }, [otherSender, showToast, t]);
 
   const handleSend = useCallback(
     (content: string, messageType?: string, attachment?: AttachmentData) => {
-      let finalContent = content
-      let encrypted = false
-      const isMediaMessage = messageType === "image" || messageType === "file"
+      let finalContent = content;
+      let encrypted = false;
+      const isMediaMessage = messageType === "image" || messageType === "file";
       if (otherUserId && isDm && !isMediaMessage) {
         getTheirPublicKey().then(async (theirKey) => {
           try {
             if (theirKey) {
-              const ciphertext = await encryptMessage(conversationId, content, theirKey, currentUserId)
+              const ciphertext = await encryptMessage(conversationId, content, theirKey, currentUserId);
               if (ciphertext) {
-                finalContent = "e2ee:" + ciphertext
-                encrypted = true
+                finalContent = "e2ee:" + ciphertext;
+                encrypted = true;
               }
             }
           } catch {
             // Fall back to plaintext rather than silently dropping the message.
           }
-          const keyId = encrypted ? await getOrCreateDeviceId(currentUserId) : undefined
+          const keyId = encrypted ? await getOrCreateDeviceId(currentUserId) : undefined;
           wsClient.send("message:send", {
             conversationId,
             content: finalContent,
@@ -517,83 +517,85 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             attachment,
             encrypted,
             keyId,
-          })
-        })
+          });
+        });
       } else {
-        wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted })
+        wsClient.send("message:send", { conversationId, content: finalContent, messageType, attachment, encrypted });
       }
     },
     [conversationId, otherUserId, isDm, getTheirPublicKey, currentUserId],
-  )
+  );
 
   const handleEdit = useCallback((msg: Message) => {
-    setEditingMessageId(msg.id)
-    setEditText(msg.content)
-    setMenuMessageId(null)
-  }, [])
+    setEditingMessageId(msg.id);
+    setEditText(msg.content);
+    setMenuMessageId(null);
+  }, []);
 
   const handleEditConfirm = useCallback(() => {
-    if (!editingMessageId || !editText.trim()) return
-    wsClient.send("message:edit", { messageId: editingMessageId, conversationId, content: editText.trim() })
-    setEditingMessageId(null)
-    setEditText("")
-  }, [editingMessageId, editText, conversationId])
+    if (!editingMessageId || !editText.trim()) return;
+    wsClient.send("message:edit", { messageId: editingMessageId, conversationId, content: editText.trim() });
+    setEditingMessageId(null);
+    setEditText("");
+  }, [editingMessageId, editText, conversationId]);
 
   const handleEditCancel = useCallback(() => {
-    setEditingMessageId(null)
-    setEditText("")
-  }, [])
+    setEditingMessageId(null);
+    setEditText("");
+  }, []);
 
   const handleDelete = useCallback(
     async (msg: Message) => {
       setMessages((prev) => {
-        const next = prev.map((m) => (m.id === msg.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m))
+        const next = prev.map((m) =>
+          m.id === msg.id ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m,
+        );
         cacheMessages(
           conversationId,
           next.filter((m) => !m.deletedAt),
-        )
-        return next
-      })
-      setMenuMessageId(null)
+        );
+        return next;
+      });
+      setMenuMessageId(null);
       try {
-        await api(`/api/conversations/${conversationId}/messages/${msg.id}`, { method: "DELETE" })
+        await api(`/api/conversations/${conversationId}/messages/${msg.id}`, { method: "DELETE" });
       } catch {
-        showToast(t("chat.deleteError"))
+        showToast(t("chat.deleteError"));
       }
     },
     [conversationId, showToast, t],
-  )
+  );
 
   const handleLeaveConversation = useCallback(async () => {
     try {
-      await api(`/api/conversations/${conversationId}/participants/${currentUserId}`, { method: "DELETE" })
-      showToast(t("chat.leftConversation"), "success")
-      setShowConvMenu(false)
-      onLeave?.()
+      await api(`/api/conversations/${conversationId}/participants/${currentUserId}`, { method: "DELETE" });
+      showToast(t("chat.leftConversation"), "success");
+      setShowConvMenu(false);
+      onLeave?.();
     } catch {
-      showToast(t("chat.leaveError"))
+      showToast(t("chat.leaveError"));
     }
-  }, [conversationId, currentUserId, showToast, t, onLeave])
+  }, [conversationId, currentUserId, showToast, t, onLeave]);
 
-  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
+      const file = e.target.files?.[0];
+      if (!file) return;
       try {
-        const formData = new FormData()
-        formData.append("avatar", file)
-        const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData)
-        setConvInfo((prev) => (prev ? { ...prev, avatar: res.avatar } : prev))
-        showToast(t("chat.avatarUpdated"), "success")
+        const formData = new FormData();
+        formData.append("avatar", file);
+        const res = await apiFormData<{ avatar: string }>(`/api/conversations/${conversationId}/avatar`, formData);
+        setConvInfo((prev) => (prev ? { ...prev, avatar: res.avatar } : prev));
+        showToast(t("chat.avatarUpdated"), "success");
       } catch {
-        showToast(t("chat.avatarError"))
+        showToast(t("chat.avatarError"));
       }
-      if (avatarInputRef.current) avatarInputRef.current.value = ""
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
     },
     [conversationId, showToast, t],
-  )
+  );
 
   const navigateToDm = useCallback(
     async (targetUserId: string) => {
@@ -601,56 +603,56 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         const conv = await api<{ id: string }>("/api/conversations", {
           method: "POST",
           body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
-        })
-        setActiveConversationId(conv.id)
-        setView("chat")
+        });
+        setActiveConversationId(conv.id);
+        setView("chat");
       } catch {
         /* ignore */
       }
     },
     [setActiveConversationId, setView],
-  )
+  );
 
   const handleStartRename = useCallback(() => {
-    setRenameText(convInfo?.name ?? "")
-    setRenaming(true)
-    setShowConvMenu(false)
-    setTimeout(() => renameInputRef.current?.focus(), 50)
-  }, [convInfo])
+    setRenameText(convInfo?.name ?? "");
+    setRenaming(true);
+    setShowConvMenu(false);
+    setTimeout(() => renameInputRef.current?.focus(), 50);
+  }, [convInfo]);
 
   const handleRenameConfirm = useCallback(async () => {
-    if (!renameText.trim()) return
+    if (!renameText.trim()) return;
     try {
       const updated = await api<{ name: string }>(`/api/conversations/${conversationId}`, {
         method: "PUT",
         body: JSON.stringify({ name: renameText.trim() }),
-      })
-      setConvInfo((prev) => (prev ? { ...prev, name: updated.name } : prev))
-      setRenaming(false)
-      showToast(t("chat.renamed"), "success")
+      });
+      setConvInfo((prev) => (prev ? { ...prev, name: updated.name } : prev));
+      setRenaming(false);
+      showToast(t("chat.renamed"), "success");
     } catch {
-      showToast(t("chat.renameError"))
+      showToast(t("chat.renameError"));
     }
-  }, [renameText, conversationId, showToast, t])
+  }, [renameText, conversationId, showToast, t]);
 
   const handleRenameCancel = useCallback(() => {
-    setRenaming(false)
-    setRenameText("")
-  }, [])
+    setRenaming(false);
+    setRenameText("");
+  }, []);
 
   const handleCopyUserId = useCallback(async () => {
-    if (!otherSender) return
+    if (!otherSender) return;
     try {
-      await navigator.clipboard.writeText(otherSender.senderId)
-      showToast(t("chat.userIdCopied"), "success")
-      setShowConvMenu(false)
+      await navigator.clipboard.writeText(otherSender.senderId);
+      showToast(t("chat.userIdCopied"), "success");
+      setShowConvMenu(false);
     } catch {
-      showToast(t("chat.copyError"))
+      showToast(t("chat.copyError"));
     }
-  }, [otherSender, showToast, t])
+  }, [otherSender, showToast, t]);
 
   const handleReportUser = useCallback(async () => {
-    if (!otherSender) return
+    if (!otherSender) return;
     try {
       await api("/api/moderation/reports", {
         method: "POST",
@@ -658,20 +660,20 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           targetUserId: otherSender.senderId,
           reason: "User report from conversation menu",
         }),
-      })
-      setShowConvMenu(false)
-      showToast(t("chat.userReported"), "success")
+      });
+      setShowConvMenu(false);
+      showToast(t("chat.userReported"), "success");
     } catch {
-      showToast(t("chat.reportError"))
+      showToast(t("chat.reportError"));
     }
-  }, [otherSender, showToast, t])
+  }, [otherSender, showToast, t]);
 
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(false);
 
   const toggleMute = useCallback(() => {
-    setMuted((prev) => !prev)
-    showToast(muted ? t("chat.unmuted") : t("chat.muted"))
-  }, [muted, showToast, t])
+    setMuted((prev) => !prev);
+    showToast(muted ? t("chat.unmuted") : t("chat.muted"));
+  }, [muted, showToast, t]);
 
   return (
     <div className="flex flex-col h-full" id="main-content">
@@ -698,8 +700,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                 value={renameText}
                 onChange={(e) => setRenameText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRenameConfirm()
-                  if (e.key === "Escape") handleRenameCancel()
+                  if (e.key === "Enter") handleRenameConfirm();
+                  if (e.key === "Escape") handleRenameCancel();
                 }}
                 className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-text-primary w-full outline-none focus:border-accent"
               />
@@ -766,7 +768,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           </button>
           {offline &&
             (() => {
-              const pendingCount = getPendingMessages().length
+              const pendingCount = getPendingMessages().length;
               return (
                 <div
                   className="flex h-9 items-center gap-1.5 px-2 rounded-2xl text-yellow-400 bg-yellow-500/10 text-xs font-medium"
@@ -780,7 +782,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                     </span>
                   )}
                 </div>
-              )
+              );
             })()}
           {isGroup && canManage && (
             <div className="relative">
@@ -806,8 +808,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       {canManage && m.id !== currentUserId && m.role !== "owner" && (
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveParticipant(m.id)
+                            e.stopPropagation();
+                            handleRemoveParticipant(m.id);
                           }}
                           className="text-text-muted hover:text-danger cursor-pointer"
                           title={t("chat.remove")}
@@ -897,9 +899,9 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           <div className="flex justify-center gap-8 pb-6 px-4">
             <button
               onClick={() => {
-                setShowConvMenu(false)
-                const targetId = otherSender?.senderId ?? otherMember?.id
-                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" })
+                setShowConvMenu(false);
+                const targetId = otherSender?.senderId ?? otherMember?.id;
+                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" });
               }}
               className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
             >
@@ -910,9 +912,9 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             </button>
             <button
               onClick={() => {
-                setShowConvMenu(false)
-                const targetId = otherSender?.senderId ?? otherMember?.id
-                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" })
+                setShowConvMenu(false);
+                const targetId = otherSender?.senderId ?? otherMember?.id;
+                targetId && setCallState({ targetUserId: targetId, direction: "outgoing" });
               }}
               className="flex flex-col items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
             >
@@ -944,8 +946,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       key={m.id}
                       className="flex items-center gap-3 py-2 cursor-pointer hover:bg-white/[0.02] rounded-lg"
                       onClick={(e) => {
-                        if ((e.target as HTMLElement).closest("button")) return
-                        navigateToDm(m.id)
+                        if ((e.target as HTMLElement).closest("button")) return;
+                        navigateToDm(m.id);
                       }}
                     >
                       <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold shrink-0">
@@ -960,8 +962,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       {canManage && m.id !== currentUserId && m.role !== "owner" && (
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveParticipant(m.id)
+                            e.stopPropagation();
+                            handleRemoveParticipant(m.id);
                           }}
                           className="text-text-muted hover:text-danger cursor-pointer shrink-0"
                         >
@@ -973,8 +975,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                   {convInfo && convInfo.members.length > 6 && (
                     <button
                       onClick={() => {
-                        setShowConvMenu(false)
-                        setShowMemberMenu("header")
+                        setShowConvMenu(false);
+                        setShowMemberMenu("header");
                       }}
                       className="text-sm text-accent hover:text-accent-hover mt-1 cursor-pointer"
                     >
@@ -987,8 +989,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               <div className="border-t border-border px-4 py-2">
                 <button
                   onClick={() => {
-                    setShowConvMenu(false)
-                    setShowMemberMenu(showMemberMenu === "header" ? null : "header")
+                    setShowConvMenu(false);
+                    setShowMemberMenu(showMemberMenu === "header" ? null : "header");
                   }}
                   className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
                 >
@@ -997,8 +999,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                 {canManage && (
                   <button
                     onClick={() => {
-                      setShowConvMenu(false)
-                      setShowAddPeople(true)
+                      setShowConvMenu(false);
+                      setShowAddPeople(true);
                     }}
                     className="flex items-center gap-3 w-full py-3 text-sm text-text-primary hover:text-text-secondary transition-colors cursor-pointer"
                   >
@@ -1090,8 +1092,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
           >
             {loading && <p className="text-sm text-text-muted text-center">{t("common.loading")}</p>}
             {messages.map((msg) => {
-              const isMe = msg.senderId === currentUserId
-              const isDeleted = !!msg.deletedAt
+              const isMe = msg.senderId === currentUserId;
+              const isDeleted = !!msg.deletedAt;
               if (isDeleted) {
                 return (
                   <div key={msg.id} className="flex justify-center relative">
@@ -1099,7 +1101,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       {t("chat.messageDeleted")}
                     </div>
                   </div>
-                )
+                );
               }
               return (
                 <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative`} role="article">
@@ -1118,8 +1120,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") handleEditConfirm()
-                            if (e.key === "Escape") handleEditCancel()
+                            if (e.key === "Enter") handleEditConfirm();
+                            if (e.key === "Escape") handleEditCancel();
                           }}
                           className={`flex-1 bg-transparent text-sm outline-none border-b ${
                             isMe ? "border-white/40 text-white" : "border-border text-text-primary"
@@ -1162,8 +1164,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                         <Download
                           className="h-4 w-4 text-text-muted shrink-0"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")))
+                            e.stopPropagation();
+                            downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")));
                           }}
                         />
                       </button>
@@ -1211,12 +1213,12 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                           <button
                             onClick={async () => {
                               try {
-                                await navigator.clipboard.writeText(msg.content)
-                                showToast(t("chat.copied"), "success")
+                                await navigator.clipboard.writeText(msg.content);
+                                showToast(t("chat.copied"), "success");
                               } catch {
-                                showToast(t("chat.copyFailed"))
+                                showToast(t("chat.copyFailed"));
                               }
-                              setMenuMessageId(null)
+                              setMenuMessageId(null);
                             }}
                             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
                           >
@@ -1225,8 +1227,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                           {(msg.type === "image" || msg.type === "file") && (
                             <button
                               onClick={() => {
-                                downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")))
-                                setMenuMessageId(null)
+                                downloadAttachment(msg).catch(() => showToast(t("chat.downloadFailed")));
+                                setMenuMessageId(null);
                               }}
                               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
                             >
@@ -1257,8 +1259,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                                   body: JSON.stringify({ targetUserId: msg.senderId, reason: "Inappropriate message" }),
                                 })
                                   .then(() => showToast(t("chat.reportSent"), "success"))
-                                  .catch(() => showToast(t("chat.reportFailed")))
-                                setMenuMessageId(null)
+                                  .catch(() => showToast(t("chat.reportFailed")));
+                                setMenuMessageId(null);
                               }}
                               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-400 hover:bg-white/5 cursor-pointer"
                             >
@@ -1270,7 +1272,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
             <div ref={messagesEndRef} />
           </div>
@@ -1295,7 +1297,7 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
               onAdded={() => {
                 api<ConversationInfo>(`/api/conversations/${conversationId}`)
                   .then(setConvInfo)
-                  .catch(() => {})
+                  .catch(() => {});
               }}
             />
           )}
@@ -1304,8 +1306,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
               onClick={() => {
-                setFilePreview(null)
-                setPreviewText(null)
+                setFilePreview(null);
+                setPreviewText(null);
               }}
             >
               <div
@@ -1326,8 +1328,8 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                     </button>
                     <button
                       onClick={() => {
-                        setFilePreview(null)
-                        setPreviewText(null)
+                        setFilePreview(null);
+                        setPreviewText(null);
                       }}
                       className="text-text-muted hover:text-text-primary cursor-pointer p-1"
                     >
@@ -1359,16 +1361,16 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
                       <button
                         onClick={async () => {
                           try {
-                            const res = await fetch(resolveAssetUrl(filePreview.content)!)
-                            const blob = await res.blob()
-                            const url = URL.createObjectURL(blob)
-                            const a = document.createElement("a")
-                            a.href = url
-                            a.download = displayName(filePreview.content, filePreview.attachment)
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                            URL.revokeObjectURL(url)
+                            const res = await fetch(resolveAssetUrl(filePreview.content)!);
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = displayName(filePreview.content, filePreview.attachment);
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
                           } catch {
                             /* ignore */
                           }
@@ -1389,5 +1391,5 @@ export function ChatArea({ conversationId, currentUserId, onLeave }: ChatAreaPro
         </>
       )}
     </div>
-  )
+  );
 }

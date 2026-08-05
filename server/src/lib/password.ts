@@ -1,10 +1,10 @@
-import bcrypt from "bcrypt"
-import { config } from "../config.js"
+import bcrypt from "bcrypt";
+import { config } from "../config.js";
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, config.bcrypt.rounds)
+  return bcrypt.hash(password, config.bcrypt.rounds);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
+  return bcrypt.compare(password, hash);
 }

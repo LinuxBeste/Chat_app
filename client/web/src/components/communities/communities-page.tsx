@@ -1,153 +1,153 @@
-import { useState, useEffect } from "react"
-import { api } from "../../lib/api"
-import { useAuth } from "../../lib/auth-context"
-import { useTranslation } from "react-i18next"
-import { Plus, X, Globe, Hash, Link, Check, Copy, Crown, Headphones } from "lucide-react"
-import { VoiceChannel } from "./voice-channel"
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
+import { useTranslation } from "react-i18next";
+import { Plus, X, Globe, Hash, Link, Check, Copy, Crown, Headphones } from "lucide-react";
+import { VoiceChannel } from "./voice-channel";
 
 interface Community {
-  id: string
-  name: string
-  description: string | null
-  ownerId: string
-  createdAt: string
+  id: string;
+  name: string;
+  description: string | null;
+  ownerId: string;
+  createdAt: string;
 }
 
 interface Channel {
-  id: string
-  communityId: string
-  name: string
-  topic: string | null
+  id: string;
+  communityId: string;
+  name: string;
+  topic: string | null;
 }
 
 interface Member {
-  userId: string
-  communityId: string
-  role: string
+  userId: string;
+  communityId: string;
+  role: string;
 }
 
 interface Invite {
-  id: string
-  communityId: string
-  code: string
-  useCount: number
-  maxUses: number | null
-  expiresAt: string | null
+  id: string;
+  communityId: string;
+  code: string;
+  useCount: number;
+  maxUses: number | null;
+  expiresAt: string | null;
 }
 
 export function CommunitiesPage() {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [communities, setCommunities] = useState<Community[]>([])
-  const [selected, setSelected] = useState<Community | null>(null)
-  const [channels, setChannels] = useState<Channel[]>([])
-  const [voiceChannels, setVoiceChannels] = useState<any[]>([])
-  const [members, setMembers] = useState<Member[]>([])
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [showCreate, setShowCreate] = useState(false)
-  const [showJoin, setShowJoin] = useState(false)
-  const [createName, setCreateName] = useState("")
-  const [createDesc, setCreateDesc] = useState("")
-  const [joinCode, setJoinCode] = useState("")
-  const [newChannel, setNewChannel] = useState("")
-  const [newVoice, setNewVoice] = useState("")
-  const [activeVoice, setActiveVoice] = useState<{ id: string; name: string } | null>(null)
-  const [copied, setCopied] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [selected, setSelected] = useState<Community | null>(null);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [voiceChannels, setVoiceChannels] = useState<any[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createDesc, setCreateDesc] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [newChannel, setNewChannel] = useState("");
+  const [newVoice, setNewVoice] = useState("");
+  const [activeVoice, setActiveVoice] = useState<{ id: string; name: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const currentMember = members.find((m) => m.userId === user?.id)
-  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin"
-  const isOwner = currentMember?.role === "owner"
+  const currentMember = members.find((m) => m.userId === user?.id);
+  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin";
+  const isOwner = currentMember?.role === "owner";
 
   useEffect(() => {
     api<Community[]>("/api/communities")
       .then(setCommunities)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const selectCommunity = async (c: Community) => {
-    setSelected(c)
-    const data = await api<any>(`/api/communities/${c.id}`).catch(() => null)
+    setSelected(c);
+    const data = await api<any>(`/api/communities/${c.id}`).catch(() => null);
     if (data) {
-      setChannels(data.channels ?? [])
-      setVoiceChannels(data.voiceChannels ?? [])
-      setMembers(data.members ?? [])
+      setChannels(data.channels ?? []);
+      setVoiceChannels(data.voiceChannels ?? []);
+      setMembers(data.members ?? []);
     }
-    const invs = await api<Invite[]>(`/api/communities/${c.id}/invites`).catch(() => [])
-    setInvites(invs ?? [])
-  }
+    const invs = await api<Invite[]>(`/api/communities/${c.id}/invites`).catch(() => []);
+    setInvites(invs ?? []);
+  };
 
   const createCommunity = async () => {
-    if (!createName.trim()) return
+    if (!createName.trim()) return;
     const c = await api<Community>("/api/communities", {
       method: "POST",
       body: JSON.stringify({ name: createName.trim(), description: createDesc.trim() || undefined }),
-    }).catch(() => null)
+    }).catch(() => null);
     if (c) {
-      setCommunities((prev) => [c, ...prev.filter((comm) => comm.id !== c.id)])
-      setCreateName("")
-      setCreateDesc("")
-      setShowCreate(false)
-      selectCommunity(c)
+      setCommunities((prev) => [c, ...prev.filter((comm) => comm.id !== c.id)]);
+      setCreateName("");
+      setCreateDesc("");
+      setShowCreate(false);
+      selectCommunity(c);
     }
-  }
+  };
 
   const joinCommunity = async () => {
-    if (!joinCode.trim()) return
-    await api(`/api/communities/join/${joinCode.trim()}`, { method: "POST" }).catch(() => null)
-    setJoinCode("")
-    setShowJoin(false)
+    if (!joinCode.trim()) return;
+    await api(`/api/communities/join/${joinCode.trim()}`, { method: "POST" }).catch(() => null);
+    setJoinCode("");
+    setShowJoin(false);
     api<Community[]>("/api/communities")
       .then(setCommunities)
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   const createChannel = async () => {
-    if (!selected || !newChannel.trim()) return
+    if (!selected || !newChannel.trim()) return;
     const ch = await api<Channel>(`/api/communities/${selected.id}/channels`, {
       method: "POST",
       body: JSON.stringify({ name: newChannel.trim() }),
-    }).catch(() => null)
+    }).catch(() => null);
     if (ch) {
-      setChannels((prev) => (prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch]))
-      setNewChannel("")
+      setChannels((prev) => (prev.some((ch2) => ch2.id === ch.id) ? prev : [...prev, ch]));
+      setNewChannel("");
     }
-  }
+  };
 
   const createVoiceChannel = async () => {
-    if (!selected || !newVoice.trim()) return
+    if (!selected || !newVoice.trim()) return;
     const ch = await api<any>(`/api/communities/${selected.id}/voice`, {
       method: "POST",
       body: JSON.stringify({ name: newVoice.trim() }),
-    }).catch(() => null)
+    }).catch(() => null);
     if (ch) {
-      setVoiceChannels((prev) => (prev.some((v) => v.id === ch.id) ? prev : [...prev, ch]))
-      setNewVoice("")
+      setVoiceChannels((prev) => (prev.some((v) => v.id === ch.id) ? prev : [...prev, ch]));
+      setNewVoice("");
     }
-  }
+  };
 
   const joinVoiceChannel = (id: string, name: string) => {
-    setActiveVoice({ id, name })
-  }
+    setActiveVoice({ id, name });
+  };
 
   const leaveVoiceChannel = () => {
-    setActiveVoice(null)
-  }
+    setActiveVoice(null);
+  };
 
   const createInvite = async () => {
-    if (!selected) return
+    if (!selected) return;
     const inv = await api<Invite>(`/api/communities/${selected.id}/invites`, {
       method: "POST",
-    }).catch(() => null)
+    }).catch(() => null);
     if (inv) {
-      setInvites((prev) => (prev.some((i) => i.id === inv.id) ? prev : [...prev, inv]))
+      setInvites((prev) => (prev.some((i) => i.id === inv.id) ? prev : [...prev, inv]));
     }
-  }
+  };
 
   const copyInvite = (code: string) => {
-    navigator.clipboard.writeText(code)
-    setCopied(code)
-    setTimeout(() => setCopied(null), 2000)
-  }
+    navigator.clipboard.writeText(code);
+    setCopied(code);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   return (
     <div className="flex h-full">
@@ -258,7 +258,7 @@ export function CommunitiesPage() {
                       <button
                         onClick={() =>
                           api(`/api/communities/voice/${vc.id}`, { method: "DELETE" }).then(() => {
-                            setVoiceChannels((prev) => prev.filter((v) => v.id !== vc.id))
+                            setVoiceChannels((prev) => prev.filter((v) => v.id !== vc.id));
                           })
                         }
                         className="text-text-muted hover:text-danger cursor-pointer"
@@ -314,7 +314,7 @@ export function CommunitiesPage() {
                       <button
                         onClick={() =>
                           api(`/api/communities/${selected?.id}/members/${m.userId}`, { method: "DELETE" }).then(() => {
-                            setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId))
+                            setMembers((prev) => prev.filter((mm) => mm.userId !== m.userId));
                           })
                         }
                         className="text-text-muted hover:text-danger cursor-pointer"
@@ -333,7 +333,7 @@ export function CommunitiesPage() {
                           }).then(() => {
                             setMembers((prev) =>
                               prev.map((mm) => (mm.userId === m.userId ? { ...mm, role: e.target.value } : mm)),
-                            )
+                            );
                           })
                         }
                         className="text-xs bg-transparent border border-border rounded-xl px-1.5 py-1 text-text-muted cursor-pointer outline-none"
@@ -461,5 +461,5 @@ export function CommunitiesPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

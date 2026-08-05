@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   ScrollView,
   BackHandler,
-} from "react-native"
+} from "react-native";
 import {
   Image as ImageIcon,
   Paperclip,
@@ -46,21 +46,21 @@ import {
   BellOff,
   Search,
   Download,
-} from "lucide-react-native"
-import { api, uploadFile } from "../lib/api"
-import { wsClient } from "../lib/ws"
-import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache"
-import { useAuth } from "../lib/auth-context"
-import { useTheme } from "../lib/theme-context"
-import { useToast } from "../lib/toast-context"
-import { resolveFileUrl } from "../lib/file-url"
-import { downloadAndShare } from "../lib/download"
-import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix, getOrCreateDeviceId } from "../lib/crypto"
-import { useTranslation } from "react-i18next"
-import * as DocumentPicker from "expo-document-picker"
-import * as ImagePicker from "expo-image-picker"
-import type { ImagePickerAsset } from "expo-image-picker"
-import { EmojiPicker } from "../components/emoji-picker"
+} from "lucide-react-native";
+import { api, uploadFile } from "../lib/api";
+import { wsClient } from "../lib/ws";
+import { cacheGet, cacheSet, offlineKeys } from "../lib/offline-cache";
+import { useAuth } from "../lib/auth-context";
+import { useTheme } from "../lib/theme-context";
+import { useToast } from "../lib/toast-context";
+import { resolveFileUrl } from "../lib/file-url";
+import { downloadAndShare } from "../lib/download";
+import { encryptMessage, decryptMessage, isEncrypted, stripEncryptionPrefix, getOrCreateDeviceId } from "../lib/crypto";
+import { useTranslation } from "react-i18next";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import type { ImagePickerAsset } from "expo-image-picker";
+import { EmojiPicker } from "../components/emoji-picker";
 
 const TEXT_PREVIEW_EXT = new Set([
   "txt",
@@ -90,341 +90,341 @@ const TEXT_PREVIEW_EXT = new Set([
   "java",
   "c",
   "h",
-])
+]);
 
 function isTextFileMsg(item: Msg): boolean {
-  if (item.fileType?.startsWith("text/") || item.attachment?.mimeType?.startsWith("text/")) return true
-  const name = item.fileName || item.attachment?.filename || ""
-  const ext = name.split(".").pop()?.toLowerCase() ?? ""
-  return TEXT_PREVIEW_EXT.has(ext)
+  if (item.fileType?.startsWith("text/") || item.attachment?.mimeType?.startsWith("text/")) return true;
+  const name = item.fileName || item.attachment?.filename || "";
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return TEXT_PREVIEW_EXT.has(ext);
 }
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { CallOverlay } from "../components/call-overlay"
-import { AddParticipantsModal } from "../components/add-participants-modal"
-import * as Clipboard from "expo-clipboard"
-import { MediaGallery } from "../components/media-gallery"
-import { AvatarImage } from "../components/ui/avatar-image"
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CallOverlay } from "../components/call-overlay";
+import { AddParticipantsModal } from "../components/add-participants-modal";
+import * as Clipboard from "expo-clipboard";
+import { MediaGallery } from "../components/media-gallery";
+import { AvatarImage } from "../components/ui/avatar-image";
 
 interface Reaction {
-  emoji: string
-  userId: string
-  username: string
+  emoji: string;
+  userId: string;
+  username: string;
 }
 
 interface Msg {
-  id: string
-  content: string
-  conversationId?: string
-  senderId: string
-  createdAt: string
-  editedAt?: string
-  deletedAt?: string
-  sender: { id: string; username: string; displayName?: string }
-  fileUrl?: string
-  fileName?: string
-  fileType?: string
-  replyTo?: { id: string; content: string; sender: { username: string; displayName?: string } }
-  encrypted?: boolean | string
-  keyId?: string
-  messageType?: string
-  attachment?: { url: string; filename: string; mimeType: string; size: number }
-  reactions?: Reaction[]
+  id: string;
+  content: string;
+  conversationId?: string;
+  senderId: string;
+  createdAt: string;
+  editedAt?: string;
+  deletedAt?: string;
+  sender: { id: string; username: string; displayName?: string };
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  replyTo?: { id: string; content: string; sender: { username: string; displayName?: string } };
+  encrypted?: boolean | string;
+  keyId?: string;
+  messageType?: string;
+  attachment?: { url: string; filename: string; mimeType: string; size: number };
+  reactions?: Reaction[];
 }
 
 interface ConvInfo {
-  id: string
-  type: "dm" | "group" | "channel"
-  name: string | null
-  avatar?: string
-  members: { id: string; username: string; displayName?: string; role?: string; avatar?: string; status?: string }[]
-  createdBy?: string
-  muted?: boolean
+  id: string;
+  type: "dm" | "group" | "channel";
+  name: string | null;
+  avatar?: string;
+  members: { id: string; username: string; displayName?: string; role?: string; avatar?: string; status?: string }[];
+  createdBy?: string;
+  muted?: boolean;
 }
 
-const senderPalette = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"]
+const senderPalette = ["#E5A13C", "#38B7DE", "#E542A3", "#1FA855", "#C484FF", "#F27F2F", "#3FC8B4", "#5B9BD5"];
 
 const senderColor = (id: string) => {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-  return senderPalette[h % senderPalette.length]
-}
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return senderPalette[h % senderPalette.length];
+};
 
 export function ChatScreen({
   conversationId,
   onBack,
   onOpenConversation,
 }: {
-  conversationId: string
-  onBack: () => void
-  onOpenConversation?: (id: string) => void
+  conversationId: string;
+  onBack: () => void;
+  onOpenConversation?: (id: string) => void;
 }) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const { c } = useTheme()
-  const { showToast } = useToast()
-  const insets = useSafeAreaInsets()
-  const [messages, setMessages] = useState<Msg[]>([])
-  const [input, setInput] = useState("")
-  const [convInfo, setConvInfo] = useState<ConvInfo | null>(null)
-  const [decrypted, setDecrypted] = useState<Record<string, string>>({})
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({})
-  const [prefs, setPrefs] = useState<Record<string, any>>({})
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
-  const [showEmoji, setShowEmoji] = useState(false)
-  const [typingUsers, setTypingUsers] = useState<string[]>([])
-  const [previewFile, setPreviewFile] = useState<Msg | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [showMedia, setShowMedia] = useState(false)
-  const [mediaItems, setMediaItems] = useState<Msg[]>([])
-  const [inCall, setInCall] = useState<"voice" | "video" | null>(null)
-  const [replyingTo, setReplyingTo] = useState<Msg | null>(null)
-  const [msgStatus, setMsgStatus] = useState<Record<string, "sending" | "sent" | "failed">>({})
-  const flatRef = useRef<FlatList>(null)
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const sendingRef = useRef(false)
-  const stickToBottom = useRef(true)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const { c } = useTheme();
+  const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [convInfo, setConvInfo] = useState<ConvInfo | null>(null);
+  const [decrypted, setDecrypted] = useState<Record<string, string>>({});
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [prefs, setPrefs] = useState<Record<string, any>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [previewFile, setPreviewFile] = useState<Msg | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [showMedia, setShowMedia] = useState(false);
+  const [mediaItems, setMediaItems] = useState<Msg[]>([]);
+  const [inCall, setInCall] = useState<"voice" | "video" | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Msg | null>(null);
+  const [msgStatus, setMsgStatus] = useState<Record<string, "sending" | "sent" | "failed">>({});
+  const flatRef = useRef<FlatList>(null);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sendingRef = useRef(false);
+  const stickToBottom = useRef(true);
 
   useEffect(() => {
-    stickToBottom.current = true
-  }, [conversationId])
+    stickToBottom.current = true;
+  }, [conversationId]);
 
-  const [showInfo, setShowInfo] = useState(false)
-  const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "accepted" | "self">("none")
-  const [isBlocked, setIsBlocked] = useState(false)
-  const [showAddPeople, setShowAddPeople] = useState(false)
-  const [renaming, setRenaming] = useState(false)
-  const [renameText, setRenameText] = useState("")
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
-  const [pinnedMessages, setPinnedMessages] = useState<any[]>([])
-  const [showPinned, setShowPinned] = useState(false)
-  const [muted, setMuted] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<Msg[]>([])
-  const [previewText, setPreviewText] = useState<string | null>(null)
+  const [showInfo, setShowInfo] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "accepted" | "self">("none");
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [showAddPeople, setShowAddPeople] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameText, setRenameText] = useState("");
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
+  const [showPinned, setShowPinned] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Msg[]>([]);
+  const [previewText, setPreviewText] = useState<string | null>(null);
 
   useEffect(() => {
     if (!previewFile) {
-      setPreviewText(null)
-      return
+      setPreviewText(null);
+      return;
     }
     if (!isTextFileMsg(previewFile)) {
-      setPreviewText(null)
-      return
+      setPreviewText(null);
+      return;
     }
-    const url = msgImageUrl(previewFile)
+    const url = msgImageUrl(previewFile);
     if (!url) {
-      setPreviewText(null)
-      return
+      setPreviewText(null);
+      return;
     }
-    let cancelled = false
+    let cancelled = false;
     resolveFileUrl(url)
       .then((resolved) => {
-        if (!resolved || cancelled) return
+        if (!resolved || cancelled) return;
         return fetch(resolved)
           .then((r) => r.text())
           .then((text) => {
-            if (!cancelled) setPreviewText(text)
-          })
+            if (!cancelled) setPreviewText(text);
+          });
       })
       .catch(() => {
-        if (!cancelled) setPreviewText(null)
-      })
+        if (!cancelled) setPreviewText(null);
+      });
     return () => {
-      cancelled = true
-    }
-  }, [previewFile])
+      cancelled = true;
+    };
+  }, [previewFile]);
 
-  const isDm = convInfo?.type === "dm"
-  const otherMember = isDm ? convInfo?.members?.find((m) => m.id !== user!.id) : undefined
+  const isDm = convInfo?.type === "dm";
+  const otherMember = isDm ? convInfo?.members?.find((m) => m.id !== user!.id) : undefined;
 
-  const outgoingBubbleColor = prefs.outgoingBubbleColor || "#005C4B"
-  const incomingBubbleColor = prefs.incomingBubbleColor || "#1F2C34"
-  const chatBackground = prefs.chatBackground || "#0B141A"
-  const showBubbleTails = prefs.showBubbleTails !== false
-  const coloredSenderNames = prefs.coloredSenderNames !== false
+  const outgoingBubbleColor = prefs.outgoingBubbleColor || "#005C4B";
+  const incomingBubbleColor = prefs.incomingBubbleColor || "#1F2C34";
+  const chatBackground = prefs.chatBackground || "#0B141A";
+  const showBubbleTails = prefs.showBubbleTails !== false;
+  const coloredSenderNames = prefs.coloredSenderNames !== false;
 
   const mergeMsgs = (incoming: Msg[]) => {
     setMessages((prev) => {
-      const map = new Map(prev.map((m) => [m.id, m]))
-      for (const m of incoming) map.set(m.id, m)
-      return Array.from(map.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    })
-  }
+      const map = new Map(prev.map((m) => [m.id, m]));
+      for (const m of incoming) map.set(m.id, m);
+      return Array.from(map.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
+  };
 
-  const COMMON_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
+  const COMMON_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
-  const keyCacheRef = useRef<Map<string, string>>(new Map())
+  const keyCacheRef = useRef<Map<string, string>>(new Map());
 
   const getSenderKey = useCallback(async (userId: string, keyId?: string, force = false): Promise<string | null> => {
-    const cacheKey = `${userId}:${keyId ?? ""}`
-    if (!force && keyCacheRef.current.has(cacheKey)) return keyCacheRef.current.get(cacheKey)!
+    const cacheKey = `${userId}:${keyId ?? ""}`;
+    if (!force && keyCacheRef.current.has(cacheKey)) return keyCacheRef.current.get(cacheKey)!;
     try {
       if (keyId) {
-        const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/${keyId}`)
-        if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey)
-        return res.publicKey
+        const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/${keyId}`);
+        if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey);
+        return res.publicKey;
       }
       // Legacy messages (no keyId) were always encrypted with the sender's
       // legacy device key; fall back to their latest key if it is gone.
-      const legacy = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/legacy`)
+      const legacy = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}/legacy`);
       if (legacy.publicKey) {
-        keyCacheRef.current.set(cacheKey, legacy.publicKey)
-        return legacy.publicKey
+        keyCacheRef.current.set(cacheKey, legacy.publicKey);
+        return legacy.publicKey;
       }
-      const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`)
-      if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey)
-      return res.publicKey
+      const res = await api<{ publicKey: string | null }>(`/api/e2ee/key/${userId}`);
+      if (res.publicKey) keyCacheRef.current.set(cacheKey, res.publicKey);
+      return res.publicKey;
     } catch {
-      return null
+      return null;
     }
-  }, [])
+  }, []);
 
   const handleAvatarUpload = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0]
+        const file = result.assets[0];
         const res = await uploadFile<{ avatar: string }>({
           uri: file.uri,
           name: "avatar.jpg",
           type: file.mimeType || "image/jpeg",
           path: `/api/conversations/${conversationId}/avatar`,
           fieldName: "avatar",
-        })
-        setConvInfo((p) => (p ? { ...p, avatar: res.avatar } : p))
+        });
+        setConvInfo((p) => (p ? { ...p, avatar: res.avatar } : p));
       }
     } catch {}
-  }
+  };
 
   const toggleMute = async () => {
-    const next = !muted
+    const next = !muted;
     try {
       if (next) {
-        await api(`/api/conversations/${conversationId}/mute`, { method: "PUT" })
+        await api(`/api/conversations/${conversationId}/mute`, { method: "PUT" });
       } else {
-        await api(`/api/conversations/${conversationId}/mute`, { method: "DELETE" })
+        await api(`/api/conversations/${conversationId}/mute`, { method: "DELETE" });
       }
-      setMuted(next)
+      setMuted(next);
     } catch {}
-  }
+  };
 
   const loadPinnedMessages = async () => {
     try {
-      const data = await api<any[]>(`/api/productivity/pins/${conversationId}`)
+      const data = await api<any[]>(`/api/productivity/pins/${conversationId}`);
       setPinnedMessages(
         data.map((p) => ({
           id: p.id,
           content: p.messageContent,
           sender: { username: p.senderUsername },
         })),
-      )
+      );
     } catch {}
-  }
+  };
 
   const pinMessage = async (messageId: string) => {
     try {
-      await api("/api/productivity/pins", { method: "POST", body: JSON.stringify({ conversationId, messageId }) })
-      loadPinnedMessages()
+      await api("/api/productivity/pins", { method: "POST", body: JSON.stringify({ conversationId, messageId }) });
+      loadPinnedMessages();
     } catch {}
-  }
+  };
 
   const unpinMessage = async (messageId: string) => {
     try {
-      await api(`/api/productivity/pins/${conversationId}/${messageId}`, { method: "DELETE" })
-      loadPinnedMessages()
+      await api(`/api/productivity/pins/${conversationId}/${messageId}`, { method: "DELETE" });
+      loadPinnedMessages();
     } catch {}
-  }
+  };
 
   useEffect(() => {
-    keyCacheRef.current = new Map()
-  }, [conversationId])
+    keyCacheRef.current = new Map();
+  }, [conversationId]);
 
   useEffect(() => {
-    const cachedMsgs = cacheGet<Msg[]>(offlineKeys.messages(conversationId))
-    const cachedInfo = cacheGet<ConvInfo>(offlineKeys.convInfo(conversationId))
+    const cachedMsgs = cacheGet<Msg[]>(offlineKeys.messages(conversationId));
+    const cachedInfo = cacheGet<ConvInfo>(offlineKeys.convInfo(conversationId));
     Promise.all([cachedMsgs, cachedInfo]).then(([msgs, info]) => {
       if (msgs) {
-        mergeMsgs(msgs)
-        decryptMessages(msgs)
+        mergeMsgs(msgs);
+        decryptMessages(msgs);
       }
       if (info) {
-        setConvInfo(info)
-        setMuted(!!info.muted)
+        setConvInfo(info);
+        setMuted(!!info.muted);
       }
-    })
+    });
     api<ConvInfo>(`/api/conversations/${conversationId}`)
       .then((info) => {
-        setConvInfo(info)
-        setMuted(!!info.muted)
-        cacheSet(offlineKeys.convInfo(conversationId), info)
+        setConvInfo(info);
+        setMuted(!!info.muted);
+        cacheSet(offlineKeys.convInfo(conversationId), info);
         if (info.type === "dm") {
-          const other = info.members.find((m) => m.id !== user!.id)
-          if (other) getSenderKey(other.id)
+          const other = info.members.find((m) => m.id !== user!.id);
+          if (other) getSenderKey(other.id);
         }
       })
-      .catch(() => {})
+      .catch(() => {});
     api<Msg[]>(`/api/conversations/${conversationId}/messages`)
       .then((msgs) => {
-        mergeMsgs(msgs)
-        cacheSet(offlineKeys.messages(conversationId), msgs)
-        decryptMessages(msgs)
+        mergeMsgs(msgs);
+        cacheSet(offlineKeys.messages(conversationId), msgs);
+        decryptMessages(msgs);
       })
-      .catch(() => {})
+      .catch(() => {});
     api<Record<string, any>>("/api/users/preferences")
       .then(setPrefs)
-      .catch(() => {})
-    checkFriendStatus()
-    checkBlocked()
-    loadPinnedMessages()
-  }, [conversationId])
+      .catch(() => {});
+    checkFriendStatus();
+    checkBlocked();
+    loadPinnedMessages();
+  }, [conversationId]);
 
   useEffect(() => {
     if (messages.length > 0) {
-      cacheSet(offlineKeys.messages(conversationId), messages)
+      cacheSet(offlineKeys.messages(conversationId), messages);
     }
-  }, [messages, conversationId])
+  }, [messages, conversationId]);
 
   const checkFriendStatus = async () => {
-    if (!otherMember?.id) return
+    if (!otherMember?.id) return;
     try {
-      const res = await api<{ status: string }>(`/api/friends/status/${otherMember.id}`)
-      setFriendStatus(res.status as any)
+      const res = await api<{ status: string }>(`/api/friends/status/${otherMember.id}`);
+      setFriendStatus(res.status as any);
     } catch {}
-  }
+  };
 
   const checkBlocked = async () => {
-    if (!otherMember?.id) return
+    if (!otherMember?.id) return;
     try {
-      const blocks = await api<{ targetId: string }[]>("/api/privacy/blocks")
-      setIsBlocked(blocks.some((b) => b.targetId === otherMember.id))
+      const blocks = await api<{ targetId: string }[]>("/api/privacy/blocks");
+      setIsBlocked(blocks.some((b) => b.targetId === otherMember.id));
     } catch {}
-  }
+  };
 
   const addFriend = async () => {
-    if (!otherMember?.id) return
+    if (!otherMember?.id) return;
     try {
-      await api("/api/friends/requests", { method: "POST", body: JSON.stringify({ friendId: otherMember.id }) })
-      setFriendStatus("pending")
+      await api("/api/friends/requests", { method: "POST", body: JSON.stringify({ friendId: otherMember.id }) });
+      setFriendStatus("pending");
     } catch {}
-  }
+  };
 
   const toggleBlock = async () => {
-    if (!otherMember?.id) return
+    if (!otherMember?.id) return;
     try {
       if (isBlocked) {
-        await api(`/api/privacy/blocks/${otherMember.id}`, { method: "DELETE" })
-        setIsBlocked(false)
+        await api(`/api/privacy/blocks/${otherMember.id}`, { method: "DELETE" });
+        setIsBlocked(false);
       } else {
-        await api("/api/privacy/blocks", { method: "POST", body: JSON.stringify({ userId: otherMember.id }) })
-        setIsBlocked(true)
+        await api("/api/privacy/blocks", { method: "POST", body: JSON.stringify({ userId: otherMember.id }) });
+        setIsBlocked(true);
       }
     } catch {}
-  }
+  };
 
   const reportUser = () => {
-    if (!otherMember?.id) return
+    if (!otherMember?.id) return;
     Alert.alert("Report User", "Are you sure you want to report this user?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -434,11 +434,11 @@ export function ChatScreen({
           api("/api/moderation/reports", {
             method: "POST",
             body: JSON.stringify({ targetUserId: otherMember.id, reason: "Inappropriate behavior" }),
-          }).catch(() => {})
+          }).catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const deleteConversation = () => {
     Alert.alert("Delete Conversation", "Are you sure? This cannot be undone.", [
@@ -449,11 +449,11 @@ export function ChatScreen({
         onPress: () => {
           api(`/api/conversations/${conversationId}`, { method: "DELETE" })
             .then(() => onBack())
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const leaveGroup = () => {
     Alert.alert("Leave Group", "Are you sure you want to leave?", [
@@ -464,54 +464,54 @@ export function ChatScreen({
         onPress: () => {
           api(`/api/conversations/${conversationId}/participants/${user!.id}`, { method: "DELETE" })
             .then(() => onBack())
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const renameGroup = async () => {
-    if (!renameText.trim()) return
+    if (!renameText.trim()) return;
     try {
       await api(`/api/conversations/${conversationId}`, {
         method: "PUT",
         body: JSON.stringify({ name: renameText.trim() }),
-      })
-      setConvInfo((p) => (p ? { ...p, name: renameText.trim() } : p))
-      setRenaming(false)
+      });
+      setConvInfo((p) => (p ? { ...p, name: renameText.trim() } : p));
+      setRenaming(false);
     } catch {}
-  }
+  };
 
   const navigateToDm = async (targetUserId: string) => {
     try {
-      const existing = await api<{ id: string } | null>(`/api/conversations/dm/${targetUserId}`)
+      const existing = await api<{ id: string } | null>(`/api/conversations/dm/${targetUserId}`);
       if (existing) {
-        setShowInfo(false)
-        onOpenConversation?.(existing.id)
-        return
+        setShowInfo(false);
+        onOpenConversation?.(existing.id);
+        return;
       }
       const created = await api<{ id: string }>("/api/conversations", {
         method: "POST",
         body: JSON.stringify({ type: "dm", participantIds: [targetUserId] }),
-      })
-      setShowInfo(false)
-      onOpenConversation?.(created.id)
+      });
+      setShowInfo(false);
+      onOpenConversation?.(created.id);
     } catch {}
-  }
+  };
 
   useEffect(() => {
     const unsubs = [
       wsClient.on("message:new", async (data: any) => {
         if (data.conversationId === conversationId) {
-          let content = data.content
+          let content = data.content;
           if ((data.encrypted === "true" || data.encrypted === true) && isEncrypted(content)) {
-            const key = await getSenderKey(data.senderId, data.keyId)
-            let dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), key ?? undefined, user?.id)
+            const key = await getSenderKey(data.senderId, data.keyId);
+            let dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), key ?? undefined, user?.id);
             if (!dec) {
-              const fresh = await getSenderKey(data.senderId, data.keyId, true)
-              if (fresh) dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, user?.id)
+              const fresh = await getSenderKey(data.senderId, data.keyId, true);
+              if (fresh) dec = await decryptMessage(conversationId, stripEncryptionPrefix(content), fresh, user?.id);
             }
-            if (dec) content = dec
+            if (dec) content = dec;
           }
           setMessages((p) => {
             if (data.clientMessageId && p.some((m) => m.id === data.clientMessageId)) {
@@ -519,17 +519,17 @@ export function ChatScreen({
                 m.id === data.clientMessageId
                   ? ({ ...data, content, encrypted: data.encrypted, replyTo: m.replyTo } as Msg)
                   : m,
-              )
+              );
             }
-            return p.some((m) => m.id === data.id) ? p : [...p, { ...data, content, encrypted: data.encrypted } as Msg]
-          })
+            return p.some((m) => m.id === data.id) ? p : [...p, { ...data, content, encrypted: data.encrypted } as Msg];
+          });
         }
       }),
       wsClient.on("message:edited", (data: any) => {
         if (data.conversationId === conversationId) {
           setMessages((p) =>
             p.map((m) => (m.id === data.id ? { ...m, content: data.content, editedAt: data.editedAt } : m)),
-          )
+          );
         }
       }),
       wsClient.on("message:deleted", (data: any) => {
@@ -538,77 +538,77 @@ export function ChatScreen({
             p.map((m) =>
               m.id === data.id ? { ...m, content: "message deleted", deletedAt: new Date().toISOString() } : m,
             ),
-          )
+          );
         }
       }),
       wsClient.on("message:reaction", (data: any) => {
         if (data.conversationId === conversationId) {
-          setMessages((p) => p.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions || [] } : m)))
+          setMessages((p) => p.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions || [] } : m)));
         }
       }),
       wsClient.on("message:typing", (data: any) => {
         if (data.conversationId === conversationId && data.userId !== user!.id) {
-          setTypingUsers((p) => (p.includes(data.userId) ? p : [...p, data.userId]))
-          clearTimeout(typingTimer.current)
-          typingTimer.current = setTimeout(() => setTypingUsers([]), 3000)
+          setTypingUsers((p) => (p.includes(data.userId) ? p : [...p, data.userId]));
+          clearTimeout(typingTimer.current);
+          typingTimer.current = setTimeout(() => setTypingUsers([]), 3000);
         }
       }),
-    ]
+    ];
     return () => {
-      unsubs.forEach((u) => u())
-    }
-  }, [conversationId])
+      unsubs.forEach((u) => u());
+    };
+  }, [conversationId]);
 
   useEffect(() => {
-    setMediaItems(messages.filter((m) => m.messageType === "image" || (m.fileUrl && m.fileType?.startsWith("image/"))))
-  }, [messages])
+    setMediaItems(messages.filter((m) => m.messageType === "image" || (m.fileUrl && m.fileType?.startsWith("image/"))));
+  }, [messages]);
 
   useEffect(() => {
     const tasks = messages
       .filter((m) => m.fileUrl || m.attachment?.url)
       .map(async (m) => {
-        const url = m.fileUrl || m.attachment?.url || ""
-        return [m.id, (await resolveFileUrl(url)) || url] as [string, string]
-      })
-    if (tasks.length === 0) return
+        const url = m.fileUrl || m.attachment?.url || "";
+        return [m.id, (await resolveFileUrl(url)) || url] as [string, string];
+      });
+    if (tasks.length === 0) return;
     Promise.all(tasks).then((pairs) => {
-      setResolvedUrls((p) => ({ ...p, ...Object.fromEntries(pairs) }))
-    })
-  }, [messages])
+      setResolvedUrls((p) => ({ ...p, ...Object.fromEntries(pairs) }));
+    });
+  }, [messages]);
 
-  const msgImageUrl = (item: Msg) => resolvedUrls[item.id] || item.fileUrl || item.attachment?.url
+  const msgImageUrl = (item: Msg) => resolvedUrls[item.id] || item.fileUrl || item.attachment?.url;
 
   const decryptMessages = useCallback(
     async (msgs: Msg[]) => {
-      if (!user) return
-      const uid = user.id
+      if (!user) return;
+      const uid = user.id;
       const entries = await Promise.all(
         msgs.map(async (m) => {
           if (isEncrypted(m.content)) {
-            const key = await getSenderKey(m.senderId, m.keyId)
-            const cipher = stripEncryptionPrefix(m.content)
-            let plain = await decryptMessage(conversationId, cipher, key ?? undefined, uid)
+            const key = await getSenderKey(m.senderId, m.keyId);
+            const cipher = stripEncryptionPrefix(m.content);
+            let plain = await decryptMessage(conversationId, cipher, key ?? undefined, uid);
             if (!plain) {
-              const fresh = await getSenderKey(m.senderId, m.keyId, true)
-              if (fresh) plain = await decryptMessage(conversationId, cipher, fresh, uid)
+              const fresh = await getSenderKey(m.senderId, m.keyId, true);
+              if (fresh) plain = await decryptMessage(conversationId, cipher, fresh, uid);
             }
-            return [m.id, plain || m.content] as [string, string]
+            return [m.id, plain || m.content] as [string, string];
           }
-          return [m.id, m.content] as [string, string]
+          return [m.id, m.content] as [string, string];
         }),
-      )
-      setDecrypted((p) => ({ ...p, ...Object.fromEntries(entries) }))
+      );
+      setDecrypted((p) => ({ ...p, ...Object.fromEntries(entries) }));
     },
     [conversationId, user],
-  )
+  );
 
   const send = async () => {
-    if (!input.trim() || sendingRef.current) return
-    sendingRef.current = true
-    stickToBottom.current = true
-    const tempId = "temp_" + Date.now()
-    const text = input.trim()
-    setMsgStatus((p) => ({ ...p, [tempId]: "sending" }))
+    if (!input.trim() || sendingRef.current) return;
+    sendingRef.current = true;
+    stickToBottom.current = true;
+    const tempId = "temp_" + Date.now();
+    const text = input.trim();
+    setMsgStatus((p) => ({ ...p, [tempId]: "sending" }));
     setMessages((p) => [
       ...p,
       {
@@ -620,27 +620,27 @@ export function ChatScreen({
         replyTo: replyingTo ? { id: replyingTo.id, content: replyingTo.content, sender: replyingTo.sender } : undefined,
         messageType: "text",
       } as Msg,
-    ])
-    setInput("")
-    setReplyingTo(null)
+    ]);
+    setInput("");
+    setReplyingTo(null);
 
-    let finalContent = text
-    let encrypted = false
-    let keyId: string | undefined
+    let finalContent = text;
+    let encrypted = false;
+    let keyId: string | undefined;
     if (isDm && otherMember?.id && user) {
       try {
-        const theirKey = await getSenderKey(otherMember.id, undefined, true)
+        const theirKey = await getSenderKey(otherMember.id, undefined, true);
         if (theirKey) {
-          const ciphertext = await encryptMessage(conversationId, text, theirKey, user.id)
+          const ciphertext = await encryptMessage(conversationId, text, theirKey, user.id);
           if (ciphertext) {
-            finalContent = "e2ee:" + ciphertext
-            encrypted = true
-            keyId = await getOrCreateDeviceId(user.id)
+            finalContent = "e2ee:" + ciphertext;
+            encrypted = true;
+            keyId = await getOrCreateDeviceId(user.id);
           }
         }
       } catch {
-        finalContent = text
-        encrypted = false
+        finalContent = text;
+        encrypted = false;
       }
     }
     const payload: any = {
@@ -649,68 +649,68 @@ export function ChatScreen({
       encrypted: encrypted ? "true" : "false",
       messageType: "text",
       clientMessageId: tempId,
-    }
-    if (keyId) payload.keyId = keyId
-    if (replyingTo) payload.replyToId = replyingTo.id
-    wsClient.send("message:send", payload)
-    setMsgStatus((p) => ({ ...p, [tempId]: "sent" }))
+    };
+    if (keyId) payload.keyId = keyId;
+    if (replyingTo) payload.replyToId = replyingTo.id;
+    wsClient.send("message:send", payload);
+    setMsgStatus((p) => ({ ...p, [tempId]: "sent" }));
     setTimeout(
       () =>
         setMsgStatus((p) => {
-          const r = { ...p }
-          delete r[tempId]
-          return r
+          const r = { ...p };
+          delete r[tempId];
+          return r;
         }),
       2000,
-    )
+    );
     setTimeout(() => {
-      sendingRef.current = false
-    }, 800)
-  }
+      sendingRef.current = false;
+    }, 800);
+  };
 
   const confirmEdit = async () => {
-    if (!editingId || !editText.trim()) return
-    wsClient.send("message:edit", { messageId: editingId, conversationId, content: editText.trim() })
-    setEditingId(null)
-    setEditText("")
-  }
+    if (!editingId || !editText.trim()) return;
+    wsClient.send("message:edit", { messageId: editingId, conversationId, content: editText.trim() });
+    setEditingId(null);
+    setEditText("");
+  };
 
   const deleteMsg = (msgId: string) => {
-    wsClient.send("message:delete", { messageId: msgId, conversationId })
+    wsClient.send("message:delete", { messageId: msgId, conversationId });
     setMessages((p) =>
       p.map((m) => (m.id === msgId ? { ...m, content: "message deleted", deletedAt: new Date().toISOString() } : m)),
-    )
-  }
+    );
+  };
 
   const addReaction = async (messageId: string, emoji: string) => {
-    wsClient.send("message:reaction", { messageId, conversationId, emoji })
-    setShowReactionPicker(null)
-  }
+    wsClient.send("message:reaction", { messageId, conversationId, emoji });
+    setShowReactionPicker(null);
+  };
 
   const handleInputChange = (text: string) => {
-    setInput(text)
-    wsClient.send("message:typing", { conversationId })
-  }
+    setInput(text);
+    wsClient.send("message:typing", { conversationId });
+  };
 
-  const MAX_FILE_BYTES = 25 * 1024 * 1024
+  const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
   const uploadAndSend = async (file: { uri: string; name: string; type: string; size?: number }) => {
     if (file.size && file.size > MAX_FILE_BYTES) {
-      showToast(t("chat.fileTooLarge", "File exceeds the 25 MB upload limit"))
-      return
+      showToast(t("chat.fileTooLarge", "File exceeds the 25 MB upload limit"));
+      return;
     }
-    stickToBottom.current = true
-    setUploading(true)
-    const tempId = "temp_" + Date.now()
+    stickToBottom.current = true;
+    setUploading(true);
+    const tempId = "temp_" + Date.now();
     try {
       const result = await uploadFile({
         uri: file.uri,
         name: file.name,
         type: file.type,
         conversationId,
-      })
-      const messageType = file.type.startsWith("image/") ? "image" : "file"
-      const attachment = { url: result.url, filename: result.filename, mimeType: result.mimeType, size: result.size }
+      });
+      const messageType = file.type.startsWith("image/") ? "image" : "file";
+      const attachment = { url: result.url, filename: result.filename, mimeType: result.mimeType, size: result.size };
       setMessages((p) => [
         ...p,
         {
@@ -724,7 +724,7 @@ export function ChatScreen({
           fileName: result.filename,
           fileType: result.mimeType,
         } as Msg,
-      ])
+      ]);
       wsClient.send("message:send", {
         conversationId,
         content: result.url,
@@ -732,100 +732,100 @@ export function ChatScreen({
         attachment,
         encrypted: "false",
         clientMessageId: tempId,
-      })
+      });
     } catch (err) {
-      const detail = err instanceof Error && err.message ? `: ${err.message}` : ""
-      showToast(`${t("chat.uploadFailed", "Upload failed")}${detail}`)
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : "";
+      showToast(`${t("chat.uploadFailed", "Upload failed")}${detail}`);
     }
-    setUploading(false)
-  }
+    setUploading(false);
+  };
 
   const pickImage = async () => {
-    let result: Awaited<ReturnType<typeof ImagePicker.launchImageLibraryAsync>>
+    let result: Awaited<ReturnType<typeof ImagePicker.launchImageLibraryAsync>>;
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        showToast(t("chat.mediaPermission", "Photo permission needed to attach images"))
-        return
+        showToast(t("chat.mediaPermission", "Photo permission needed to attach images"));
+        return;
       }
-      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 })
+      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
     } catch {
-      const pending = await ImagePicker.getPendingResultAsync()
+      const pending = await ImagePicker.getPendingResultAsync();
       if (!pending || !("canceled" in pending) || pending.canceled || !pending.assets || pending.assets.length === 0) {
-        showToast(t("chat.pickerFailed", "Could not open photo picker"))
-        return
+        showToast(t("chat.pickerFailed", "Could not open photo picker"));
+        return;
       }
-      result = pending
+      result = pending;
     }
     if (!result.canceled && result.assets[0]) {
-      const file = result.assets[0]
-      await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" })
+      const file = result.assets[0];
+      await uploadAndSend({ uri: file.uri, name: file.fileName || "image.jpg", type: file.mimeType || "image/jpeg" });
     }
-  }
+  };
 
   const pickFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
       if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0]
+        const file = result.assets[0];
         await uploadAndSend({
           uri: file.uri,
           name: file.name,
           type: file.mimeType || "application/octet-stream",
           size: file.size,
-        })
+        });
       }
     } catch {
-      setUploading(false)
-      showToast(t("chat.pickerFailed", "Could not open file picker"))
+      setUploading(false);
+      showToast(t("chat.pickerFailed", "Could not open file picker"));
     }
-  }
+  };
 
-  const [contextMenu, setContextMenu] = useState<Msg | null>(null)
-  const showContextMenu = (item: Msg) => setContextMenu(item)
+  const [contextMenu, setContextMenu] = useState<Msg | null>(null);
+  const showContextMenu = (item: Msg) => setContextMenu(item);
 
   useEffect(() => {
-    if (Platform.OS !== "android") return
+    if (Platform.OS !== "android") return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (contextMenu) {
-        setContextMenu(null)
-        return true
+        setContextMenu(null);
+        return true;
       }
       if (showReactionPicker) {
-        setShowReactionPicker(null)
-        return true
+        setShowReactionPicker(null);
+        return true;
       }
       if (showEmoji) {
-        setShowEmoji(false)
-        return true
+        setShowEmoji(false);
+        return true;
       }
       if (showSearch) {
-        setShowSearch(false)
-        return true
+        setShowSearch(false);
+        return true;
       }
       if (showPinned) {
-        setShowPinned(false)
-        return true
+        setShowPinned(false);
+        return true;
       }
       if (showMedia) {
-        setShowMedia(false)
-        return true
+        setShowMedia(false);
+        return true;
       }
       if (previewFile) {
-        setPreviewFile(null)
-        return true
+        setPreviewFile(null);
+        return true;
       }
       if (showAddPeople) {
-        setShowAddPeople(false)
-        return true
+        setShowAddPeople(false);
+        return true;
       }
       if (showInfo) {
-        setShowInfo(false)
-        return true
+        setShowInfo(false);
+        return true;
       }
-      return false
-    })
-    return () => sub.remove()
+      return false;
+    });
+    return () => sub.remove();
   }, [
     contextMenu,
     showReactionPicker,
@@ -836,30 +836,36 @@ export function ChatScreen({
     previewFile,
     showAddPeople,
     showInfo,
-  ])
+  ]);
 
   const contextMenuActions = (item: Msg) => {
-    const me = item.senderId === user!.id
-    const isDeleted = !!item.deletedAt
-    const actions: { key: string; icon: any; label: string; tint?: string; onPress: () => void }[] = []
+    const me = item.senderId === user!.id;
+    const isDeleted = !!item.deletedAt;
+    const actions: { key: string; icon: any; label: string; tint?: string; onPress: () => void }[] = [];
     actions.push({
       key: "copy",
       icon: Copy,
       label: "Copy",
       onPress: () => Clipboard.setStringAsync(decrypted[item.id] || item.content),
-    })
-    actions.push({ key: "reply", icon: Reply, label: "Reply", onPress: () => setReplyingTo(item) })
+    });
+    actions.push({ key: "reply", icon: Reply, label: "Reply", onPress: () => setReplyingTo(item) });
     if (me) {
       actions.push({
         key: "edit",
         icon: Edit3,
         label: "Edit",
         onPress: () => {
-          setEditingId(item.id)
-          setEditText(item.content)
+          setEditingId(item.id);
+          setEditText(item.content);
         },
-      })
-      actions.push({ key: "delete", icon: Trash2, label: "Delete", tint: "#EF4444", onPress: () => deleteMsg(item.id) })
+      });
+      actions.push({
+        key: "delete",
+        icon: Trash2,
+        label: "Delete",
+        tint: "#EF4444",
+        onPress: () => deleteMsg(item.id),
+      });
     } else {
       actions.push({
         key: "report",
@@ -870,9 +876,9 @@ export function ChatScreen({
           api("/api/moderation/reports", {
             method: "POST",
             body: JSON.stringify({ targetUserId: item.senderId, reason: "Inappropriate message" }),
-          }).catch(() => {})
+          }).catch(() => {});
         },
-      })
+      });
     }
     if (!isDeleted) {
       actions.push({
@@ -880,12 +886,12 @@ export function ChatScreen({
         icon: SmilePlus,
         label: "Add Reaction",
         onPress: () => setShowReactionPicker(item.id),
-      })
-      if (!me) actions.push({ key: "pin", icon: Pin, label: "Pin", onPress: () => pinMessage(item.id) })
+      });
+      if (!me) actions.push({ key: "pin", icon: Pin, label: "Pin", onPress: () => pinMessage(item.id) });
     }
     if (item.messageType === "image" || item.messageType === "file" || item.fileUrl || item.attachment?.url) {
-      const fileUrl = item.fileUrl || item.attachment?.url
-      const name = item.fileName || item.attachment?.filename || "file"
+      const fileUrl = item.fileUrl || item.attachment?.url;
+      const name = item.fileName || item.attachment?.filename || "file";
       if (fileUrl) {
         actions.push({
           key: "download",
@@ -895,57 +901,57 @@ export function ChatScreen({
             resolveFileUrl(fileUrl)
               .then((url) => (url ? downloadAndShare(url, name) : Promise.reject(new Error("no url"))))
               .catch((err: any) => {
-                const detail = err instanceof Error && err.message ? `: ${err.message}` : ""
-                showToast(`${t("chat.downloadFailed", "Download failed")}${detail}`)
-              })
+                const detail = err instanceof Error && err.message ? `: ${err.message}` : "";
+                showToast(`${t("chat.downloadFailed", "Download failed")}${detail}`);
+              });
           },
-        })
+        });
       }
     }
     if (item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/"))) {
-      actions.push({ key: "view", icon: ImageIcon, label: "View Image", onPress: () => setPreviewFile(item) })
+      actions.push({ key: "view", icon: ImageIcon, label: "View Image", onPress: () => setPreviewFile(item) });
     }
-    return actions
-  }
+    return actions;
+  };
 
   const getMsgContent = (item: Msg) => {
-    if (item.deletedAt) return "message deleted"
-    return decrypted[item.id] || item.content
-  }
+    if (item.deletedAt) return "message deleted";
+    return decrypted[item.id] || item.content;
+  };
 
   const messagesWithDates = (msgs: Msg[]) => {
-    const result: any[] = []
-    let lastDate = ""
+    const result: any[] = [];
+    let lastDate = "";
     msgs.forEach((m) => {
-      const d = new Date(m.createdAt)
-      const dateKey = d.toLocaleDateString()
+      const d = new Date(m.createdAt);
+      const dateKey = d.toLocaleDateString();
       if (dateKey !== lastDate) {
-        lastDate = dateKey
-        const today = new Date().toLocaleDateString()
-        const yesterday = new Date(Date.now() - 86400000).toLocaleDateString()
-        let label = dateKey
-        if (dateKey === today) label = "Today"
-        else if (dateKey === yesterday) label = "Yesterday"
-        result.push({ _isDate: true, _key: "d_" + dateKey, label })
+        lastDate = dateKey;
+        const today = new Date().toLocaleDateString();
+        const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+        let label = dateKey;
+        if (dateKey === today) label = "Today";
+        else if (dateKey === yesterday) label = "Yesterday";
+        result.push({ _isDate: true, _key: "d_" + dateKey, label });
       }
-      result.push(m)
-    })
-    return result
-  }
+      result.push(m);
+    });
+    return result;
+  };
 
   const renderMsg = ({ item }: { item: Msg }) => {
-    const me = item.senderId === user!.id
-    const isDeleted = !!item.deletedAt
-    const isEncryptedMsg = item.encrypted === "true" || item.encrypted === true
+    const me = item.senderId === user!.id;
+    const isDeleted = !!item.deletedAt;
+    const isEncryptedMsg = item.encrypted === "true" || item.encrypted === true;
 
     return (
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => {
-          if (!isDeleted) setReplyingTo(item)
+          if (!isDeleted) setReplyingTo(item);
         }}
         onLongPress={() => {
-          if (!isDeleted) showContextMenu(item)
+          if (!isDeleted) showContextMenu(item);
         }}
         style={[mb.bubbleWrap, me ? mb.me : mb.them]}
       >
@@ -960,86 +966,86 @@ export function ChatScreen({
               {item.sender.displayName ?? item.sender.username}
             </Text>
           )}
-        <View
-          style={[
-            mb.bubble,
-            me
-              ? [mb.bubbleMe, { backgroundColor: outgoingBubbleColor }]
-              : [mb.bubbleThem, { backgroundColor: incomingBubbleColor }],
-            isDeleted && mb.deletedBubble,
-          ]}
-        >
-          {showBubbleTails && !isDeleted && (
-            <View
-              style={[
-                mb.tail,
-                me
-                  ? [mb.tailMe, { backgroundColor: outgoingBubbleColor }]
-                  : [mb.tailThem, { backgroundColor: incomingBubbleColor }],
-              ]}
-            />
-          )}
-          {item.replyTo && !isDeleted && (
-            <View style={[mb.replyPreview, me && mb.replyPreviewMe]}>
-              <Text style={mb.replySender}>{item.replyTo.sender.displayName ?? item.replyTo.sender.username}</Text>
-              <Text style={[mb.replyContent, me && mb.replyContentMe]} numberOfLines={1}>
-                {item.replyTo.content}
-              </Text>
-            </View>
-          )}
-          {isDeleted ? (
-            <Text style={mb.deletedText}>This message was deleted</Text>
-          ) : item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/")) ? (
-            <TouchableOpacity onPress={() => setPreviewFile(item)}>
-              <Image source={{ uri: msgImageUrl(item) }} style={mb.imagePreview} resizeMode="cover" />
-            </TouchableOpacity>
-          ) : item.messageType === "file" || (item.fileUrl && !item.fileType?.startsWith("image/")) ? (
-            <TouchableOpacity onPress={() => setPreviewFile(item)} style={mb.fileRow}>
-              <FileText size={14} color={me ? "#E9EDEF" : "#B9C2C8"} />
-              <Text style={[mb.msgText, me && mb.msgTextMe]}>
-                {item.fileName || item.attachment?.filename || "File"}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={mb.msgRow}>
-              {isEncryptedMsg && <Lock size={10} color={me ? "rgba(233,237,239,0.5)" : "#8696A0"} />}
-              <Text style={[mb.msgText, me && mb.msgTextMe]}>
-                {isEncryptedMsg && isEncrypted(getMsgContent(item)) ? "Could not decrypt" : getMsgContent(item)}
-              </Text>
-            </View>
-          )}
-          {item.reactions && item.reactions.length > 0 && !isDeleted && (
-            <View style={mb.reactionRow}>
-              {groupReactions(item.reactions).map((r) => (
-                <TouchableOpacity key={r.emoji} style={mb.reactionChip} onPress={() => addReaction(item.id, r.emoji)}>
-                  <Text style={mb.reactionEmoji}>{r.emoji}</Text>
-                  <Text style={mb.reactionCount}>{r.count}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          <View style={mb.metaRow}>
-            {me && msgStatus[item.id] === "failed" && <Text style={mb.failedIcon}>!</Text>}
-            {me && msgStatus[item.id] === "sent" && <Text style={mb.check}>✓</Text>}
-            {msgStatus[item.id] === "sending" && (
-              <ActivityIndicator size={8} color={me ? "rgba(233,237,239,0.6)" : "#8696A0"} />
+          <View
+            style={[
+              mb.bubble,
+              me
+                ? [mb.bubbleMe, { backgroundColor: outgoingBubbleColor }]
+                : [mb.bubbleThem, { backgroundColor: incomingBubbleColor }],
+              isDeleted && mb.deletedBubble,
+            ]}
+          >
+            {showBubbleTails && !isDeleted && (
+              <View
+                style={[
+                  mb.tail,
+                  me
+                    ? [mb.tailMe, { backgroundColor: outgoingBubbleColor }]
+                    : [mb.tailThem, { backgroundColor: incomingBubbleColor }],
+                ]}
+              />
             )}
-            <Text style={[mb.time, me && mb.timeMe]}>
-              {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </Text>
-            {item.editedAt && !isDeleted && <Text style={[mb.time, me && mb.timeMe]}>edited</Text>}
+            {item.replyTo && !isDeleted && (
+              <View style={[mb.replyPreview, me && mb.replyPreviewMe]}>
+                <Text style={mb.replySender}>{item.replyTo.sender.displayName ?? item.replyTo.sender.username}</Text>
+                <Text style={[mb.replyContent, me && mb.replyContentMe]} numberOfLines={1}>
+                  {item.replyTo.content}
+                </Text>
+              </View>
+            )}
+            {isDeleted ? (
+              <Text style={mb.deletedText}>This message was deleted</Text>
+            ) : item.messageType === "image" || (item.fileUrl && item.fileType?.startsWith("image/")) ? (
+              <TouchableOpacity onPress={() => setPreviewFile(item)}>
+                <Image source={{ uri: msgImageUrl(item) }} style={mb.imagePreview} resizeMode="cover" />
+              </TouchableOpacity>
+            ) : item.messageType === "file" || (item.fileUrl && !item.fileType?.startsWith("image/")) ? (
+              <TouchableOpacity onPress={() => setPreviewFile(item)} style={mb.fileRow}>
+                <FileText size={14} color={me ? "#E9EDEF" : "#B9C2C8"} />
+                <Text style={[mb.msgText, me && mb.msgTextMe]}>
+                  {item.fileName || item.attachment?.filename || "File"}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={mb.msgRow}>
+                {isEncryptedMsg && <Lock size={10} color={me ? "rgba(233,237,239,0.5)" : "#8696A0"} />}
+                <Text style={[mb.msgText, me && mb.msgTextMe]}>
+                  {isEncryptedMsg && isEncrypted(getMsgContent(item)) ? "Could not decrypt" : getMsgContent(item)}
+                </Text>
+              </View>
+            )}
+            {item.reactions && item.reactions.length > 0 && !isDeleted && (
+              <View style={mb.reactionRow}>
+                {groupReactions(item.reactions).map((r) => (
+                  <TouchableOpacity key={r.emoji} style={mb.reactionChip} onPress={() => addReaction(item.id, r.emoji)}>
+                    <Text style={mb.reactionEmoji}>{r.emoji}</Text>
+                    <Text style={mb.reactionCount}>{r.count}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            <View style={mb.metaRow}>
+              {me && msgStatus[item.id] === "failed" && <Text style={mb.failedIcon}>!</Text>}
+              {me && msgStatus[item.id] === "sent" && <Text style={mb.check}>✓</Text>}
+              {msgStatus[item.id] === "sending" && (
+                <ActivityIndicator size={8} color={me ? "rgba(233,237,239,0.6)" : "#8696A0"} />
+              )}
+              <Text style={[mb.time, me && mb.timeMe]}>
+                {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </Text>
+              {item.editedAt && !isDeleted && <Text style={[mb.time, me && mb.timeMe]}>edited</Text>}
+            </View>
           </View>
         </View>
-        </View>
       </TouchableOpacity>
-    )
-  }
+    );
+  };
 
   const groupReactions = (reactions: Reaction[]) => {
-    const map = new Map<string, number>()
-    reactions.forEach((r) => map.set(r.emoji, (map.get(r.emoji) || 0) + 1))
-    return Array.from(map.entries()).map(([emoji, count]) => ({ emoji, count }))
-  }
+    const map = new Map<string, number>();
+    reactions.forEach((r) => map.set(r.emoji, (map.get(r.emoji) || 0) + 1));
+    return Array.from(map.entries()).map(([emoji, count]) => ({ emoji, count }));
+  };
 
   const InfoPanel = () => (
     <Modal visible={showInfo} transparent animationType="slide" onRequestClose={() => setShowInfo(false)}>
@@ -1098,8 +1104,8 @@ export function ChatScreen({
                 <TouchableOpacity
                   style={s.infoAction}
                   onPress={() => {
-                    setShowInfo(false)
-                    onBack()
+                    setShowInfo(false);
+                    onBack();
                   }}
                 >
                   <LogOut size={16} color="#EF4444" />
@@ -1138,8 +1144,8 @@ export function ChatScreen({
                   <TouchableOpacity
                     style={s.infoAction}
                     onPress={() => {
-                      setRenameText(convInfo.name || "")
-                      setRenaming(true)
+                      setRenameText(convInfo.name || "");
+                      setRenaming(true);
                     }}
                   >
                     <Edit3 size={16} color="#6C8CFF" />
@@ -1177,10 +1183,10 @@ export function ChatScreen({
                 <TouchableOpacity
                   style={s.infoAction}
                   onPress={() => {
-                    setShowInfo(false)
-                    setShowSearch(true)
-                    setSearchQuery("")
-                    setSearchResults([])
+                    setShowInfo(false);
+                    setShowSearch(true);
+                    setSearchQuery("");
+                    setSearchResults([]);
                   }}
                 >
                   <Search size={16} color="#6C8CFF" />
@@ -1197,7 +1203,7 @@ export function ChatScreen({
         </View>
       </View>
     </Modal>
-  )
+  );
 
   return (
     <KeyboardAvoidingView
@@ -1256,12 +1262,12 @@ export function ChatScreen({
         keyExtractor={(m: any) => m.id || m._key}
         contentContainerStyle={s.msgList}
         onContentSizeChange={() => {
-          if (stickToBottom.current) flatRef.current?.scrollToEnd({ animated: false })
+          if (stickToBottom.current) flatRef.current?.scrollToEnd({ animated: false });
         }}
         onScroll={(e) => {
-          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-          const distance = contentSize.height - (contentOffset.y + layoutMeasurement.height)
-          stickToBottom.current = distance < 120
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+          const distance = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+          stickToBottom.current = distance < 120;
         }}
         scrollEventThrottle={16}
         renderItem={({ item }: any) =>
@@ -1373,24 +1379,24 @@ export function ChatScreen({
               placeholderTextColor="#585870"
               value={searchQuery}
               onChangeText={(v) => {
-                setSearchQuery(v)
+                setSearchQuery(v);
                 if (v.trim().length >= 2) {
                   const local = messages.filter(
                     (m) => m.content.toLowerCase().includes(v.toLowerCase()) && !m.deletedAt,
-                  )
-                  setSearchResults(local)
+                  );
+                  setSearchResults(local);
                   api<Msg[]>(`/api/productivity/search?q=${encodeURIComponent(v)}`)
                     .then((r) => {
-                      const filtered = r.filter((m) => m.conversationId === conversationId)
+                      const filtered = r.filter((m) => m.conversationId === conversationId);
                       setSearchResults((prev) => {
-                        const ids = new Set(prev.map((m) => m.id))
-                        const merged = [...prev, ...filtered.filter((m) => !ids.has(m.id))]
-                        return merged
-                      })
+                        const ids = new Set(prev.map((m) => m.id));
+                        const merged = [...prev, ...filtered.filter((m) => !ids.has(m.id))];
+                        return merged;
+                      });
                     })
-                    .catch(() => {})
+                    .catch(() => {});
                 } else {
-                  setSearchResults([])
+                  setSearchResults([]);
                 }
               }}
               autoFocus
@@ -1403,12 +1409,12 @@ export function ChatScreen({
                 <TouchableOpacity
                   style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A1A28" }}
                   onPress={() => {
-                    setShowSearch(false)
-                    setReplyingTo(item)
+                    setShowSearch(false);
+                    setReplyingTo(item);
                     flatRef.current?.scrollToIndex({
                       index: messages.findIndex((m) => m.id === item.id),
                       animated: true,
-                    })
+                    });
                   }}
                 >
                   <Text style={{ color: "#6C8CFF", fontSize: 12, fontWeight: "600", marginBottom: 2 }}>
@@ -1564,14 +1570,14 @@ export function ChatScreen({
                 </Text>
               </View>
               {contextMenuActions(contextMenu).map((a) => {
-                const Icon = a.icon
+                const Icon = a.icon;
                 return (
                   <TouchableOpacity
                     key={a.key}
                     style={s.ctxItem}
                     onPress={() => {
-                      setContextMenu(null)
-                      a.onPress()
+                      setContextMenu(null);
+                      a.onPress();
                     }}
                   >
                     <View style={[s.ctxIconWrap, a.tint && { backgroundColor: "rgba(239,68,68,0.08)" }]}>
@@ -1579,7 +1585,7 @@ export function ChatScreen({
                     </View>
                     <Text style={[s.ctxItemLabel, a.tint && { color: a.tint }]}>{a.label}</Text>
                   </TouchableOpacity>
-                )
+                );
               })}
               <TouchableOpacity style={s.ctxCancel} onPress={() => setContextMenu(null)}>
                 <Text style={s.ctxCancelText}>Cancel</Text>
@@ -1592,7 +1598,7 @@ export function ChatScreen({
       <EmojiPicker
         visible={showEmoji}
         onSelect={(emoji) => {
-          setInput((p) => p + emoji)
+          setInput((p) => p + emoji);
         }}
         onClose={() => setShowEmoji(false)}
       />
@@ -1612,7 +1618,7 @@ export function ChatScreen({
         onClose={() => setShowAddPeople(false)}
       />
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const mb = StyleSheet.create({
@@ -1691,7 +1697,7 @@ const mb = StyleSheet.create({
     paddingVertical: 3,
     overflow: "hidden",
   },
-})
+});
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0B141A" },
@@ -2021,4 +2027,4 @@ const s = StyleSheet.create({
     borderColor: "#1A1A28",
   },
   ctxCancelText: { color: "#8888A0", fontSize: 15, fontWeight: "600" },
-})
+});

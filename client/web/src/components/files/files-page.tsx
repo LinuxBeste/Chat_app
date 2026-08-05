@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react"
-import { api, apiFormData, BASE_URL } from "../../lib/api"
-import { useTranslation } from "react-i18next"
-import { useToast } from "../../lib/toast-context"
+import { useState, useEffect, useRef, useCallback } from "react";
+import { api, apiFormData, BASE_URL } from "../../lib/api";
+import { useTranslation } from "react-i18next";
+import { useToast } from "../../lib/toast-context";
 import {
   FileText,
   Image,
@@ -19,250 +19,250 @@ import {
   Edit3,
   Check,
   FolderOpen,
-} from "lucide-react"
+} from "lucide-react";
 
 interface FileItem {
-  id: string
-  url: string
-  filename: string
-  mimeType: string
-  size: number
-  createdAt: string
-  messageId: string | null
-  folderId: string | null
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  messageId: string | null;
+  folderId: string | null;
 }
 
 interface FolderData {
-  id: string
-  userId: string
-  name: string
-  parentId: string | null
-  createdAt: string
+  id: string;
+  userId: string;
+  name: string;
+  parentId: string | null;
+  createdAt: string;
 }
 
 interface FolderMember {
-  userId: string
-  permission: string
-  createdAt: string
+  userId: string;
+  permission: string;
+  createdAt: string;
 }
 
 function fileIcon(mime: string) {
-  if (mime.startsWith("image/")) return <Image className="h-5 w-5" />
-  if (mime.startsWith("video/")) return <Film className="h-5 w-5" />
-  if (mime.startsWith("audio/")) return <Music className="h-5 w-5" />
-  if (mime.includes("zip") || mime.includes("rar") || mime.includes("tar")) return <Archive className="h-5 w-5" />
-  return <FileText className="h-5 w-5" />
+  if (mime.startsWith("image/")) return <Image className="h-5 w-5" />;
+  if (mime.startsWith("video/")) return <Film className="h-5 w-5" />;
+  if (mime.startsWith("audio/")) return <Music className="h-5 w-5" />;
+  if (mime.includes("zip") || mime.includes("rar") || mime.includes("tar")) return <Archive className="h-5 w-5" />;
+  return <FileText className="h-5 w-5" />;
 }
 
 function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function FilesPage() {
-  const { t } = useTranslation()
-  const { showToast } = useToast()
-  const [files, setFiles] = useState<FileItem[]>([])
-  const [folders, setFolders] = useState<FolderData[]>([])
-  const [showNewFolder, setShowNewFolder] = useState(false)
-  const [newFolderName, setNewFolderName] = useState("")
-  const [parentFolderId, setParentFolderId] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
-  const [filePreview, setFilePreview] = useState<FileItem | null>(null)
-  const [previewText, setPreviewText] = useState<string | null>(null)
-  const [folderMembers, setFolderMembers] = useState<FolderMember[]>([])
-  const [showFolderMembers, setShowFolderMembers] = useState<string | null>(null)
-  const [addMemberId, setAddMemberId] = useState("")
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  const [renamingFileId, setRenamingFileId] = useState<string | null>(null)
-  const [renameValue, setRenameValue] = useState("")
-  const [movingFileId, setMovingFileId] = useState<string | null>(null)
-  const renameInputRef = useRef<HTMLInputElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [folders, setFolders] = useState<FolderData[]>([]);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [parentFolderId, setParentFolderId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [filePreview, setFilePreview] = useState<FileItem | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [folderMembers, setFolderMembers] = useState<FolderMember[]>([]);
+  const [showFolderMembers, setShowFolderMembers] = useState<string | null>(null);
+  const [addMemberId, setAddMemberId] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [movingFileId, setMovingFileId] = useState<string | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api<FileItem[]>("/api/files/list")
       .then(setFiles)
-      .catch(() => {})
+      .catch(() => {});
     api<FolderData[]>("/api/files/folders")
       .then(setFolders)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const uploadFile = useCallback(async (file: File) => {
-    setUploading(true)
+    setUploading(true);
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      const result = await apiFormData<FileItem>("/api/uploads", formData)
-      setFiles((prev) => [result, ...prev.filter((f) => f.id !== result.id)])
-      showToast(t("files.uploadSuccess"), "success")
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await apiFormData<FileItem>("/api/uploads", formData);
+      setFiles((prev) => [result, ...prev.filter((f) => f.id !== result.id)]);
+      showToast(t("files.uploadSuccess"), "success");
     } catch (err: any) {
-      showToast(err?.message || t("files.uploadError"))
+      showToast(err?.message || t("files.uploadError"));
     }
-    setUploading(false)
-  }, [])
+    setUploading(false);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }
+    e.preventDefault();
+    setDragOver(true);
+  };
 
-  const handleDragLeave = () => setDragOver(false)
+  const handleDragLeave = () => setDragOver(false);
 
   const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) await uploadFile(file)
-  }
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await uploadFile(file);
+  };
 
   const createFolder = async () => {
-    if (!newFolderName.trim()) return
+    if (!newFolderName.trim()) return;
     try {
       const folder = await api<FolderData>("/api/files/folders", {
         method: "POST",
         body: JSON.stringify({ name: newFolderName.trim(), parentId: parentFolderId }),
-      })
-      setFolders((prev) => (prev.some((f) => f.id === folder.id) ? prev : [...prev, folder]))
-      setNewFolderName("")
-      setShowNewFolder(false)
-      setParentFolderId(null)
+      });
+      setFolders((prev) => (prev.some((f) => f.id === folder.id) ? prev : [...prev, folder]));
+      setNewFolderName("");
+      setShowNewFolder(false);
+      setParentFolderId(null);
     } catch (err: any) {
-      showToast(err?.message ?? t("files.folderCreateError"))
+      showToast(err?.message ?? t("files.folderCreateError"));
     }
-  }
+  };
 
   const deleteFolder = async (id: string) => {
-    if (!confirm(t("files.deleteFolderConfirm"))) return
+    if (!confirm(t("files.deleteFolderConfirm"))) return;
     try {
-      await api(`/api/files/folders/${id}`, { method: "DELETE" })
-      setFolders((prev) => prev.filter((f) => f.id !== id))
+      await api(`/api/files/folders/${id}`, { method: "DELETE" });
+      setFolders((prev) => prev.filter((f) => f.id !== id));
     } catch (err: any) {
-      showToast(err?.message ?? t("files.folderDeleteError"))
+      showToast(err?.message ?? t("files.folderDeleteError"));
     }
-  }
+  };
 
   const openPreview = async (file: FileItem) => {
-    setFilePreview(file)
+    setFilePreview(file);
     if (file.mimeType.startsWith("text/") || file.mimeType === "application/pdf") {
       try {
-        const res = await fetch(`${BASE_URL}${file.url}`)
-        const text = await res.text()
-        setPreviewText(text)
+        const res = await fetch(`${BASE_URL}${file.url}`);
+        const text = await res.text();
+        setPreviewText(text);
       } catch {
-        setPreviewText(t("files.cannotPreview"))
+        setPreviewText(t("files.cannotPreview"));
       }
     } else {
-      setPreviewText(null)
+      setPreviewText(null);
     }
-  }
+  };
 
   const loadFolderMembers = async (folderId: string) => {
     try {
-      const members = await api<FolderMember[]>(`/api/files/folders/${folderId}/members`)
-      setFolderMembers(members)
+      const members = await api<FolderMember[]>(`/api/files/folders/${folderId}/members`);
+      setFolderMembers(members);
     } catch (err: any) {
-      showToast(err?.message ?? t("files.membersLoadError"))
+      showToast(err?.message ?? t("files.membersLoadError"));
     }
-  }
+  };
 
   const addFolderMember = async () => {
-    if (!addMemberId.trim() || !showFolderMembers) return
+    if (!addMemberId.trim() || !showFolderMembers) return;
     try {
       await api(`/api/files/folders/${showFolderMembers}/members`, {
         method: "POST",
         body: JSON.stringify({ userId: addMemberId.trim(), permission: "read" }),
-      })
-      setAddMemberId("")
-      loadFolderMembers(showFolderMembers)
+      });
+      setAddMemberId("");
+      loadFolderMembers(showFolderMembers);
     } catch (err: any) {
-      showToast(err?.message ?? t("files.memberAddError"))
+      showToast(err?.message ?? t("files.memberAddError"));
     }
-  }
+  };
 
   const removeFolderMember = async (userId: string) => {
-    if (!showFolderMembers) return
+    if (!showFolderMembers) return;
     try {
-      await api(`/api/files/folders/${showFolderMembers}/members/${userId}`, { method: "DELETE" })
-      setFolderMembers((prev) => prev.filter((m) => m.userId !== userId))
+      await api(`/api/files/folders/${showFolderMembers}/members/${userId}`, { method: "DELETE" });
+      setFolderMembers((prev) => prev.filter((m) => m.userId !== userId));
     } catch (err: any) {
-      showToast(err?.message ?? t("files.memberRemoveError"))
+      showToast(err?.message ?? t("files.memberRemoveError"));
     }
-  }
+  };
 
   const getFolderFiles = () => {
-    return selectedFolderId ? files.filter((f) => f.folderId === selectedFolderId) : files.filter((f) => !f.folderId)
-  }
+    return selectedFolderId ? files.filter((f) => f.folderId === selectedFolderId) : files.filter((f) => !f.folderId);
+  };
 
   const startRename = (file: FileItem) => {
-    setRenamingFileId(file.id)
-    setRenameValue(file.filename)
-    setTimeout(() => renameInputRef.current?.select(), 0)
-  }
+    setRenamingFileId(file.id);
+    setRenameValue(file.filename);
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  };
 
   const confirmRename = async () => {
-    if (!renamingFileId || !renameValue.trim()) return
+    if (!renamingFileId || !renameValue.trim()) return;
     try {
       const updated = await api<FileItem>(`/api/files/${renamingFileId}/rename`, {
         method: "PUT",
         body: JSON.stringify({ filename: renameValue.trim() }),
-      })
-      setFiles((prev) => prev.map((f) => (f.id === renamingFileId ? { ...f, filename: updated.filename } : f)))
+      });
+      setFiles((prev) => prev.map((f) => (f.id === renamingFileId ? { ...f, filename: updated.filename } : f)));
     } catch {
       /* ignore */
     }
-    setRenamingFileId(null)
-    setRenameValue("")
-  }
+    setRenamingFileId(null);
+    setRenameValue("");
+  };
 
   const cancelRename = () => {
-    setRenamingFileId(null)
-    setRenameValue("")
-  }
+    setRenamingFileId(null);
+    setRenameValue("");
+  };
 
   const moveToFolder = async (fileId: string, folderId: string | null) => {
     try {
       const updated = await api<FileItem>(`/api/files/${fileId}/move`, {
         method: "PUT",
         body: JSON.stringify({ folderId }),
-      })
-      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)))
+      });
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)));
     } catch {
       /* ignore */
     }
-    setMovingFileId(null)
-  }
+    setMovingFileId(null);
+  };
 
   const handleDragStart = (e: React.DragEvent, fileId: string) => {
-    e.dataTransfer.setData("text/plain", fileId)
-    e.dataTransfer.effectAllowed = "move"
-  }
+    e.dataTransfer.setData("text/plain", fileId);
+    e.dataTransfer.effectAllowed = "move";
+  };
 
   const handleFolderDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-  }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
 
   const handleFolderDrop = async (e: React.DragEvent, folderId: string) => {
-    e.preventDefault()
-    const fileId = e.dataTransfer.getData("text/plain")
-    if (!fileId) return
+    e.preventDefault();
+    const fileId = e.dataTransfer.getData("text/plain");
+    if (!fileId) return;
     try {
       const updated = await api<FileItem>(`/api/files/${fileId}/move`, {
         method: "PUT",
         body: JSON.stringify({ folderId }),
-      })
-      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)))
+      });
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, folderId: updated.folderId } : f)));
     } catch (err: any) {
-      showToast(err?.message ?? t("files.moveError"))
+      showToast(err?.message ?? t("files.moveError"));
     }
-  }
+  };
 
-  const rootFolders = folders.filter((f) => f.parentId === null)
-  const currentFiles = getFolderFiles()
+  const rootFolders = folders.filter((f) => f.parentId === null);
+  const currentFiles = getFolderFiles();
 
   return (
     <div
@@ -303,9 +303,9 @@ export function FilesPage() {
             type="file"
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) uploadFile(file)
-              if (fileInputRef.current) fileInputRef.current.value = ""
+              const file = e.target.files?.[0];
+              if (file) uploadFile(file);
+              if (fileInputRef.current) fileInputRef.current.value = "";
             }}
           />
         </div>
@@ -335,9 +335,9 @@ export function FilesPage() {
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      setShowFolderMembers(showFolderMembers === folder.id ? null : folder.id)
-                      loadFolderMembers(folder.id)
+                      e.stopPropagation();
+                      setShowFolderMembers(showFolderMembers === folder.id ? null : folder.id);
+                      loadFolderMembers(folder.id);
                     }}
                     className="p-1 rounded-lg text-text-muted hover:text-accent bg-surface/80 hover:bg-surface"
                     title={t("files.manageAccess")}
@@ -346,8 +346,8 @@ export function FilesPage() {
                   </button>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      deleteFolder(folder.id)
+                      e.stopPropagation();
+                      deleteFolder(folder.id);
                     }}
                     className="p-1 rounded-lg text-text-muted hover:text-danger bg-surface/80 hover:bg-surface"
                     title={t("files.deleteFolder")}
@@ -381,8 +381,8 @@ export function FilesPage() {
           </button>
           <button
             onClick={() => {
-              setShowNewFolder(false)
-              setNewFolderName("")
+              setShowNewFolder(false);
+              setNewFolderName("");
             }}
             className="h-10 w-10 flex items-center justify-center rounded-2xl text-text-muted hover:text-text-primary cursor-pointer"
           >
@@ -464,16 +464,16 @@ export function FilesPage() {
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") confirmRename()
-                        if (e.key === "Escape") cancelRename()
+                        if (e.key === "Enter") confirmRename();
+                        if (e.key === "Escape") cancelRename();
                       }}
                       className="flex-1 h-8 rounded-xl border border-accent bg-bg-primary px-2 text-sm text-text-primary outline-none"
                       onClick={(e) => e.stopPropagation()}
                     />
                     <button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        confirmRename()
+                        e.stopPropagation();
+                        confirmRename();
                       }}
                       className="p-1.5 rounded-lg text-accent hover:bg-accent/10 transition-all cursor-pointer"
                     >
@@ -481,8 +481,8 @@ export function FilesPage() {
                     </button>
                     <button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        cancelRename()
+                        e.stopPropagation();
+                        cancelRename();
                       }}
                       className="p-1.5 rounded-lg text-text-muted hover:text-text-primary transition-all cursor-pointer"
                     >
@@ -501,8 +501,8 @@ export function FilesPage() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={(e) => {
-                    e.stopPropagation()
-                    startRename(f)
+                    e.stopPropagation();
+                    startRename(f);
                   }}
                   className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
                   aria-label={t("files.rename")}
@@ -514,10 +514,10 @@ export function FilesPage() {
                     <select
                       value=""
                       onChange={(e) => {
-                        const val = e.target.value
-                        if (val === "__root__") moveToFolder(f.id, null)
-                        else if (val) moveToFolder(f.id, val)
-                        else setMovingFileId(null)
+                        const val = e.target.value;
+                        if (val === "__root__") moveToFolder(f.id, null);
+                        else if (val) moveToFolder(f.id, val);
+                        else setMovingFileId(null);
                       }}
                       className="h-8 rounded-xl border border-accent bg-bg-primary px-2 text-xs text-text-primary outline-none cursor-pointer"
                       autoFocus
@@ -534,8 +534,8 @@ export function FilesPage() {
                 ) : (
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      setMovingFileId(f.id)
+                      e.stopPropagation();
+                      setMovingFileId(f.id);
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:text-accent hover:bg-accent/10 transition-all cursor-pointer"
                     aria-label={t("files.moveToFolder")}
@@ -564,8 +564,8 @@ export function FilesPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => {
-            setFilePreview(null)
-            setPreviewText(null)
+            setFilePreview(null);
+            setPreviewText(null);
           }}
         >
           <div
@@ -576,8 +576,8 @@ export function FilesPage() {
               <h3 className="text-sm font-semibold text-text-primary truncate">{filePreview.filename}</h3>
               <button
                 onClick={() => {
-                  setFilePreview(null)
-                  setPreviewText(null)
+                  setFilePreview(null);
+                  setPreviewText(null);
                 }}
                 className="text-text-muted hover:text-text-primary cursor-pointer"
               >
@@ -621,5 +621,5 @@ export function FilesPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

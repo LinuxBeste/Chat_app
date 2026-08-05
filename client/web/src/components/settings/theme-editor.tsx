@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
-import { useTranslation } from "react-i18next"
-import { api } from "../../lib/api"
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { api } from "../../lib/api";
 import {
   useTheme,
   type CustomThemeData,
@@ -8,7 +8,7 @@ import {
   themePresets,
   defaultLightTheme,
   defaultDarkTheme,
-} from "../../lib/theme-context"
+} from "../../lib/theme-context";
 import {
   Palette,
   Check,
@@ -23,7 +23,7 @@ import {
   Moon,
   Layout,
   Circle,
-} from "lucide-react"
+} from "lucide-react";
 
 const defaultThemeConfig: ThemeConfig = {
   colors: {
@@ -40,14 +40,14 @@ const defaultThemeConfig: ThemeConfig = {
   bubbleStyle: "cozy",
   borderRadius: 24,
   statusEmoji: "",
-}
+};
 
 function bubbleStyleOptions(t: (key: string) => string) {
   return [
     { value: "compact", label: t("themeEditor.bubbleStyles.compact") },
     { value: "cozy", label: t("themeEditor.bubbleStyles.cozy") },
     { value: "alternating", label: t("themeEditor.bubbleStyles.alternating") },
-  ] as const
+  ] as const;
 }
 
 function colorKeys(t: (key: string) => string) {
@@ -61,29 +61,29 @@ function colorKeys(t: (key: string) => string) {
     { key: "text-primary", label: t("themeEditor.text") },
     { key: "text-secondary", label: t("themeEditor.textSecondary") },
     { key: "text-muted", label: t("themeEditor.textMuted") },
-  ]
+  ];
 }
 
 interface ThemeEditorProps {
-  onClose?: () => void
+  onClose?: () => void;
 }
 
 function configsEqual(a: ThemeConfig, b: ThemeConfig): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 const darkPresets = themePresets.filter((p) => {
-  const bg = p.config.colors?.["bg-primary"] || ""
-  return !bg.startsWith("#F") && !bg.startsWith("#E")
-})
+  const bg = p.config.colors?.["bg-primary"] || "";
+  return !bg.startsWith("#F") && !bg.startsWith("#E");
+});
 
 const lightPresets = themePresets.filter((p) => {
-  const bg = p.config.colors?.["bg-primary"] || ""
-  return bg.startsWith("#F") || bg.startsWith("#E")
-})
+  const bg = p.config.colors?.["bg-primary"] || "";
+  return bg.startsWith("#F") || bg.startsWith("#E");
+});
 
 export function ThemeEditor(_props: ThemeEditorProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     theme,
     customTheme,
@@ -95,83 +95,83 @@ export function ThemeEditor(_props: ThemeEditorProps) {
     darkTheme,
     setLightTheme,
     setDarkTheme,
-  } = useTheme()
-  const [themes, setThemes] = useState<CustomThemeData[]>([])
-  const [editing, setEditing] = useState(false)
-  const [name, setName] = useState("")
-  const [config, setConfig] = useState<ThemeConfig>(defaultThemeConfig)
+  } = useTheme();
+  const [themes, setThemes] = useState<CustomThemeData[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [config, setConfig] = useState<ThemeConfig>(defaultThemeConfig);
 
-  const isDefaultDark = !customTheme && !themeConfig && theme === "dark"
-  const isDefaultLight = !customTheme && !themeConfig && theme === "light"
+  const isDefaultDark = !customTheme && !themeConfig && theme === "dark";
+  const isDefaultLight = !customTheme && !themeConfig && theme === "light";
 
-  const activeConfig: ThemeConfig | null = customTheme ? JSON.parse(customTheme.theme) : themeConfig
+  const activeConfig: ThemeConfig | null = customTheme ? JSON.parse(customTheme.theme) : themeConfig;
 
   useEffect(() => {
     api<CustomThemeData[]>("/api/themes")
       .then(setThemes)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const createTheme = async () => {
-    if (!name.trim()) return
+    if (!name.trim()) return;
     try {
       const created = await api<CustomThemeData>("/api/themes", {
         method: "POST",
         body: JSON.stringify({ name: name.trim(), theme: config }),
-      })
-      setThemes((prev) => [created, ...prev.filter((t) => t.id !== created.id)])
-      applyTheme(created)
-      setName("")
-      setEditing(false)
+      });
+      setThemes((prev) => [created, ...prev.filter((t) => t.id !== created.id)]);
+      applyTheme(created);
+      setName("");
+      setEditing(false);
     } catch {
       /* Ignored */
     }
-  }
+  };
 
   const activateTheme = async (t: CustomThemeData) => {
     try {
-      await api(`/api/themes/${t.id}/activate`, { method: "POST" })
-      applyTheme(t)
+      await api(`/api/themes/${t.id}/activate`, { method: "POST" });
+      applyTheme(t);
     } catch {
       /* Ignored */
     }
-  }
+  };
 
   const deleteTheme = async (id: string) => {
     try {
-      await api(`/api/themes/${id}`, { method: "DELETE" })
-      setThemes((prev) => prev.filter((t) => t.id !== id))
-      if (customTheme?.id === id) clearCustomTheme()
+      await api(`/api/themes/${id}`, { method: "DELETE" });
+      setThemes((prev) => prev.filter((t) => t.id !== id));
+      if (customTheme?.id === id) clearCustomTheme();
     } catch {
       /* Ignored */
     }
-  }
+  };
 
   const setColor = (key: string, value: string) => {
     setConfig((prev) => ({
       ...prev,
       colors: { ...prev.colors, [key]: value },
-    }))
-  }
+    }));
+  };
 
   const setBubbleStyle = (value: "compact" | "cozy" | "alternating") => {
-    setConfig((prev) => ({ ...prev, bubbleStyle: value }))
-  }
+    setConfig((prev) => ({ ...prev, bubbleStyle: value }));
+  };
 
   const setBorderRadius = (value: number) => {
-    setConfig((prev) => ({ ...prev, borderRadius: value }))
-  }
+    setConfig((prev) => ({ ...prev, borderRadius: value }));
+  };
 
   const setStatusEmoji = (value: string) => {
-    setConfig((prev) => ({ ...prev, statusEmoji: value }))
-  }
+    setConfig((prev) => ({ ...prev, statusEmoji: value }));
+  };
 
   function PresetButton({ config: cfg, name: label, active }: { config: ThemeConfig; name: string; active: boolean }) {
     return (
       <button
         onClick={() => {
-          clearCustomTheme()
-          applyPreset(cfg)
+          clearCustomTheme();
+          applyPreset(cfg);
         }}
         className={`flex items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer text-left ${
           active ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/50"
@@ -186,7 +186,7 @@ export function ThemeEditor(_props: ThemeEditorProps) {
           <Check className="h-3.5 w-3.5 shrink-0 ml-auto" style={{ color: cfg.colors?.accent || "#7C5CFC" }} />
         )}
       </button>
-    )
+    );
   }
 
   return (
@@ -272,13 +272,13 @@ export function ThemeEditor(_props: ThemeEditorProps) {
             <select
               value={lightTheme ? JSON.stringify(lightTheme) : ""}
               onChange={(e) => {
-                const val = e.target.value
+                const val = e.target.value;
                 if (!val) {
-                  setLightTheme(null)
-                  return
+                  setLightTheme(null);
+                  return;
                 }
-                const parsed = JSON.parse(val)
-                setLightTheme(parsed)
+                const parsed = JSON.parse(val);
+                setLightTheme(parsed);
               }}
               className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
             >
@@ -316,13 +316,13 @@ export function ThemeEditor(_props: ThemeEditorProps) {
             <select
               value={darkTheme ? JSON.stringify(darkTheme) : ""}
               onChange={(e) => {
-                const val = e.target.value
+                const val = e.target.value;
                 if (!val) {
-                  setDarkTheme(null)
-                  return
+                  setDarkTheme(null);
+                  return;
                 }
-                const parsed = JSON.parse(val)
-                setDarkTheme(parsed)
+                const parsed = JSON.parse(val);
+                setDarkTheme(parsed);
               }}
               className="flex-1 h-10 rounded-2xl border border-border bg-bg-primary px-3 text-sm text-text-primary outline-none focus:border-accent/50 cursor-pointer"
             >
@@ -361,7 +361,7 @@ export function ThemeEditor(_props: ThemeEditorProps) {
       {/* Existing themes */}
       <div className="space-y-1.5">
         {themes.map((themeItem) => {
-          const isActive = customTheme?.id === themeItem.id
+          const isActive = customTheme?.id === themeItem.id;
           return (
             <div
               key={themeItem.id}
@@ -374,9 +374,9 @@ export function ThemeEditor(_props: ThemeEditorProps) {
                 style={{
                   background: (() => {
                     try {
-                      return JSON.parse(themeItem.theme).colors?.["accent"] || "#4850BB"
+                      return JSON.parse(themeItem.theme).colors?.["accent"] || "#4850BB";
                     } catch {
-                      return "#4850BB"
+                      return "#4850BB";
                     }
                   })(),
                   color: "#fff",
@@ -409,7 +409,7 @@ export function ThemeEditor(_props: ThemeEditorProps) {
                 </button>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -533,9 +533,9 @@ export function ThemeEditor(_props: ThemeEditorProps) {
       ) : (
         <button
           onClick={() => {
-            setName("")
-            setConfig(defaultThemeConfig)
-            setEditing(true)
+            setName("");
+            setConfig(defaultThemeConfig);
+            setEditing(true);
           }}
           className="flex w-full items-center justify-center gap-2 h-10 rounded-2xl border border-dashed border-border text-text-muted text-sm hover:text-accent hover:border-accent/50 transition-all cursor-pointer"
         >
@@ -544,5 +544,5 @@ export function ThemeEditor(_props: ThemeEditorProps) {
         </button>
       )}
     </section>
-  )
+  );
 }

@@ -1,38 +1,38 @@
-import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Modal } from "react-native"
-import { wsClient } from "../lib/ws"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { useTheme } from "../lib/theme-context"
+import { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Modal } from "react-native";
+import { wsClient } from "../lib/ws";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../lib/theme-context";
 
 const statuses = [
   { key: "online", emoji: "🟢", label: "status.online" },
   { key: "away", emoji: "🟡", label: "status.away" },
   { key: "busy", emoji: "🔴", label: "status.busy" },
   { key: "offline", emoji: "⚫", label: "status.offline" },
-]
+];
 
 export function StatusSelector() {
-  const { t } = useTranslation()
-  const { c } = useTheme()
-  const [visible, setVisible] = useState(false)
-  const [current, setCurrent] = useState("online")
-  const [customText, setCustomText] = useState("")
+  const { t } = useTranslation();
+  const { c } = useTheme();
+  const [visible, setVisible] = useState(false);
+  const [current, setCurrent] = useState("online");
+  const [customText, setCustomText] = useState("");
 
   useEffect(() => {
     api<{ status?: string; customStatus?: string }>("/api/users/me")
       .then((u) => {
-        if (u.status) setCurrent(u.status)
-        if (u.customStatus) setCustomText(u.customStatus)
+        if (u.status) setCurrent(u.status);
+        if (u.customStatus) setCustomText(u.customStatus);
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const setStatus = (status: string) => {
-    setCurrent(status)
-    wsClient.send("presence:status", { status, customStatus: customText || undefined })
-    setVisible(false)
-  }
+    setCurrent(status);
+    wsClient.send("presence:status", { status, customStatus: customText || undefined });
+    setVisible(false);
+  };
 
   return (
     <View>
@@ -71,7 +71,7 @@ export function StatusSelector() {
         </TouchableOpacity>
       </Modal>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -94,4 +94,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
   },
-})
+});

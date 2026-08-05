@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,40 +10,40 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-} from "react-native"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { Search, X } from "lucide-react-native"
-import { useTheme } from "../lib/theme-context"
+} from "react-native";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Search, X } from "lucide-react-native";
+import { useTheme } from "../lib/theme-context";
 
 interface Stats {
-  totalUsers: number
-  totalConversations: number
-  totalMessages: number
-  totalCommunities: number
-  totalFiles: number
-  totalReports: number
+  totalUsers: number;
+  totalConversations: number;
+  totalMessages: number;
+  totalCommunities: number;
+  totalFiles: number;
+  totalReports: number;
 }
 
 interface AdminUser {
-  id: string
-  username: string
-  email: string
-  isSuspended: string
-  isAdmin: string
-  createdAt: string
+  id: string;
+  username: string;
+  email: string;
+  isSuspended: string;
+  isAdmin: string;
+  createdAt: string;
 }
 
-type AdminTab = "stats" | "users" | "reports" | "bans" | "activity" | "admins"
+type AdminTab = "stats" | "users" | "reports" | "bans" | "activity" | "admins";
 
 export function AdminScreen({ onBack }: { onBack: () => void }) {
-  const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  const { c } = useTheme()
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
 
-  const [tab, setTab] = useState<AdminTab>("stats")
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [tab, setTab] = useState<AdminTab>("stats");
+  const [stats, setStats] = useState<Stats | null>(null);
 
   const tabs: { key: AdminTab; label: string }[] = [
     { key: "stats", label: t("admin.stats") },
@@ -52,14 +52,14 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
     { key: "bans", label: t("admin.bans") },
     { key: "activity", label: t("admin.activity") },
     { key: "admins", label: t("admin.manageAdmins") },
-  ]
+  ];
 
   useEffect(() => {
     if (tab === "stats")
       api<Stats>("/api/admin/stats")
         .then(setStats)
-        .catch(() => {})
-  }, [tab])
+        .catch(() => {});
+  }, [tab]);
 
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
@@ -118,18 +118,18 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
       {tab === "activity" && <AdminActivity />}
       {tab === "admins" && <AdminManagement />}
     </View>
-  )
+  );
 }
 
 function AdminActivity() {
-  const { c } = useTheme()
-  const [logs, setLogs] = useState<any[]>([])
+  const { c } = useTheme();
+  const [logs, setLogs] = useState<any[]>([]);
 
   useEffect(() => {
     api<any[]>("/api/admin/activity")
       .then(setLogs)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   return (
     <FlatList
@@ -150,34 +150,34 @@ function AdminActivity() {
         <Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No activity logs</Text>
       }
     />
-  )
+  );
 }
 
 function AdminManagement() {
-  const { c } = useTheme()
-  const [admins, setAdmins] = useState<any[]>([])
-  const [addAdminId, setAddAdminId] = useState("")
-  const [adminMsg, setAdminMsg] = useState("")
+  const { c } = useTheme();
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [addAdminId, setAddAdminId] = useState("");
+  const [adminMsg, setAdminMsg] = useState("");
 
   useEffect(() => {
     api<any[]>("/api/admin/admins")
       .then(setAdmins)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const addAdmin = async () => {
-    if (!addAdminId.trim()) return
+    if (!addAdminId.trim()) return;
     try {
-      await api("/api/admin/admins", { method: "POST", body: JSON.stringify({ userId: addAdminId.trim() }) })
-      setAdminMsg("Admin added successfully")
-      setAddAdminId("")
+      await api("/api/admin/admins", { method: "POST", body: JSON.stringify({ userId: addAdminId.trim() }) });
+      setAdminMsg("Admin added successfully");
+      setAddAdminId("");
       api<any[]>("/api/admin/admins")
         .then(setAdmins)
-        .catch(() => {})
+        .catch(() => {});
     } catch (e: any) {
-      setAdminMsg(e?.message || "Failed to add admin")
+      setAdminMsg(e?.message || "Failed to add admin");
     }
-  }
+  };
 
   const removeAdmin = (id: string) => {
     Alert.alert("Remove Admin", "", [
@@ -188,11 +188,11 @@ function AdminManagement() {
         onPress: () => {
           api(`/api/admin/admins/${id}`, { method: "DELETE" })
             .then(() => setAdmins((p) => p.filter((a) => a.id !== id)))
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -252,34 +252,34 @@ function AdminManagement() {
         ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No admins</Text>}
       />
     </View>
-  )
+  );
 }
 
 function AdminUsers() {
-  const { c } = useTheme()
-  const [users, setUsers] = useState<AdminUser[]>([])
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
-  const [detailUser, setDetailUser] = useState<AdminUser | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { c } = useTheme();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [detailUser, setDetailUser] = useState<AdminUser | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const loadUsers = useCallback(
     async (p: number) => {
-      setLoading(true)
+      setLoading(true);
       try {
         const data = await api<AdminUser[]>(
           `/api/admin/users?page=${p}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`,
-        )
-        setUsers(data)
+        );
+        setUsers(data);
       } catch {}
-      setLoading(false)
+      setLoading(false);
     },
     [search],
-  )
+  );
 
   useEffect(() => {
-    loadUsers(page)
-  }, [page, loadUsers])
+    loadUsers(page);
+  }, [page, loadUsers]);
 
   const suspendUser = (id: string) => {
     Alert.alert("Suspend User", "", [
@@ -290,11 +290,11 @@ function AdminUsers() {
         onPress: () => {
           api(`/api/admin/users/${id}/suspend`, { method: "PUT" })
             .then(() => loadUsers(page))
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const deleteUser = (id: string) => {
     Alert.alert("Delete User", "This cannot be undone", [
@@ -305,11 +305,11 @@ function AdminUsers() {
         onPress: () => {
           api(`/api/admin/users/${id}`, { method: "DELETE" })
             .then(() => setUsers((p) => p.filter((u) => u.id !== id)))
-            .catch(() => {})
+            .catch(() => {});
         },
       },
-    ])
-  }
+    ]);
+  };
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
@@ -323,15 +323,15 @@ function AdminUsers() {
           placeholderTextColor={c.textMuted}
           value={search}
           onChangeText={(v) => {
-            setSearch(v)
-            setPage(1)
+            setSearch(v);
+            setPage(1);
           }}
         />
         {search ? (
           <TouchableOpacity
             onPress={() => {
-              setSearch("")
-              setPage(1)
+              setSearch("");
+              setPage(1);
             }}
             style={{ padding: 8 }}
           >
@@ -410,30 +410,30 @@ function AdminUsers() {
         </View>
       </Modal>
     </View>
-  )
+  );
 }
 
 function AdminReports() {
-  const { c } = useTheme()
-  const [reports, setReports] = useState<any[]>([])
-  const [filter, setFilter] = useState<string>("all")
+  const { c } = useTheme();
+  const [reports, setReports] = useState<any[]>([]);
+  const [filter, setFilter] = useState<string>("all");
 
   const loadReports = useCallback(async (status: string) => {
     try {
-      const data = await api<any[]>(`/api/admin/reports?status=${status}`)
-      setReports(data)
+      const data = await api<any[]>(`/api/admin/reports?status=${status}`);
+      setReports(data);
     } catch {}
-  }, [])
+  }, []);
 
   useEffect(() => {
-    loadReports(filter)
-  }, [filter, loadReports])
+    loadReports(filter);
+  }, [filter, loadReports]);
 
   const resolve = (id: string, status: string) => {
     api(`/api/admin/reports/${id}`, { method: "PUT", body: JSON.stringify({ status }) })
       .then(() => setReports((p) => p.filter((r) => r.id !== id)))
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -484,26 +484,26 @@ function AdminReports() {
         ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 40 }}>No reports</Text>}
       />
     </View>
-  )
+  );
 }
 
 function AdminBans() {
-  const { c } = useTheme()
-  const [bans, setBans] = useState<any[]>([])
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
+  const { c } = useTheme();
+  const [bans, setBans] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     api<any[]>(`/api/admin/bans?page=${page}&limit=50${search ? `&q=${encodeURIComponent(search)}` : ""}`)
       .then(setBans)
-      .catch(() => {})
-  }, [page, search])
+      .catch(() => {});
+  }, [page, search]);
 
   const unban = (id: string) => {
     api(`/api/admin/bans/${id}`, { method: "DELETE" })
       .then(() => setBans((p) => p.filter((b) => b.id !== id)))
-      .catch(() => {})
-  }
+      .catch(() => {});
+  };
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
@@ -513,8 +513,8 @@ function AdminBans() {
         placeholderTextColor={c.textMuted}
         value={search}
         onChangeText={(v) => {
-          setSearch(v)
-          setPage(1)
+          setSearch(v);
+          setPage(1);
         }}
       />
       <FlatList
@@ -544,7 +544,7 @@ function AdminBans() {
         </TouchableOpacity>
       </View>
     </View>
-  )
+  );
 }
 
 const ss = StyleSheet.create({
@@ -603,7 +603,7 @@ const ss = StyleSheet.create({
     marginTop: 12,
   },
   btnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});
 
 const s = StyleSheet.create({
   container: { flex: 1 },
@@ -625,4 +625,4 @@ const s = StyleSheet.create({
   tabText: { fontSize: 13 },
   tabTextActive: { color: "#FFFFFF", fontWeight: "600" },
   content: { flex: 1 },
-})
+});

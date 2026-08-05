@@ -1,13 +1,13 @@
-import { Router, type Request, type Response } from "express"
-import { z } from "zod"
-import { db } from "../lib/db.js"
-import { validate } from "../middleware/validate.js"
-import { authGuard } from "../middleware/auth.js"
-import { catchAsync } from "../middleware/error-handler.js"
-import { pinnedMessages, messages, users } from "../db/schema.js"
-import { eq, and, like, desc } from "drizzle-orm"
+import { Router, type Request, type Response } from "express";
+import { z } from "zod";
+import { db } from "../lib/db.js";
+import { validate } from "../middleware/validate.js";
+import { authGuard } from "../middleware/auth.js";
+import { catchAsync } from "../middleware/error-handler.js";
+import { pinnedMessages, messages, users } from "../db/schema.js";
+import { eq, and, like, desc } from "drizzle-orm";
 
-const router: ReturnType<typeof Router> = Router()
+const router: ReturnType<typeof Router> = Router();
 
 // --- Pinned Messages ---
 
@@ -23,10 +23,10 @@ router.post(
         messageId: req.body.messageId,
         pinnedBy: req.user!.userId,
       })
-      .onConflictDoNothing()
-    res.status(201).json({ message: "Message pinned" })
+      .onConflictDoNothing();
+    res.status(201).json({ message: "Message pinned" });
   }),
-)
+);
 
 router.delete(
   "/pins/:conversationId/:messageId",
@@ -39,10 +39,10 @@ router.delete(
           eq(pinnedMessages.conversationId, req.params.conversationId as string),
           eq(pinnedMessages.messageId, req.params.messageId as string),
         ),
-      )
-    res.json({ message: "Message unpinned" })
+      );
+    res.json({ message: "Message unpinned" });
   }),
-)
+);
 
 router.get(
   "/pins/:conversationId",
@@ -61,10 +61,10 @@ router.get(
       .innerJoin(messages, eq(pinnedMessages.messageId, messages.id))
       .innerJoin(users, eq(messages.senderId, users.id))
       .where(eq(pinnedMessages.conversationId, req.params.conversationId as string))
-      .orderBy(desc(pinnedMessages.createdAt))
-    res.json(pins)
+      .orderBy(desc(pinnedMessages.createdAt));
+    res.json(pins);
   }),
-)
+);
 
 // --- Search ---
 
@@ -72,10 +72,10 @@ router.get(
   "/search",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const query = req.query.q as string | undefined
+    const query = req.query.q as string | undefined;
     if (!query || query.length < 2) {
-      res.status(400).json({ error: "Query must be at least 2 characters" })
-      return
+      res.status(400).json({ error: "Query must be at least 2 characters" });
+      return;
     }
     const results = await db
       .select({
@@ -90,9 +90,9 @@ router.get(
       .innerJoin(users, eq(messages.senderId, users.id))
       .where(and(like(messages.content, `%${query}%`), eq(messages.type, "text")))
       .orderBy(desc(messages.createdAt))
-      .limit(50)
-    res.json(results)
+      .limit(50);
+    res.json(results);
   }),
-)
+);
 
-export default router
+export default router;

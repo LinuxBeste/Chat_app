@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
-import { api } from "../../lib/api"
+import { useState, useEffect, useCallback } from "react";
+import { api } from "../../lib/api";
 import {
   Shield,
   Users,
@@ -19,216 +19,216 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"
-import { useTranslation } from "react-i18next"
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Stats {
-  users: number
-  conversations: number
-  messages: number
-  reports: number
-  bans: number
-  registrationsToday: number
-  onlineUsers: number
-  messagesToday: number
+  users: number;
+  conversations: number;
+  messages: number;
+  reports: number;
+  bans: number;
+  registrationsToday: number;
+  onlineUsers: number;
+  messagesToday: number;
 }
 
 interface AdminUser {
-  id: string
-  username: string
-  email: string
-  displayName: string | null
-  status: string
-  avatar?: string | null
-  createdAt: string
+  id: string;
+  username: string;
+  email: string;
+  displayName: string | null;
+  status: string;
+  avatar?: string | null;
+  createdAt: string;
 }
 
 interface AdminReport {
-  id: string
-  reportedBy: string
-  targetUserId: string | null
-  targetMessageId: string | null
-  reason: string
-  status: string
-  createdAt: string
-  reportedByName?: string
-  targetUserName?: string | null
+  id: string;
+  reportedBy: string;
+  targetUserId: string | null;
+  targetMessageId: string | null;
+  reason: string;
+  status: string;
+  createdAt: string;
+  reportedByName?: string;
+  targetUserName?: string | null;
 }
 
 interface AdminBan {
-  id: string
-  conversationId: string
-  userId: string
-  bannedBy: string
-  reason: string | null
-  expiresAt: string | null
-  createdAt: string
+  id: string;
+  conversationId: string;
+  userId: string;
+  bannedBy: string;
+  reason: string | null;
+  expiresAt: string | null;
+  createdAt: string;
 }
 
 interface ActivityItem {
-  id: string
-  type: string
-  userId: string
-  username: string
-  content: string
-  createdAt: string
+  id: string;
+  type: string;
+  userId: string;
+  username: string;
+  content: string;
+  createdAt: string;
 }
 
-type Tab = "overview" | "users" | "reports" | "bans" | "admins" | "activity"
+type Tab = "overview" | "users" | "reports" | "bans" | "admins" | "activity";
 
 export function AdminPage() {
-  const { t } = useTranslation()
-  const [tab, setTab] = useState<Tab>("overview")
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [userList, setUserList] = useState<AdminUser[]>([])
-  const [userTotal, setUserTotal] = useState(0)
-  const [userPage, setUserPage] = useState(1)
-  const [userQuery, setUserQuery] = useState("")
-  const [userStatusFilter, setUserStatusFilter] = useState("")
-  const [reportList, setReportList] = useState<AdminReport[]>([])
-  const [reportTotal, setReportTotal] = useState(0)
-  const [reportPage, setReportPage] = useState(1)
-  const [reportStatusFilter, setReportStatusFilter] = useState("")
-  const [banList, setBanList] = useState<AdminBan[]>([])
-  const [banTotal, setBanTotal] = useState(0)
-  const [banPage, setBanPage] = useState(1)
-  const [banQuery, setBanQuery] = useState("")
-  const [activityList, setActivityList] = useState<ActivityItem[]>([])
-  const [ownerId, setOwnerId] = useState<string | null>(null)
-  const [adminIds, setAdminIds] = useState<string[]>([])
-  const [addAdminId, setAddAdminId] = useState("")
-  const [adminMsg, setAdminMsg] = useState("")
-  const [detailUser, setDetailUser] = useState<any>(null)
-  const [detailLoading, setDetailLoading] = useState(false)
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<Tab>("overview");
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [userList, setUserList] = useState<AdminUser[]>([]);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userPage, setUserPage] = useState(1);
+  const [userQuery, setUserQuery] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState("");
+  const [reportList, setReportList] = useState<AdminReport[]>([]);
+  const [reportTotal, setReportTotal] = useState(0);
+  const [reportPage, setReportPage] = useState(1);
+  const [reportStatusFilter, setReportStatusFilter] = useState("");
+  const [banList, setBanList] = useState<AdminBan[]>([]);
+  const [banTotal, setBanTotal] = useState(0);
+  const [banPage, setBanPage] = useState(1);
+  const [banQuery, setBanQuery] = useState("");
+  const [activityList, setActivityList] = useState<ActivityItem[]>([]);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [adminIds, setAdminIds] = useState<string[]>([]);
+  const [addAdminId, setAddAdminId] = useState("");
+  const [adminMsg, setAdminMsg] = useState("");
+  const [detailUser, setDetailUser] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     api<Stats>("/api/admin/stats")
       .then(setStats)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    if (tab === "users") loadUsers()
-    if (tab === "reports") loadReports()
-    if (tab === "bans") loadBans()
-    if (tab === "activity") loadActivity()
-    if (tab === "admins") loadAdmins()
-  }, [tab, userPage, reportPage, banPage])
+    if (tab === "users") loadUsers();
+    if (tab === "reports") loadReports();
+    if (tab === "bans") loadBans();
+    if (tab === "activity") loadActivity();
+    if (tab === "admins") loadAdmins();
+  }, [tab, userPage, reportPage, banPage]);
 
   const loadUsers = useCallback(async () => {
-    const params = new URLSearchParams()
-    if (userQuery) params.set("q", userQuery)
-    if (userStatusFilter) params.set("status", userStatusFilter)
-    params.set("page", String(userPage))
-    const data = await api<any>(`/api/admin/users?${params}`).catch(() => null)
+    const params = new URLSearchParams();
+    if (userQuery) params.set("q", userQuery);
+    if (userStatusFilter) params.set("status", userStatusFilter);
+    params.set("page", String(userPage));
+    const data = await api<any>(`/api/admin/users?${params}`).catch(() => null);
     if (data) {
-      setUserList(data.users)
-      setUserTotal(data.total)
+      setUserList(data.users);
+      setUserTotal(data.total);
     }
-  }, [userQuery, userStatusFilter, userPage])
+  }, [userQuery, userStatusFilter, userPage]);
 
   const loadReports = useCallback(async () => {
-    const params = new URLSearchParams()
-    if (reportStatusFilter) params.set("status", reportStatusFilter)
-    params.set("page", String(reportPage))
-    const data = await api<any>(`/api/admin/reports?${params}`).catch(() => null)
+    const params = new URLSearchParams();
+    if (reportStatusFilter) params.set("status", reportStatusFilter);
+    params.set("page", String(reportPage));
+    const data = await api<any>(`/api/admin/reports?${params}`).catch(() => null);
     if (data) {
-      setReportList(data.reports)
-      setReportTotal(data.total)
+      setReportList(data.reports);
+      setReportTotal(data.total);
     }
-  }, [reportStatusFilter, reportPage])
+  }, [reportStatusFilter, reportPage]);
 
   const loadBans = useCallback(async () => {
-    const params = new URLSearchParams()
-    if (banQuery) params.set("q", banQuery)
-    params.set("page", String(banPage))
-    const data = await api<any>(`/api/admin/bans?${params}`).catch(() => null)
+    const params = new URLSearchParams();
+    if (banQuery) params.set("q", banQuery);
+    params.set("page", String(banPage));
+    const data = await api<any>(`/api/admin/bans?${params}`).catch(() => null);
     if (data) {
-      setBanList(data.bans)
-      setBanTotal(data.total)
+      setBanList(data.bans);
+      setBanTotal(data.total);
     }
-  }, [banQuery, banPage])
+  }, [banQuery, banPage]);
 
   const loadActivity = useCallback(async () => {
-    const data = await api<ActivityItem[]>("/api/admin/activity").catch(() => [])
-    setActivityList(data)
-  }, [])
+    const data = await api<ActivityItem[]>("/api/admin/activity").catch(() => []);
+    setActivityList(data);
+  }, []);
 
   const loadAdmins = useCallback(async () => {
-    const data = await api<{ ownerId: string | null; adminIds: string[] }>("/api/admin/admins").catch(() => null)
+    const data = await api<{ ownerId: string | null; adminIds: string[] }>("/api/admin/admins").catch(() => null);
     if (data) {
-      setOwnerId(data.ownerId)
-      setAdminIds(data.adminIds)
+      setOwnerId(data.ownerId);
+      setAdminIds(data.adminIds);
     }
-  }, [])
+  }, []);
 
   const searchUsers = () => {
-    setUserPage(1)
-    loadUsers()
-  }
+    setUserPage(1);
+    loadUsers();
+  };
 
   const resolveReport = async (id: string, status: string) => {
-    await api(`/api/admin/reports/${id}`, { method: "PUT", body: JSON.stringify({ status }) }).catch(() => {})
-    setReportList((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
-  }
+    await api(`/api/admin/reports/${id}`, { method: "PUT", body: JSON.stringify({ status }) }).catch(() => {});
+    setReportList((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  };
 
   const deleteUser = async (id: string) => {
-    if (!confirm(t("admin.deleteConfirm"))) return
-    await api(`/api/admin/users/${id}`, { method: "DELETE" }).catch(() => {})
-    setUserList((prev) => prev.filter((u) => u.id !== id))
-    setUserTotal((p) => p - 1)
-  }
+    if (!confirm(t("admin.deleteConfirm"))) return;
+    await api(`/api/admin/users/${id}`, { method: "DELETE" }).catch(() => {});
+    setUserList((prev) => prev.filter((u) => u.id !== id));
+    setUserTotal((p) => p - 1);
+  };
 
   const toggleSuspend = async (id: string, currentlySuspended: boolean) => {
     await api(`/api/admin/users/${id}/suspend`, {
       method: "PUT",
       body: JSON.stringify({ suspended: !currentlySuspended }),
-    }).catch(() => {})
+    }).catch(() => {});
     setUserList((prev) =>
       prev.map((u) => (u.id === id ? { ...u, status: currentlySuspended ? "offline" : "busy" } : u)),
-    )
-  }
+    );
+  };
 
   const viewUserDetail = async (id: string) => {
-    setDetailLoading(true)
-    const data = await api<any>(`/api/admin/users/${id}`).catch(() => null)
-    setDetailUser(data)
-    setDetailLoading(false)
-  }
+    setDetailLoading(true);
+    const data = await api<any>(`/api/admin/users/${id}`).catch(() => null);
+    setDetailUser(data);
+    setDetailLoading(false);
+  };
 
   const removeBan = async (id: string) => {
-    await api(`/api/admin/bans/${id}`, { method: "DELETE" }).catch(() => {})
-    setBanList((prev) => prev.filter((b) => b.id !== id))
-    setBanTotal((p) => p - 1)
-  }
+    await api(`/api/admin/bans/${id}`, { method: "DELETE" }).catch(() => {});
+    setBanList((prev) => prev.filter((b) => b.id !== id));
+    setBanTotal((p) => p - 1);
+  };
 
   const addAdmin = async () => {
-    if (!addAdminId.trim()) return
-    setAdminMsg("")
+    if (!addAdminId.trim()) return;
+    setAdminMsg("");
     try {
       const res = await api<{ adminIds: string[] }>("/api/admin/admins", {
         method: "POST",
         body: JSON.stringify({ userId: addAdminId.trim() }),
-      })
-      setAdminIds(res.adminIds)
-      setAddAdminId("")
-      setAdminMsg(t("admin.adminAdded"))
+      });
+      setAdminIds(res.adminIds);
+      setAddAdminId("");
+      setAdminMsg(t("admin.adminAdded"));
     } catch {
-      setAdminMsg(t("admin.failed"))
+      setAdminMsg(t("admin.failed"));
     }
-  }
+  };
 
   const removeAdmin = async (userId: string) => {
-    if (!confirm(t("admin.removeAdminConfirm"))) return
-    setAdminMsg("")
+    if (!confirm(t("admin.removeAdminConfirm"))) return;
+    setAdminMsg("");
     try {
-      const res = await api<{ adminIds: string[] }>(`/api/admin/admins/${userId}`, { method: "DELETE" })
-      setAdminIds(res.adminIds)
-      setAdminMsg(t("admin.adminRemoved"))
+      const res = await api<{ adminIds: string[] }>(`/api/admin/admins/${userId}`, { method: "DELETE" });
+      setAdminIds(res.adminIds);
+      setAdminMsg(t("admin.adminRemoved"));
     } catch {
-      setAdminMsg(t("admin.failed"))
+      setAdminMsg(t("admin.failed"));
     }
-  }
+  };
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: t("admin.overview"), icon: Shield },
@@ -237,7 +237,7 @@ export function AdminPage() {
     { key: "bans", label: t("admin.bans"), icon: Ban },
     { key: "activity", label: t("admin.activity"), icon: Activity },
     { key: "admins", label: t("admin.admins"), icon: Star },
-  ]
+  ];
 
   return (
     <div className="flex h-full">
@@ -324,8 +324,8 @@ export function AdminPage() {
               <select
                 value={userStatusFilter}
                 onChange={(e) => {
-                  setUserStatusFilter(e.target.value)
-                  setUserPage(1)
+                  setUserStatusFilter(e.target.value);
+                  setUserPage(1);
                 }}
                 className="h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-accent/50"
               >
@@ -430,8 +430,8 @@ export function AdminPage() {
               <select
                 value={reportStatusFilter}
                 onChange={(e) => {
-                  setReportStatusFilter(e.target.value)
-                  setReportPage(1)
+                  setReportStatusFilter(e.target.value);
+                  setReportPage(1);
                 }}
                 className="h-9 rounded-2xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-accent/50"
               >
@@ -760,7 +760,7 @@ export function AdminPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string; value: number; sub?: string }) {
@@ -775,5 +775,5 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string;
       <p className="text-2xl font-bold text-text-primary">{value}</p>
       {sub && <p className="text-xs text-text-muted mt-1">{sub}</p>}
     </div>
-  )
+  );
 }

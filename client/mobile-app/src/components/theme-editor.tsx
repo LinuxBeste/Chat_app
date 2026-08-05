@@ -1,28 +1,37 @@
-import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator } from "react-native"
-import { api } from "../lib/api"
-import { useTranslation } from "react-i18next"
-import { Check, Trash2 } from "lucide-react-native"
-import { useTheme } from "../lib/theme-context"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Modal,
+  ActivityIndicator,
+} from "react-native";
+import { api } from "../lib/api";
+import { useTranslation } from "react-i18next";
+import { Check, Trash2 } from "lucide-react-native";
+import { useTheme } from "../lib/theme-context";
 
 interface ThemeEditorProps {
-  visible: boolean
-  onClose: () => void
+  visible: boolean;
+  onClose: () => void;
 }
 
 interface ThemeData {
-  id: string
-  name: string
-  theme: string
-  createdAt?: string
+  id: string;
+  name: string;
+  theme: string;
+  createdAt?: string;
 }
 
 export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
-  const { t } = useTranslation()
-  const { c } = useTheme()
-  const [themes, setThemes] = useState<ThemeData[]>([])
-  const [name, setName] = useState("")
-  const [saving, setSaving] = useState(false)
+  const { t } = useTranslation();
+  const { c } = useTheme();
+  const [themes, setThemes] = useState<ThemeData[]>([]);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
   const [colors, setColors] = useState({
     "bg-primary": "#0A0A0F",
     "bg-secondary": "#101016",
@@ -33,46 +42,46 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
     "text-primary": "#E8E8F0",
     "text-secondary": "#8888A0",
     "text-muted": "#585870",
-  })
+  });
 
   useEffect(() => {
     if (visible) {
       api<ThemeData[]>("/api/themes")
         .then(setThemes)
-        .catch(() => {})
+        .catch(() => {});
     }
-  }, [visible])
+  }, [visible]);
 
-  const colorKeys = Object.keys(colors) as (keyof typeof colors)[]
+  const colorKeys = Object.keys(colors) as (keyof typeof colors)[];
 
   const saveTheme = async () => {
-    if (!name.trim()) return
-    setSaving(true)
+    if (!name.trim()) return;
+    setSaving(true);
     try {
       await api("/api/themes", {
         method: "POST",
         body: JSON.stringify({ name: name.trim(), theme: JSON.stringify(colors) }),
-      })
-      setName("")
+      });
+      setName("");
       api<ThemeData[]>("/api/themes")
         .then(setThemes)
-        .catch(() => {})
+        .catch(() => {});
     } catch {}
-    setSaving(false)
-  }
+    setSaving(false);
+  };
 
   const activateTheme = async (id: string) => {
     try {
-      await api(`/api/themes/${id}/activate`, { method: "POST" })
+      await api(`/api/themes/${id}/activate`, { method: "POST" });
     } catch {}
-  }
+  };
 
   const deleteTheme = async (id: string) => {
     try {
-      await api(`/api/themes/${id}`, { method: "DELETE" })
-      setThemes((p) => p.filter((t) => t.id !== id))
+      await api(`/api/themes/${id}`, { method: "DELETE" });
+      setThemes((p) => p.filter((t) => t.id !== id));
     } catch {}
-  }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -135,7 +144,7 @@ export function ThemeEditor({ visible, onClose }: ThemeEditorProps) {
         </View>
       </View>
     </Modal>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -187,4 +196,4 @@ const s = StyleSheet.create({
   },
   saveBtn: { borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
   saveText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
-})
+});

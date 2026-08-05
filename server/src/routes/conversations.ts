@@ -1,36 +1,36 @@
-import { Router, Request, Response } from "express"
-import type { Router as RouterType } from "express"
-import multer from "multer"
-import { z } from "zod"
-import { db } from "../lib/db.js"
-import { validate } from "../middleware/validate.js"
-import { authGuard } from "../middleware/auth.js"
-import { catchAsync } from "../middleware/error-handler.js"
-import { conversations, participants, messages, users, attachments, mutes, reactions } from "../db/schema.js"
-import { eq, and, desc, sql, inArray, isNull } from "drizzle-orm"
-import { createContextLogger } from "../lib/logger.js"
-import { clients, sendToConversation } from "../ws/clients.js"
-import { saveAvatar } from "../lib/image.js"
-import { deleteMessageWithAttachments } from "../lib/message-cleanup.js"
+import { Router, Request, Response } from "express";
+import type { Router as RouterType } from "express";
+import multer from "multer";
+import { z } from "zod";
+import { db } from "../lib/db.js";
+import { validate } from "../middleware/validate.js";
+import { authGuard } from "../middleware/auth.js";
+import { catchAsync } from "../middleware/error-handler.js";
+import { conversations, participants, messages, users, attachments, mutes, reactions } from "../db/schema.js";
+import { eq, and, desc, sql, inArray, isNull } from "drizzle-orm";
+import { createContextLogger } from "../lib/logger.js";
+import { clients, sendToConversation } from "../ws/clients.js";
+import { saveAvatar } from "../lib/image.js";
+import { deleteMessageWithAttachments } from "../lib/message-cleanup.js";
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true)
-    else cb(new Error("Only image files are allowed"))
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
   },
-})
+});
 
-const log = createContextLogger("routes:conversations")
+const log = createContextLogger("routes:conversations");
 
-const router: RouterType = Router()
+const router: RouterType = Router();
 
 const createSchema = z.object({
   type: z.enum(["dm", "group", "channel"]),
   name: z.string().min(1).max(100).optional(),
   participantIds: z.array(z.string().uuid()).default([]),
-})
+});
 
 router.post(
   "/",
@@ -38,22 +38,22 @@ router.post(
   validate(createSchema),
   catchAsync(async (req: Request, res: Response) => {
     try {
-      const { type, name, participantIds } = req.body
-      const allIds = [...new Set([req.user!.userId, ...participantIds])]
+      const { type, name, participantIds } = req.body;
+      const allIds = [...new Set([req.user!.userId, ...participantIds])];
 
       if (type === "dm") {
-        const dms = await db.select({ id: conversations.id }).from(conversations).where(eq(conversations.type, "dm"))
-        let existing: { id: string } | undefined
+        const dms = await db.select({ id: conversations.id }).from(conversations).where(eq(conversations.type, "dm"));
+        let existing: { id: string } | undefined;
         for (const dm of dms) {
           const members = await db
             .select({ userId: participants.userId })
             .from(participants)
-            .where(eq(participants.conversationId, dm.id))
-          const memberIds = members.map((m) => m.userId).sort()
-          const targetIds = [...allIds].sort()
+            .where(eq(participants.conversationId, dm.id));
+          const memberIds = members.map((m) => m.userId).sort();
+          const targetIds = [...allIds].sort();
           if (memberIds.length === targetIds.length && memberIds.every((id, i) => id === targetIds[i])) {
-            existing = dm
-            break
+            existing = dm;
+            break;
           }
         }
 
@@ -67,7 +67,7 @@ router.post(
             })
             .from(conversations)
             .where(eq(conversations.id, existing.id))
-            .limit(1)
+            .limit(1);
 
           const other = await db
             .select({
@@ -82,17 +82,17 @@ router.post(
             .where(
               and(eq(participants.conversationId, existing.id), sql`${participants.userId} != ${req.user!.userId}`),
             )
-            .limit(1)
+            .limit(1);
 
-          res.json({ ...fullConv, otherUser: other[0] ?? null })
-          return
+          res.json({ ...fullConv, otherUser: other[0] ?? null });
+          return;
         }
       }
 
       const [conv] = await db
         .insert(conversations)
         .values({ type, name: name ?? null, createdBy: req.user!.userId })
-        .returning()
+        .returning();
 
       await db.insert(participants).values(
         allIds.map((userId) => ({
@@ -100,7 +100,7 @@ router.post(
           userId,
           role: userId === req.user!.userId ? "owner" : "member",
         })),
-      )
+      );
 
       if (type === "dm") {
         const other = await db
@@ -114,24 +114,24 @@ router.post(
           .from(participants)
           .innerJoin(users, eq(users.id, participants.userId))
           .where(and(eq(participants.conversationId, conv.id), sql`${participants.userId} != ${req.user!.userId}`))
-          .limit(1)
+          .limit(1);
 
-        res.status(201).json({ ...conv, otherUser: other[0] ?? null })
+        res.status(201).json({ ...conv, otherUser: other[0] ?? null });
       } else {
-        res.status(201).json(conv)
+        res.status(201).json(conv);
       }
     } catch (err) {
-      log.error({ err }, "Create conversation failed")
-      res.status(500).json({ error: "Internal server error" })
+      log.error({ err }, "Create conversation failed");
+      res.status(500).json({ error: "Internal server error" });
     }
   }),
-)
+);
 
 router.get(
   "/",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
+    const userId = req.user!.userId;
     const convs = await db
       .select({
         id: conversations.id,
@@ -143,18 +143,18 @@ router.get(
       .from(conversations)
       .innerJoin(participants, eq(participants.conversationId, conversations.id))
       .where(eq(participants.userId, userId))
-      .orderBy(desc(conversations.createdAt))
+      .orderBy(desc(conversations.createdAt));
 
-    const seen = new Set<string>()
+    const seen = new Set<string>();
     const unique = convs.filter((c) => {
-      if (seen.has(c.id)) return false
-      seen.add(c.id)
-      return true
-    })
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
 
     const enriched = await Promise.all(
       unique.map(async (conv) => {
-        if (conv.type !== "dm") return conv
+        if (conv.type !== "dm") return conv;
 
         const other = await db
           .select({
@@ -167,16 +167,16 @@ router.get(
           .from(participants)
           .innerJoin(users, eq(users.id, participants.userId))
           .where(and(eq(participants.conversationId, conv.id), sql`${participants.userId} != ${userId}`))
-          .limit(1)
+          .limit(1);
 
         return {
           ...conv,
           otherUser: other[0] ?? null,
-        }
+        };
       }),
-    )
+    );
 
-    const ids = enriched.map((c) => c.id)
+    const ids = enriched.map((c) => c.id);
     const lastRows = ids.length
       ? await db
           .selectDistinctOn([messages.conversationId], {
@@ -191,12 +191,12 @@ router.get(
           .innerJoin(users, eq(users.id, messages.senderId))
           .where(and(inArray(messages.conversationId, ids), isNull(messages.deletedAt)))
           .orderBy(messages.conversationId, desc(messages.createdAt))
-      : []
-    const lastByConv = new Map(lastRows.map((r) => [r.conversationId, r]))
+      : [];
+    const lastByConv = new Map(lastRows.map((r) => [r.conversationId, r]));
 
     res.json(
       enriched.map((conv) => {
-        const last = lastByConv.get(conv.id)
+        const last = lastByConv.get(conv.id);
         return {
           ...conv,
           lastMessage: last
@@ -210,22 +210,22 @@ router.get(
                 },
               }
             : null,
-        }
+        };
       }),
-    )
+    );
   }),
-)
+);
 
 router.get(
   "/:id",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const id = req.params.id as string
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
+    const id = req.params.id as string;
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
 
     if (!conv) {
-      res.status(404).json({ error: "Conversation not found" })
-      return
+      res.status(404).json({ error: "Conversation not found" });
+      return;
     }
 
     const members = await db
@@ -239,45 +239,45 @@ router.get(
       })
       .from(participants)
       .innerJoin(users, eq(users.id, participants.userId))
-      .where(eq(participants.conversationId, conv.id))
+      .where(eq(participants.conversationId, conv.id));
 
     const [muteRow] = await db
       .select({ id: mutes.id })
       .from(mutes)
       .where(and(eq(mutes.conversationId, conv.id), eq(mutes.userId, req.user!.userId)))
-      .limit(1)
+      .limit(1);
 
-    res.json({ ...conv, members, muted: !!muteRow })
+    res.json({ ...conv, members, muted: !!muteRow });
   }),
-)
+);
 
 router.put(
   "/:id/mute",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const convId = req.params.id as string
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    const convId = req.params.id as string;
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
     if (!conv) {
-      res.status(404).json({ error: "Conversation not found" })
-      return
+      res.status(404).json({ error: "Conversation not found" });
+      return;
     }
     const [member] = await db
       .select()
       .from(participants)
       .where(and(eq(participants.conversationId, convId), eq(participants.userId, req.user!.userId)))
-      .limit(1)
+      .limit(1);
     if (!member) {
-      res.status(403).json({ error: "Not a member of this conversation" })
-      return
+      res.status(403).json({ error: "Not a member of this conversation" });
+      return;
     }
     const [row] = await db
       .insert(mutes)
       .values({ conversationId: convId, userId: req.user!.userId })
       .onConflictDoNothing()
-      .returning()
-    res.json({ muted: true, mutesId: row?.id ?? null })
+      .returning();
+    res.json({ muted: true, mutesId: row?.id ?? null });
   }),
-)
+);
 
 router.delete(
   "/:id/mute",
@@ -285,30 +285,30 @@ router.delete(
   catchAsync(async (req: Request, res: Response) => {
     await db
       .delete(mutes)
-      .where(and(eq(mutes.conversationId, req.params.id as string), eq(mutes.userId, req.user!.userId)))
-    res.json({ muted: false })
+      .where(and(eq(mutes.conversationId, req.params.id as string), eq(mutes.userId, req.user!.userId)));
+    res.json({ muted: false });
   }),
-)
+);
 
 router.put(
   "/:id",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const { name } = req.body
-    const updates: Record<string, unknown> = {}
-    if (name && typeof name === "string") updates.name = name
+    const { name } = req.body;
+    const updates: Record<string, unknown> = {};
+    if (name && typeof name === "string") updates.name = name;
     if (Object.keys(updates).length === 0) {
-      res.status(400).json({ error: "No fields to update" })
-      return
+      res.status(400).json({ error: "No fields to update" });
+      return;
     }
     const [updated] = await db
       .update(conversations)
       .set(updates)
       .where(eq(conversations.id, req.params.id as string))
-      .returning()
-    res.json(updated)
+      .returning();
+    res.json(updated);
   }),
-)
+);
 
 router.post(
   "/:id/avatar",
@@ -316,55 +316,55 @@ router.post(
   avatarUpload.single("avatar"),
   catchAsync(async (req: Request, res: Response) => {
     if (!req.file) {
-      res.status(400).json({ error: "No file provided" })
-      return
+      res.status(400).json({ error: "No file provided" });
+      return;
     }
-    const url = await saveAvatar(req.file.buffer)
+    const url = await saveAvatar(req.file.buffer);
     const [updated] = await db
       .update(conversations)
       .set({ avatar: url })
       .where(eq(conversations.id, req.params.id as string))
-      .returning()
-    res.json({ avatar: updated.avatar })
+      .returning();
+    res.json({ avatar: updated.avatar });
   }),
-)
+);
 
 const addParticipantsSchema = z.object({
   participantIds: z.array(z.string().uuid()).min(1),
-})
+});
 
 router.post(
   "/:id/participants",
   authGuard,
   validate(addParticipantsSchema),
   catchAsync(async (req: Request, res: Response) => {
-    const convId = req.params.id as string
-    const { participantIds } = req.body
+    const convId = req.params.id as string;
+    const { participantIds } = req.body;
 
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
     if (!conv) {
-      res.status(404).json({ error: "Conversation not found" })
-      return
+      res.status(404).json({ error: "Conversation not found" });
+      return;
     }
     if (conv.type === "dm") {
-      res.status(400).json({ error: "Cannot add participants to a DM" })
-      return
+      res.status(400).json({ error: "Cannot add participants to a DM" });
+      return;
     }
 
     const existingParticipants = await db
       .select({ userId: participants.userId })
       .from(participants)
-      .where(eq(participants.conversationId, convId))
+      .where(eq(participants.conversationId, convId));
 
-    const existingIds = new Set(existingParticipants.map((p) => p.userId))
-    const newIds = participantIds.filter((id: string) => !existingIds.has(id))
+    const existingIds = new Set(existingParticipants.map((p) => p.userId));
+    const newIds = participantIds.filter((id: string) => !existingIds.has(id));
 
     if (newIds.length === 0) {
-      res.status(400).json({ error: "All users are already participants" })
-      return
+      res.status(400).json({ error: "All users are already participants" });
+      return;
     }
 
-    await db.insert(participants).values(newIds.map((userId: string) => ({ conversationId: convId, userId })))
+    await db.insert(participants).values(newIds.map((userId: string) => ({ conversationId: convId, userId })));
 
     const added = await db
       .select({
@@ -385,71 +385,71 @@ router.post(
             sql`, `,
           )})`,
         ),
-      )
+      );
 
-    res.status(201).json(added)
+    res.status(201).json(added);
   }),
-)
+);
 
 router.delete(
   "/:id/participants/:userId",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const convId = req.params.id as string
-    const targetUserId = req.params.userId as string
+    const convId = req.params.id as string;
+    const targetUserId = req.params.userId as string;
 
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
     if (!conv) {
-      res.status(404).json({ error: "Conversation not found" })
-      return
+      res.status(404).json({ error: "Conversation not found" });
+      return;
     }
 
     if (conv.createdBy === targetUserId && req.user!.userId !== targetUserId) {
-      res.status(403).json({ error: "Cannot remove the conversation owner" })
-      return
+      res.status(403).json({ error: "Cannot remove the conversation owner" });
+      return;
     }
 
     await db
       .delete(participants)
-      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)))
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)));
 
-    const userSockets = clients.get(targetUserId)
+    const userSockets = clients.get(targetUserId);
     if (userSockets) {
       for (const ws of userSockets) {
-        ws.send(JSON.stringify({ type: "participant:removed", conversationId: convId }))
-        ws.close()
+        ws.send(JSON.stringify({ type: "participant:removed", conversationId: convId }));
+        ws.close();
       }
-      clients.delete(targetUserId)
+      clients.delete(targetUserId);
     }
 
-    res.json({ message: "Participant removed" })
+    res.json({ message: "Participant removed" });
   }),
-)
+);
 
 router.put(
   "/:id/participants/:userId/role",
   authGuard,
   validate(z.object({ role: z.enum(["owner", "admin", "member"]) })),
   catchAsync(async (req: Request, res: Response) => {
-    const convId = req.params.id as string
-    const targetUserId = req.params.userId as string
-    const { role } = req.body
+    const convId = req.params.id as string;
+    const targetUserId = req.params.userId as string;
+    const { role } = req.body;
 
     await db
       .update(participants)
       .set({ role })
-      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)))
+      .where(and(eq(participants.conversationId, convId), eq(participants.userId, targetUserId)));
 
-    res.json({ message: "Role updated" })
+    res.json({ message: "Role updated" });
   }),
-)
+);
 
 router.get(
   "/:id/messages",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100)
-    const offset = parseInt(req.query.offset as string) || 0
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
 
     const msgs = await db
       .select({
@@ -482,30 +482,35 @@ router.get(
       .where(eq(messages.conversationId, req.params.id as string))
       .orderBy(desc(messages.createdAt))
       .limit(limit)
-      .offset(offset)
+      .offset(offset);
 
-    const list = msgs.reverse()
+    const list = msgs.reverse();
     if (list.length > 0) {
-      const ids = list.map((m) => m.id)
+      const ids = list.map((m) => m.id);
       const reactionRows = await db
-        .select({ messageId: reactions.messageId, emoji: reactions.emoji, userId: reactions.userId, username: users.username })
+        .select({
+          messageId: reactions.messageId,
+          emoji: reactions.emoji,
+          userId: reactions.userId,
+          username: users.username,
+        })
         .from(reactions)
         .innerJoin(users, eq(users.id, reactions.userId))
-        .where(inArray(reactions.messageId, ids))
-      const byMessage = new Map<string, typeof reactionRows>()
+        .where(inArray(reactions.messageId, ids));
+      const byMessage = new Map<string, typeof reactionRows>();
       reactionRows.forEach((r) => {
-        const arr = byMessage.get(r.messageId) ?? []
-        arr.push(r)
-        byMessage.set(r.messageId, arr)
-      })
+        const arr = byMessage.get(r.messageId) ?? [];
+        arr.push(r);
+        byMessage.set(r.messageId, arr);
+      });
       list.forEach((m) => {
-        ;(m as any).reactions = byMessage.get(m.id) ?? []
-      })
+        (m as any).reactions = byMessage.get(m.id) ?? [];
+      });
     }
 
-    res.json(list)
+    res.json(list);
   }),
-)
+);
 
 router.put(
   "/:id/messages/:msgId",
@@ -516,30 +521,30 @@ router.put(
       .select()
       .from(messages)
       .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
-      .limit(1)
+      .limit(1);
 
     if (!msg) {
-      res.status(404).json({ error: "Message not found" })
-      return
+      res.status(404).json({ error: "Message not found" });
+      return;
     }
     if (msg.senderId !== req.user!.userId) {
-      res.status(403).json({ error: "Not your message" })
-      return
+      res.status(403).json({ error: "Not your message" });
+      return;
     }
     if (msg.deletedAt) {
-      res.status(400).json({ error: "Cannot edit deleted message" })
-      return
+      res.status(400).json({ error: "Cannot edit deleted message" });
+      return;
     }
 
     const [updated] = await db
       .update(messages)
       .set({ content: req.body.content, editedAt: new Date() })
       .where(eq(messages.id, msg.id))
-      .returning()
+      .returning();
 
-    res.json(updated)
+    res.json(updated);
   }),
-)
+);
 
 router.delete(
   "/:id/messages/:msgId",
@@ -549,55 +554,55 @@ router.delete(
       .select()
       .from(messages)
       .where(and(eq(messages.id, req.params.msgId as string), eq(messages.conversationId, req.params.id as string)))
-      .limit(1)
+      .limit(1);
 
     if (!msg) {
-      res.status(404).json({ error: "Message not found" })
-      return
+      res.status(404).json({ error: "Message not found" });
+      return;
     }
     if (msg.senderId !== req.user!.userId) {
-      res.status(403).json({ error: "Not your message" })
-      return
+      res.status(403).json({ error: "Not your message" });
+      return;
     }
-    await deleteMessageWithAttachments(msg.id)
+    await deleteMessageWithAttachments(msg.id);
 
-    const event = { type: "message:deleted", id: msg.id, conversationId: req.params.id }
-    sendToConversation(req.params.id as string, event, req.user!.userId)
-    const sockets = clients.get(req.user!.userId)
+    const event = { type: "message:deleted", id: msg.id, conversationId: req.params.id };
+    sendToConversation(req.params.id as string, event, req.user!.userId);
+    const sockets = clients.get(req.user!.userId);
     if (sockets) {
       for (const ws of sockets) {
-        if (ws.readyState === 1) ws.send(JSON.stringify(event))
+        if (ws.readyState === 1) ws.send(JSON.stringify(event));
       }
     }
 
-    res.json({ message: "Message deleted" })
+    res.json({ message: "Message deleted" });
   }),
-)
+);
 
 router.delete(
   "/:id",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
-    const convId = req.params.id as string
+    const convId = req.params.id as string;
 
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1)
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
     if (!conv) {
-      res.status(404).json({ error: "Conversation not found" })
-      return
+      res.status(404).json({ error: "Conversation not found" });
+      return;
     }
 
     if (conv.createdBy !== req.user!.userId) {
-      res.status(403).json({ error: "Only the creator can delete this conversation" })
-      return
+      res.status(403).json({ error: "Only the creator can delete this conversation" });
+      return;
     }
 
-    await db.delete(participants).where(eq(participants.conversationId, convId))
-    await db.delete(messages).where(eq(messages.conversationId, convId))
-    await db.delete(conversations).where(eq(conversations.id, convId))
+    await db.delete(participants).where(eq(participants.conversationId, convId));
+    await db.delete(messages).where(eq(messages.conversationId, convId));
+    await db.delete(conversations).where(eq(conversations.id, convId));
 
-    res.json({ message: "Conversation deleted" })
+    res.json({ message: "Conversation deleted" });
   }),
-)
+);
 
 router.get(
   "/:id/files",
@@ -622,10 +627,10 @@ router.get(
       .leftJoin(attachments, eq(attachments.messageId, messages.id))
       .where(and(eq(messages.conversationId, req.params.id as string), eq(messages.type, "file")))
       .orderBy(desc(messages.createdAt))
-      .limit(50)
+      .limit(50);
 
-    res.json(fileMsgs.filter((m) => m.attachment))
+    res.json(fileMsgs.filter((m) => m.attachment));
   }),
-)
+);
 
-export default router
+export default router;

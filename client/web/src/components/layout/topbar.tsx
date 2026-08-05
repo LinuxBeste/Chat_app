@@ -1,44 +1,44 @@
-import { useTranslation } from "react-i18next"
-import { Search, ChevronDown, PanelLeftClose, PanelLeft, Moon, Sun } from "lucide-react"
-import { Avatar } from "../ui/avatar"
-import { Input } from "../ui/input"
-import { useTheme } from "../../lib/theme-context"
-import { useAuth } from "../../lib/auth-context"
-import { StatusSelector } from "../presence/status-selector"
-import { SearchPanel } from "../search/search-panel"
-import { useState, useRef, useEffect } from "react"
+import { useTranslation } from "react-i18next";
+import { Search, ChevronDown, PanelLeftClose, PanelLeft, Moon, Sun } from "lucide-react";
+import { Avatar } from "../ui/avatar";
+import { Input } from "../ui/input";
+import { useTheme } from "../../lib/theme-context";
+import { useAuth } from "../../lib/auth-context";
+import { StatusSelector } from "../presence/status-selector";
+import { SearchPanel } from "../search/search-panel";
+import { useState, useRef, useEffect } from "react";
 
 interface TopbarProps {
-  collapsed: boolean
-  onToggle: () => void
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
 export function Topbar({ collapsed, onToggle }: TopbarProps) {
-  const { t } = useTranslation()
-  const { theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const searchRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!searchOpen) return
+    if (!searchOpen) return;
     const handler = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setSearchOpen(false)
+        setSearchOpen(false);
       }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [searchOpen])
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [searchOpen]);
 
   const closeSearch = () => {
-    setSearchOpen(false)
-    setSearchQuery("")
-  }
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
 
-  const displayName = user?.displayName || user?.username || "User"
-  const initials = (displayName.match(/\b\w/g) || []).join("").slice(0, 2).toUpperCase() || "U"
+  const displayName = user?.displayName || user?.username || "User";
+  const initials = (displayName.match(/\b\w/g) || []).join("").slice(0, 2).toUpperCase() || "U";
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border bg-bg-secondary px-6">
@@ -56,12 +56,12 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
           className="pl-10"
           value={searchQuery}
           onChange={(e) => {
-            setSearchQuery(e.target.value)
-            setSearchOpen(true)
+            setSearchQuery(e.target.value);
+            setSearchOpen(true);
           }}
           onFocus={() => setSearchOpen(true)}
           onKeyDown={(e) => {
-            if (e.key === "Escape") closeSearch()
+            if (e.key === "Escape") closeSearch();
           }}
         />
         {searchOpen && <SearchPanel query={searchQuery} onChange={setSearchQuery} onClose={closeSearch} />}
@@ -85,5 +85,5 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }

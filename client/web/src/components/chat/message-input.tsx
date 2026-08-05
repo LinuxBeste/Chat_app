@@ -1,111 +1,111 @@
-import { useState, useRef, useCallback, useEffect } from "react"
-import { useTranslation } from "react-i18next"
-import { Send, Paperclip, Smile, Loader2, Upload, WifiOff } from "lucide-react"
-import { apiFormData } from "../../lib/api"
-import { useToast } from "../../lib/toast-context"
-import { EmojiPicker } from "./emoji-picker"
-import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages } from "../../lib/offline"
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Send, Paperclip, Smile, Loader2, Upload, WifiOff } from "lucide-react";
+import { apiFormData } from "../../lib/api";
+import { useToast } from "../../lib/toast-context";
+import { EmojiPicker } from "./emoji-picker";
+import { subscribeToOnlineStatus, isOnline as checkOnline, getPendingMessages } from "../../lib/offline";
 
 export interface AttachmentData {
-  id?: string
-  url: string
-  filename: string
-  mimeType: string
-  size: number
+  id?: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
 }
 
 interface MessageInputProps {
-  conversationId: string
-  onSend: (content: string, messageType?: string, attachment?: AttachmentData) => void
+  conversationId: string;
+  onSend: (content: string, messageType?: string, attachment?: AttachmentData) => void;
 }
 
 export function MessageInput({ conversationId: _conversationId, onSend }: MessageInputProps) {
-  const { t } = useTranslation()
-  const { showToast } = useToast()
-  const [value, setValue] = useState("")
-  const [uploading, setUploading] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [offline, setOffline] = useState(!checkOnline())
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [value, setValue] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [offline, setOffline] = useState(!checkOnline());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return subscribeToOnlineStatus(
       () => setOffline(false),
       () => setOffline(true),
-    )
-  }, [])
+    );
+  }, []);
 
   const handleEmojiSelect = (emoji: string) => {
-    const input = inputRef.current
+    const input = inputRef.current;
     if (!input) {
-      setValue((prev) => prev + emoji)
-      return
+      setValue((prev) => prev + emoji);
+      return;
     }
-    const start = input.selectionStart ?? value.length
-    const end = input.selectionStart ?? value.length
-    const newValue = value.slice(0, start) + emoji + value.slice(end)
-    setValue(newValue)
+    const start = input.selectionStart ?? value.length;
+    const end = input.selectionStart ?? value.length;
+    const newValue = value.slice(0, start) + emoji + value.slice(end);
+    setValue(newValue);
     requestAnimationFrame(() => {
-      input.selectionStart = input.selectionEnd = start + emoji.length
-      input.focus()
-    })
-  }
+      input.selectionStart = input.selectionEnd = start + emoji.length;
+      input.focus();
+    });
+  };
 
   const uploadFile = useCallback(
     async (file: File) => {
-      setUploading(true)
+      setUploading(true);
       try {
-        const formData = new FormData()
-        formData.append("file", file)
-        const result = await apiFormData<AttachmentData>("/api/uploads", formData)
-        onSend(result.url, file.type.startsWith("image/") ? "image" : "file", result)
+        const formData = new FormData();
+        formData.append("file", file);
+        const result = await apiFormData<AttachmentData>("/api/uploads", formData);
+        onSend(result.url, file.type.startsWith("image/") ? "image" : "file", result);
       } catch {
-        showToast(t("chat.uploadError"))
+        showToast(t("chat.uploadError"));
       } finally {
-        setUploading(false)
+        setUploading(false);
       }
     },
     [onSend],
-  )
+  );
 
   const handleSend = () => {
-    if (!value.trim() || uploading) return
-    onSend(value.trim())
-    setValue("")
-  }
+    if (!value.trim() || uploading) return;
+    onSend(value.trim());
+    setValue("");
+  };
 
   const handleFilePick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    await uploadFile(file)
-    if (fileInputRef.current) fileInputRef.current.value = ""
-  }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragOver(true)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragOver(false)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
 
   const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) await uploadFile(file)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await uploadFile(file);
+  };
 
   return (
     <div className="relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
@@ -124,7 +124,7 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
       >
         {offline &&
           (() => {
-            const pendingCount = getPendingMessages().length
+            const pendingCount = getPendingMessages().length;
             return (
               <div className="flex items-center gap-1.5 text-yellow-400 text-xs shrink-0" title={t("chat.offline")}>
                 <WifiOff className="h-3.5 w-3.5" />
@@ -135,7 +135,7 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
                   </span>
                 )}
               </div>
-            )
+            );
           })()}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
         <button
@@ -181,5 +181,5 @@ export function MessageInput({ conversationId: _conversationId, onSend }: Messag
         </button>
       </div>
     </div>
-  )
+  );
 }

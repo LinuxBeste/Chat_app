@@ -1,69 +1,69 @@
-import { useState, useEffect, useRef } from "react"
-import { useTranslation } from "react-i18next"
-import { api } from "../../lib/api"
-import { Search, X, Plus, UserCheck } from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { api } from "../../lib/api";
+import { Search, X, Plus, UserCheck } from "lucide-react";
 
 interface UserResult {
-  id: string
-  username: string
-  displayName: string | null
-  avatar: string | null
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatar: string | null;
 }
 
 interface AddParticipantsModalProps {
-  conversationId: string
-  onClose: () => void
-  onAdded: () => void
+  conversationId: string;
+  onClose: () => void;
+  onAdded: () => void;
 }
 
 export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddParticipantsModalProps) {
-  const { t } = useTranslation()
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<UserResult[]>([])
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [adding, setAdding] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<UserResult[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (query.length < 1) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
     const timer = setTimeout(() => {
       api<UserResult[]>(`/api/users/search?q=${encodeURIComponent(query)}`)
         .then(setResults)
-        .catch(() => setResults([]))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [query])
+        .catch(() => setResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const toggleUser = (id: string) => {
     setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const addParticipants = async () => {
-    if (selected.size === 0 || adding) return
-    setAdding(true)
+    if (selected.size === 0 || adding) return;
+    setAdding(true);
     try {
       await api(`/api/conversations/${conversationId}/participants`, {
         method: "POST",
         body: JSON.stringify({ participantIds: Array.from(selected) }),
-      })
-      onAdded()
-      onClose()
+      });
+      onAdded();
+      onClose();
     } catch {
-      setAdding(false)
+      setAdding(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -94,7 +94,7 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
             <p className="text-sm text-text-muted text-center py-4">{t("chat.noUsersFound")}</p>
           )}
           {results.map((u) => {
-            const isSelected = selected.has(u.id)
+            const isSelected = selected.has(u.id);
             return (
               <button
                 key={u.id}
@@ -116,7 +116,7 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
                   <Plus className="h-4 w-4 text-text-muted shrink-0" />
                 )}
               </button>
-            )
+            );
           })}
         </div>
 
@@ -131,5 +131,5 @@ export function AddParticipantsModal({ conversationId, onClose, onAdded }: AddPa
         </div>
       </div>
     </div>
-  )
+  );
 }

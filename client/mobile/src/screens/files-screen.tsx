@@ -1,22 +1,22 @@
-import { View, Text, FlatList, StyleSheet } from "react-native"
-import { useState, useEffect } from "react"
-import { api } from "../lib/api"
+import { View, Text, FlatList, StyleSheet } from "react-native";
+import { useState, useEffect } from "react";
+import { api } from "../lib/api";
 
 interface FileEntry {
-  id: string
-  name: string
-  type: string
-  size: number
+  id: string;
+  name: string;
+  type: string;
+  size: number;
 }
 
 export function FilesScreen() {
-  const [files, setFiles] = useState<FileEntry[]>([])
+  const [files, setFiles] = useState<FileEntry[]>([]);
 
   useEffect(() => {
     api<FileEntry[]>("/api/uploads")
       .then(setFiles)
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   return (
     <View style={s.container}>
@@ -40,7 +40,7 @@ export function FilesScreen() {
         ListEmptyComponent={<Text style={s.empty}>No files shared yet</Text>}
       />
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -52,4 +52,4 @@ const s = StyleSheet.create({
   name: { color: "#F0F0F0", fontSize: 15 },
   meta: { color: "#6B7280", fontSize: 12, marginTop: 2 },
   empty: { color: "#6B7280", textAlign: "center", marginTop: 40, fontSize: 14 },
-})
+});

@@ -1,4 +1,4 @@
-import React from "react"
+import React from "react";
 
 const iconNames = [
   "Activity",
@@ -179,9 +179,9 @@ const iconNames = [
   "ZapOff",
   "ZoomIn",
   "ZoomOut",
-]
+];
 
-const icons: Record<string, React.FC<{ size?: number; color?: string; strokeWidth?: number; className?: string }>> = {}
+const icons: Record<string, React.FC<{ size?: number; color?: string; strokeWidth?: number; className?: string }>> = {};
 
 for (const name of iconNames) {
   icons[name] = ({ size = 24, color = "currentColor", className, ...props }) =>
@@ -197,10 +197,10 @@ for (const name of iconNames) {
       strokeLinejoin: "round",
       className,
       ...props,
-    })
+    });
 }
 
-export default icons
+export default icons;
 export const {
   Search,
   Send,
@@ -333,4 +333,4 @@ export const {
   Volume2,
   VolumeX,
   ExternalLink,
-} = icons
+} = icons;
