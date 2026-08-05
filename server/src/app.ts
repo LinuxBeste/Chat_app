@@ -1,47 +1,47 @@
-import express, { type Express } from "express"
-import cors from "cors"
-import helmet from "helmet"
-import morgan from "morgan"
-import compression from "compression"
-import rateLimit from "express-rate-limit"
-import { resolve, dirname } from "path"
-import { fileURLToPath } from "url"
-import { config } from "./config.js"
+import express, { type Express } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import { config } from "./config.js";
 
-import authRoutes from "./routes/auth.js"
-import userRoutes from "./routes/users.js"
-import conversationRoutes from "./routes/conversations.js"
-import friendRoutes from "./routes/friends.js"
-import moderationRoutes from "./routes/moderation.js"
-import privacyRoutes from "./routes/privacy.js"
-import productivityRoutes from "./routes/productivity.js"
-import { errorHandler } from "./middleware/error-handler.js"
-import developerRoutes from "./routes/developer.js"
-import securityRoutes from "./routes/security.js"
-import uploadRoutes from "./routes/uploads.js"
-import notificationRoutes from "./routes/notifications.js"
-import eventRoutes from "./routes/events.js"
-import communityRoutes from "./routes/communities.js"
-import callRoutes from "./routes/calls.js"
-import themeRoutes from "./routes/themes.js"
-import adminRoutes from "./routes/admin.js"
-import fileRoutes from "./routes/files.js"
-import e2eeRoutes from "./routes/e2ee.js"
+import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
+import conversationRoutes from "./routes/conversations.js";
+import friendRoutes from "./routes/friends.js";
+import moderationRoutes from "./routes/moderation.js";
+import privacyRoutes from "./routes/privacy.js";
+import productivityRoutes from "./routes/productivity.js";
+import { errorHandler } from "./middleware/error-handler.js";
+import developerRoutes from "./routes/developer.js";
+import securityRoutes from "./routes/security.js";
+import uploadRoutes from "./routes/uploads.js";
+import notificationRoutes from "./routes/notifications.js";
+import eventRoutes from "./routes/events.js";
+import communityRoutes from "./routes/communities.js";
+import callRoutes from "./routes/calls.js";
+import themeRoutes from "./routes/themes.js";
+import adminRoutes from "./routes/admin.js";
+import fileRoutes from "./routes/files.js";
+import e2eeRoutes from "./routes/e2ee.js";
 
-const app: Express = express()
+const app: Express = express();
 
-app.use(helmet())
+app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      callback(null, origin || true)
+      callback(null, origin || true);
     },
     credentials: true,
   }),
-)
-app.use(compression())
-app.use(morgan("dev"))
-app.use(express.json())
+);
+app.use(compression());
+app.use(morgan("dev"));
+app.use(express.json());
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -49,35 +49,35 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later" },
-})
-app.use(limiter)
+});
+app.use(limiter);
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-app.use("/uploads", express.static(resolve(__dirname, "..", config.uploads.dir)))
+const __dirname = dirname(fileURLToPath(import.meta.url));
+app.use("/uploads", express.static(resolve(__dirname, "..", config.uploads.dir)));
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", uptime: process.uptime() })
-})
+  res.json({ status: "ok", uptime: process.uptime() });
+});
 
-app.use(`${config.apiPrefix}/auth`, authRoutes)
-app.use(`${config.apiPrefix}/users`, userRoutes)
-app.use(`${config.apiPrefix}/conversations`, conversationRoutes)
-app.use(`${config.apiPrefix}/friends`, friendRoutes)
-app.use(`${config.apiPrefix}/moderation`, moderationRoutes)
-app.use(`${config.apiPrefix}/privacy`, privacyRoutes)
-app.use(`${config.apiPrefix}/productivity`, productivityRoutes)
-app.use(`${config.apiPrefix}/developer`, developerRoutes)
-app.use(`${config.apiPrefix}/notifications`, notificationRoutes)
-app.use(`${config.apiPrefix}/security`, securityRoutes)
-app.use(`${config.apiPrefix}/events`, eventRoutes)
-app.use(`${config.apiPrefix}/communities`, communityRoutes)
-app.use(`${config.apiPrefix}/calls`, callRoutes)
-app.use(`${config.apiPrefix}/uploads`, uploadRoutes)
-app.use(`${config.apiPrefix}/themes`, themeRoutes)
-app.use(`${config.apiPrefix}/admin`, adminRoutes)
-app.use(`${config.apiPrefix}/files`, fileRoutes)
-app.use(`${config.apiPrefix}/e2ee`, e2eeRoutes)
+app.use(`${config.apiPrefix}/auth`, authRoutes);
+app.use(`${config.apiPrefix}/users`, userRoutes);
+app.use(`${config.apiPrefix}/conversations`, conversationRoutes);
+app.use(`${config.apiPrefix}/friends`, friendRoutes);
+app.use(`${config.apiPrefix}/moderation`, moderationRoutes);
+app.use(`${config.apiPrefix}/privacy`, privacyRoutes);
+app.use(`${config.apiPrefix}/productivity`, productivityRoutes);
+app.use(`${config.apiPrefix}/developer`, developerRoutes);
+app.use(`${config.apiPrefix}/notifications`, notificationRoutes);
+app.use(`${config.apiPrefix}/security`, securityRoutes);
+app.use(`${config.apiPrefix}/events`, eventRoutes);
+app.use(`${config.apiPrefix}/communities`, communityRoutes);
+app.use(`${config.apiPrefix}/calls`, callRoutes);
+app.use(`${config.apiPrefix}/uploads`, uploadRoutes);
+app.use(`${config.apiPrefix}/themes`, themeRoutes);
+app.use(`${config.apiPrefix}/admin`, adminRoutes);
+app.use(`${config.apiPrefix}/files`, fileRoutes);
+app.use(`${config.apiPrefix}/e2ee`, e2eeRoutes);
 
-app.use(errorHandler)
+app.use(errorHandler);
 
-export default app
+export default app;

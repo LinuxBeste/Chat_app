@@ -1,10 +1,10 @@
-import { config as loadEnv } from "dotenv"
-import { resolve, dirname } from "path"
-import { fileURLToPath } from "url"
+import { config as loadEnv } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-loadEnv({ path: resolve(__dirname, "..", ".env") })
+loadEnv({ path: resolve(__dirname, "..", ".env") });
 
 export const config = {
   port: parseInt(process.env.PORT ?? "3000", 10),
@@ -56,4 +56,4 @@ export const config = {
     userIds: (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean),
     ownerUserId: process.env.OWNER_USER_ID ?? "",
   },
-} as const
+} as const;

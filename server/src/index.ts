@@ -1,54 +1,54 @@
-import { createServer } from "http"
-import app from "./app.js"
-import { config } from "./config.js"
-import { testConnection } from "./lib/db.js"
-import { createWSServer } from "./ws/index.js"
-import { logger } from "./lib/logger.js"
+import { createServer } from "http";
+import app from "./app.js";
+import { config } from "./config.js";
+import { testConnection } from "./lib/db.js";
+import { createWSServer } from "./ws/index.js";
+import { logger } from "./lib/logger.js";
 
 async function main() {
   if (config.nodeEnv === "production" && config.jwt.secret === "dev-secret-change-me") {
-    logger.fatal("JWT_SECRET must be changed in production")
-    process.exit(1)
+    logger.fatal("JWT_SECRET must be changed in production");
+    process.exit(1);
   }
 
-  logger.info({ nodeEnv: process.env.NODE_ENV, port: config.port, host: config.host }, "Starting server")
-  await testConnection()
+  logger.info({ nodeEnv: process.env.NODE_ENV, port: config.port, host: config.host }, "Starting server");
+  await testConnection();
 
-  const server = createServer(app)
+  const server = createServer(app);
 
-  createWSServer(server)
+  createWSServer(server);
 
   server.listen(config.port, config.host, () => {
-    logger.info({ port: config.port, host: config.host }, `Server listening on http://${config.host}:${config.port}`)
-  })
+    logger.info({ port: config.port, host: config.host }, `Server listening on http://${config.host}:${config.port}`);
+  });
 
   const shutdown = (signal: string) => {
-    logger.info({ signal }, "Shutting down gracefully")
+    logger.info({ signal }, "Shutting down gracefully");
     server.close(() => {
-      logger.info("Server closed")
-      process.exit(0)
-    })
+      logger.info("Server closed");
+      process.exit(0);
+    });
     setTimeout(() => {
-      logger.error("Forced shutdown after timeout")
-      process.exit(1)
-    }, 10000)
-  }
+      logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 10000);
+  };
 
-  process.on("SIGINT", () => shutdown("SIGINT"))
-  process.on("SIGTERM", () => shutdown("SIGTERM"))
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 
   process.on("uncaughtException", (err) => {
-    logger.fatal({ err }, "Uncaught exception")
-    shutdown("uncaughtException")
-  })
+    logger.fatal({ err }, "Uncaught exception");
+    shutdown("uncaughtException");
+  });
 
   process.on("unhandledRejection", (reason) => {
-    logger.fatal({ reason }, "Unhandled promise rejection")
-    shutdown("unhandledRejection")
-  })
+    logger.fatal({ reason }, "Unhandled promise rejection");
+    shutdown("unhandledRejection");
+  });
 }
 
 main().catch((err) => {
-  logger.fatal({ err }, "Failed to start server")
-  process.exit(1)
-})
+  logger.fatal({ err }, "Failed to start server");
+  process.exit(1);
+});

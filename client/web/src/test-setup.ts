@@ -1,37 +1,37 @@
-import "vitest"
-import "@testing-library/jest-dom"
+import "vitest";
+import "@testing-library/jest-dom";
 
 class LocalStorageMock {
-  private store: Record<string, string> = {}
+  private store: Record<string, string> = {};
 
   clear() {
-    this.store = {}
+    this.store = {};
   }
 
   getItem(key: string) {
-    return this.store[key] ?? null
+    return this.store[key] ?? null;
   }
 
   setItem(key: string, value: string) {
-    this.store[key] = value
+    this.store[key] = value;
   }
 
   removeItem(key: string) {
-    delete this.store[key]
+    delete this.store[key];
   }
 
   get length() {
-    return Object.keys(this.store).length
+    return Object.keys(this.store).length;
   }
 
   key(index: number) {
-    return Object.keys(this.store)[index] ?? null
+    return Object.keys(this.store)[index] ?? null;
   }
 }
 
 Object.defineProperty(globalThis, "localStorage", {
   value: new LocalStorageMock(),
-})
+});
 
 Object.defineProperty(globalThis, "matchMedia", {
   writable: true,
@@ -45,4 +45,4 @@ Object.defineProperty(globalThis, "matchMedia", {
     removeEventListener: () => {},
     dispatchEvent: () => false,
   }),
-})
+});

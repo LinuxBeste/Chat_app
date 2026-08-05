@@ -1,17 +1,17 @@
-import { AuthProvider, useAuth } from "./lib/auth-context"
-import { ThemeProvider } from "./lib/theme-context"
-import { NotificationProvider } from "./lib/notification-context"
-import { ToastProvider } from "./lib/toast-context"
-import { isDesktop } from "./lib/utils"
-import { DashboardLayout } from "../../mobile/src/layout/dashboard-layout"
-import { LoginPage } from "./components/auth/login-page"
-import { SetupDialog } from "./components/auth/setup-dialog"
-import { WifiOff, RefreshCw } from "lucide-react"
-import { useState } from "react"
-import "./lib/i18n"
+import { AuthProvider, useAuth } from "./lib/auth-context";
+import { ThemeProvider } from "./lib/theme-context";
+import { NotificationProvider } from "./lib/notification-context";
+import { ToastProvider } from "./lib/toast-context";
+import { isDesktop } from "./lib/utils";
+import { DashboardLayout } from "../../mobile/src/layout/dashboard-layout";
+import { LoginPage } from "./components/auth/login-page";
+import { SetupDialog } from "./components/auth/setup-dialog";
+import { WifiOff, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import "./lib/i18n";
 
 function OfflineScreen({ onRetry }: { onRetry: () => void }) {
-  const [retrying, setRetrying] = useState(false)
+  const [retrying, setRetrying] = useState(false);
 
   return (
     <div className="flex h-screen flex-col items-center justify-center bg-bg-primary px-8">
@@ -22,9 +22,9 @@ function OfflineScreen({ onRetry }: { onRetry: () => void }) {
       <p className="mt-2 max-w-sm text-center text-sm text-text-muted">Reconnect to continue. Your session is safe.</p>
       <button
         onClick={async () => {
-          setRetrying(true)
-          await onRetry()
-          setRetrying(false)
+          setRetrying(true);
+          await onRetry();
+          setRetrying(false);
         }}
         disabled={retrying}
         className="mt-6 flex h-11 items-center gap-2 rounded-2xl bg-accent px-6 text-sm font-medium text-white hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-50"
@@ -33,30 +33,30 @@ function OfflineScreen({ onRetry }: { onRetry: () => void }) {
         {retrying ? "Connecting..." : "Try again"}
       </button>
     </div>
-  )
+  );
 }
 
 function AppContent() {
-  const { user, loading, offline, retry, needsSetup } = useAuth()
+  const { user, loading, offline, retry, needsSetup } = useAuth();
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-bg-primary">
         <p className="text-sm text-text-muted">Loading...</p>
       </div>
-    )
+    );
   }
 
-  if (offline && !user && isDesktop()) return <OfflineScreen onRetry={retry} />
+  if (offline && !user && isDesktop()) return <OfflineScreen onRetry={retry} />;
 
-  if (!user) return <LoginPage />
+  if (!user) return <LoginPage />;
 
   return (
     <>
       <DashboardLayout />
       {needsSetup && <SetupDialog />}
     </>
-  )
+  );
 }
 
 export default function App() {
@@ -70,5 +70,5 @@ export default function App() {
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
-  )
+  );
 }

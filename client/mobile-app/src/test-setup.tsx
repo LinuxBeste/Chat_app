@@ -1,31 +1,31 @@
-import "@testing-library/jest-dom/vitest"
-import { vi } from "vitest"
+import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
 
-const asyncStorage = new Map<string, string>()
+const asyncStorage = new Map<string, string>();
 vi.mock("@react-native-async-storage/async-storage", () => {
   return {
     default: {
       getItem: vi.fn((key: string) => Promise.resolve(asyncStorage.get(key) ?? null)),
       setItem: vi.fn((key: string, value: string) => {
-        asyncStorage.set(key, value)
-        return Promise.resolve()
+        asyncStorage.set(key, value);
+        return Promise.resolve();
       }),
       removeItem: vi.fn((key: string) => {
-        asyncStorage.delete(key)
-        return Promise.resolve()
+        asyncStorage.delete(key);
+        return Promise.resolve();
       }),
       clear: vi.fn(() => {
-        asyncStorage.clear()
-        return Promise.resolve()
+        asyncStorage.clear();
+        return Promise.resolve();
       }),
       getAllKeys: vi.fn(() => Promise.resolve(Array.from(asyncStorage.keys()))),
       multiRemove: vi.fn((keys: string[]) => {
-        for (const key of keys) asyncStorage.delete(key)
-        return Promise.resolve()
+        for (const key of keys) asyncStorage.delete(key);
+        return Promise.resolve();
       }),
     },
-  }
-})
+  };
+});
 
 vi.mock("expo-secure-store", () => {
   return {
@@ -37,34 +37,34 @@ vi.mock("expo-secure-store", () => {
     getItemAsync: vi.fn(() => Promise.resolve(null)),
     setItemAsync: vi.fn(() => Promise.resolve()),
     deleteItemAsync: vi.fn(() => Promise.resolve()),
-  }
-})
+  };
+});
 
 vi.mock("expo-clipboard", () => {
-  return { default: { setStringAsync: vi.fn() }, setStringAsync: vi.fn(), getStringAsync: vi.fn() }
-})
+  return { default: { setStringAsync: vi.fn() }, setStringAsync: vi.fn(), getStringAsync: vi.fn() };
+});
 
 vi.mock("expo-document-picker", () => {
   return {
     default: { getDocumentAsync: vi.fn() },
     getDocumentAsync: vi.fn(() => Promise.resolve({ canceled: true })),
-  }
-})
+  };
+});
 
 vi.mock("expo-image-picker", () => {
   return {
     default: { launchImageLibraryAsync: vi.fn(), requestMediaLibraryPermissionsAsync: vi.fn() },
     launchImageLibraryAsync: vi.fn(() => Promise.resolve({ canceled: true, assets: [] })),
     requestMediaLibraryPermissionsAsync: vi.fn(() => Promise.resolve({ granted: true })),
-  }
-})
+  };
+});
 
 vi.mock("expo-file-system", () => {
   class MockFile {
-    uri: string
-    static downloadFileAsync = vi.fn((_url: string, to: MockFile) => Promise.resolve(to))
+    uri: string;
+    static downloadFileAsync = vi.fn((_url: string, to: MockFile) => Promise.resolve(to));
     constructor(first: string, name?: string) {
-      this.uri = name ? `${first.replace(/\/+$/, "")}/${name}` : first
+      this.uri = name ? `${first.replace(/\/+$/, "")}/${name}` : first;
     }
     copy() {}
   }
@@ -86,15 +86,15 @@ vi.mock("expo-file-system", () => {
     File: MockFile,
     Directory: class {},
     Paths: { cache: "/mock/cache/", document: "/mock/documents/" },
-  }
-})
+  };
+});
 
 vi.mock("expo-web-browser", () => {
   return {
     default: { openBrowserAsync: vi.fn() },
     openBrowserAsync: vi.fn(() => Promise.resolve({ type: "cancel" })),
-  }
-})
+  };
+});
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -151,19 +151,19 @@ vi.mock("react-i18next", () => ({
         "common.create": "Create",
         "common.delete": "Delete",
         "common.save": "Save",
-      }
-      return map[key] ?? key
+      };
+      return map[key] ?? key;
     },
     i18n: { language: "en", changeLanguage: () => {} },
   }),
   initReactI18next: { type: "3rdParty", init: () => {} },
-}))
+}));
 
 vi.mock("react-native-safe-area-context", () => ({
   SafeAreaProvider: ({ children }: any) => children,
   SafeAreaView: ({ children }: any) => children,
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}))
+}));
 
 vi.mock("react-native-gesture-handler", () => ({
   GestureHandlerRootView: ({ children }: any) => children,
@@ -172,14 +172,14 @@ vi.mock("react-native-gesture-handler", () => ({
   PanGestureHandler: ({ children }: any) => children,
   TapGestureHandler: ({ children }: any) => children,
   LongPressGestureHandler: ({ children }: any) => children,
-}))
+}));
 
 vi.mock("react-native-gesture-handler", async () => {
-  const React = await import("react")
+  const React = await import("react");
   const ce = (type: string, props: any, ...children: any[]) =>
-    ((React as any).default || React).createElement(type, props, ...children)
-  const MockView = ({ children, ...props }: any) => ce("div", props, children)
-  MockView.displayName = "GestureHandlerRootView"
+    ((React as any).default || React).createElement(type, props, ...children);
+  const MockView = ({ children, ...props }: any) => ce("div", props, children);
+  MockView.displayName = "GestureHandlerRootView";
   return {
     GestureHandlerRootView: MockView,
     Gesture: { Tap: () => {}, Pan: () => {}, Pinch: () => {}, Rotation: () => {} },
@@ -187,5 +187,5 @@ vi.mock("react-native-gesture-handler", async () => {
     PanGestureHandler: MockView,
     TapGestureHandler: MockView,
     LongPressGestureHandler: MockView,
-  }
-})
+  };
+});
