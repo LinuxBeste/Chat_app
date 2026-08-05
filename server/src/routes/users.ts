@@ -150,31 +150,6 @@ router.get(
 )
 
 router.get(
-  "/:id",
-  authGuard,
-  catchAsync(async (req: Request, res: Response) => {
-    const [user] = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        displayName: users.displayName,
-        avatar: users.avatar,
-        status: users.status,
-      })
-      .from(users)
-      .where(eq(users.id, req.params.id as string))
-      .limit(1)
-
-    if (!user) {
-      res.status(404).json({ error: "User not found" })
-      return
-    }
-
-    res.json(user)
-  }),
-)
-
-router.get(
   "/preferences",
   authGuard,
   catchAsync(async (req: Request, res: Response) => {
@@ -193,6 +168,37 @@ router.put(
       .values({ userId: req.user!.userId, preferences: prefs })
       .onConflictDoUpdate({ target: userPreferences.userId, set: { preferences: prefs, updatedAt: new Date() } })
     res.json(req.body)
+  }),
+)
+
+router.get(
+  "/:id",
+  authGuard,
+  catchAsync(async (req: Request, res: Response) => {
+    const idParam = req.params.id as string
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_RE.test(idParam)) {
+      res.status(404).json({ error: "User not found" })
+      return
+    }
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatar: users.avatar,
+        status: users.status,
+      })
+      .from(users)
+      .where(eq(users.id, idParam))
+      .limit(1)
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" })
+      return
+    }
+
+    res.json(user)
   }),
 )
 

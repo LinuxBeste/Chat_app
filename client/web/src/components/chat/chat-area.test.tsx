@@ -65,6 +65,7 @@ vi.mock("../../lib/api", () => ({
   }),
   apiFormData: vi.fn(),
   BASE_URL: "",
+  resolveAssetUrl: (url: string) => url,
 }))
 
 vi.mock("../../lib/ws", () => ({

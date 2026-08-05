@@ -6,8 +6,8 @@ import { db } from "../lib/db.js"
 import { validate } from "../middleware/validate.js"
 import { authGuard } from "../middleware/auth.js"
 import { catchAsync } from "../middleware/error-handler.js"
-import { conversations, participants, messages, users, attachments, mutes } from "../db/schema.js"
-import { eq, and, desc, sql } from "drizzle-orm"
+import { conversations, participants, messages, users, attachments, mutes, reactions } from "../db/schema.js"
+import { eq, and, desc, sql, inArray, isNull } from "drizzle-orm"
 import { createContextLogger } from "../lib/logger.js"
 import { clients, sendToConversation } from "../ws/clients.js"
 import { saveAvatar } from "../lib/image.js"
@@ -176,7 +176,43 @@ router.get(
       }),
     )
 
-    res.json(enriched)
+    const ids = enriched.map((c) => c.id)
+    const lastRows = ids.length
+      ? await db
+          .selectDistinctOn([messages.conversationId], {
+            conversationId: messages.conversationId,
+            content: messages.content,
+            createdAt: messages.createdAt,
+            senderId: messages.senderId,
+            senderUsername: users.username,
+            senderDisplayName: users.displayName,
+          })
+          .from(messages)
+          .innerJoin(users, eq(users.id, messages.senderId))
+          .where(and(inArray(messages.conversationId, ids), isNull(messages.deletedAt)))
+          .orderBy(messages.conversationId, desc(messages.createdAt))
+      : []
+    const lastByConv = new Map(lastRows.map((r) => [r.conversationId, r]))
+
+    res.json(
+      enriched.map((conv) => {
+        const last = lastByConv.get(conv.id)
+        return {
+          ...conv,
+          lastMessage: last
+            ? {
+                content: last.content,
+                createdAt: last.createdAt,
+                sender: {
+                  id: last.senderId,
+                  username: last.senderUsername,
+                  displayName: last.senderDisplayName,
+                },
+              }
+            : null,
+        }
+      }),
+    )
   }),
 )
 
@@ -448,7 +484,26 @@ router.get(
       .limit(limit)
       .offset(offset)
 
-    res.json(msgs.reverse())
+    const list = msgs.reverse()
+    if (list.length > 0) {
+      const ids = list.map((m) => m.id)
+      const reactionRows = await db
+        .select({ messageId: reactions.messageId, emoji: reactions.emoji, userId: reactions.userId, username: users.username })
+        .from(reactions)
+        .innerJoin(users, eq(users.id, reactions.userId))
+        .where(inArray(reactions.messageId, ids))
+      const byMessage = new Map<string, typeof reactionRows>()
+      reactionRows.forEach((r) => {
+        const arr = byMessage.get(r.messageId) ?? []
+        arr.push(r)
+        byMessage.set(r.messageId, arr)
+      })
+      list.forEach((m) => {
+        ;(m as any).reactions = byMessage.get(m.id) ?? []
+      })
+    }
+
+    res.json(list)
   }),
 )
 

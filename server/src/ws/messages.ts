@@ -1,5 +1,5 @@
 import { db } from "../lib/db.js"
-import { messages, participants, users, attachments } from "../db/schema.js"
+import { messages, participants, users, attachments, reactions } from "../db/schema.js"
 import { eq, and } from "drizzle-orm"
 import { getRedis } from "../lib/redis.js"
 import { WebSocket } from "ws"
@@ -44,6 +44,13 @@ interface DeleteMessagePayload {
 interface TypingPayload {
   type: "message:typing"
   conversationId: string
+}
+
+interface ReactionPayload {
+  type: "message:reaction"
+  messageId: string
+  conversationId: string
+  emoji: string
 }
 
 export async function handleSendMessage(ws: WebSocket, payload: SendMessagePayload, userId: string, _username: string) {
@@ -139,6 +146,77 @@ export async function handleTyping(_ws: WebSocket, payload: TypingPayload, userI
     redis.publish(`chat:conversation:${payload.conversationId}`, JSON.stringify(event))
   }
   sendToConversation(payload.conversationId, event, userId)
+}
+
+export async function handleReaction(ws: WebSocket, payload: ReactionPayload, userId: string) {
+  try {
+    const isMember = await db
+      .select()
+      .from(participants)
+      .where(and(eq(participants.conversationId, payload.conversationId), eq(participants.userId, userId)))
+      .limit(1)
+    if (isMember.length === 0) {
+      ws.send(JSON.stringify({ type: "error", error: "Not a member of this conversation" }))
+      return
+    }
+    const [msg] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.id, payload.messageId), eq(messages.conversationId, payload.conversationId)))
+      .limit(1)
+    if (!msg) {
+      ws.send(JSON.stringify({ type: "error", error: "Message not found" }))
+      return
+    }
+    const existing = await db
+      .select()
+      .from(reactions)
+      .where(
+        and(
+          eq(reactions.messageId, payload.messageId),
+          eq(reactions.userId, userId),
+          eq(reactions.emoji, payload.emoji),
+        ),
+      )
+      .limit(1)
+    if (existing.length > 0) {
+      await db
+        .delete(reactions)
+        .where(
+          and(
+            eq(reactions.messageId, payload.messageId),
+            eq(reactions.userId, userId),
+            eq(reactions.emoji, payload.emoji),
+          ),
+        )
+    } else {
+      await db.insert(reactions).values({ messageId: payload.messageId, userId, emoji: payload.emoji })
+    }
+
+    const list = await db
+      .select({ emoji: reactions.emoji, userId: reactions.userId, username: users.username })
+      .from(reactions)
+      .innerJoin(users, eq(users.id, reactions.userId))
+      .where(eq(reactions.messageId, payload.messageId))
+
+    const event = {
+      type: "message:reaction" as const,
+      messageId: payload.messageId,
+      conversationId: payload.conversationId,
+      reactions: list,
+    }
+    const redis = getRedis()
+    if (redis) {
+      redis.publish(`chat:conversation:${payload.conversationId}`, JSON.stringify(event))
+    } else {
+      sendToConversation(payload.conversationId, event, userId)
+    }
+    ws.send(JSON.stringify(event))
+    log.info({ messageId: payload.messageId, emoji: payload.emoji, count: list.length }, "Message reaction toggled")
+  } catch (err) {
+    log.error({ err, messageId: payload.messageId }, "Reaction failed")
+    ws.send(JSON.stringify({ type: "error", error: "Failed to react to message" }))
+  }
 }
 
 export async function handleEditMessage(ws: WebSocket, payload: EditMessagePayload, userId: string) {

@@ -312,21 +312,27 @@ export function ChatScreen({
 
   const loadPinnedMessages = async () => {
     try {
-      const data = await api<any[]>(`/api/pins/${conversationId}`)
-      setPinnedMessages(data)
+      const data = await api<any[]>(`/api/productivity/pins/${conversationId}`)
+      setPinnedMessages(
+        data.map((p) => ({
+          id: p.id,
+          content: p.messageContent,
+          sender: { username: p.senderUsername },
+        })),
+      )
     } catch {}
   }
 
   const pinMessage = async (messageId: string) => {
     try {
-      await api("/api/pins", { method: "POST", body: JSON.stringify({ conversationId, messageId }) })
+      await api("/api/productivity/pins", { method: "POST", body: JSON.stringify({ conversationId, messageId }) })
       loadPinnedMessages()
     } catch {}
   }
 
   const unpinMessage = async (messageId: string) => {
     try {
-      await api(`/api/pins/${conversationId}/${messageId}`, { method: "DELETE" })
+      await api(`/api/productivity/pins/${conversationId}/${messageId}`, { method: "DELETE" })
       loadPinnedMessages()
     } catch {}
   }
@@ -540,7 +546,7 @@ export function ChatScreen({
           setMessages((p) => p.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions || [] } : m)))
         }
       }),
-      wsClient.on("typing:indicator", (data: any) => {
+      wsClient.on("message:typing", (data: any) => {
         if (data.conversationId === conversationId && data.userId !== user!.id) {
           setTypingUsers((p) => (p.includes(data.userId) ? p : [...p, data.userId]))
           clearTimeout(typingTimer.current)
@@ -683,7 +689,7 @@ export function ChatScreen({
 
   const handleInputChange = (text: string) => {
     setInput(text)
-    wsClient.send("typing:indicator", { conversationId })
+    wsClient.send("message:typing", { conversationId })
   }
 
   const MAX_FILE_BYTES = 25 * 1024 * 1024
@@ -943,16 +949,17 @@ export function ChatScreen({
         }}
         style={[mb.bubbleWrap, me ? mb.me : mb.them]}
       >
-        {!me && !isDeleted && item.sender && (
-          <Text
-            style={[
-              mb.sender,
-              { color: coloredSenderNames ? senderColor(item.sender.id || item.sender.username || "") : "#B9C2C8" },
-            ]}
-          >
-            {item.sender.displayName ?? item.sender.username}
-          </Text>
-        )}
+        <View style={[mb.col, me ? mb.colMe : mb.colThem]}>
+          {!me && !isDeleted && item.sender && (
+            <Text
+              style={[
+                mb.sender,
+                { color: coloredSenderNames ? senderColor(item.sender.id || item.sender.username || "") : "#B9C2C8" },
+              ]}
+            >
+              {item.sender.displayName ?? item.sender.username}
+            </Text>
+          )}
         <View
           style={[
             mb.bubble,
@@ -1022,6 +1029,7 @@ export function ChatScreen({
             </Text>
             {item.editedAt && !isDeleted && <Text style={[mb.time, me && mb.timeMe]}>edited</Text>}
           </View>
+        </View>
         </View>
       </TouchableOpacity>
     )
@@ -1611,8 +1619,11 @@ const mb = StyleSheet.create({
   bubbleWrap: { flexDirection: "row", marginBottom: 4, paddingHorizontal: 12, alignItems: "flex-end" },
   me: { justifyContent: "flex-end" },
   them: { justifyContent: "flex-start" },
+  col: { flexDirection: "column", maxWidth: "80%" },
+  colMe: { alignItems: "flex-end" },
+  colThem: { alignItems: "flex-start" },
   bubble: {
-    maxWidth: "80%",
+    maxWidth: "100%",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 7,

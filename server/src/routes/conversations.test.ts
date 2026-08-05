@@ -37,6 +37,7 @@ vi.mock("../lib/db.js", () => {
   return {
     db: {
       select: vi.fn(() => chain),
+      selectDistinctOn: vi.fn(() => chain),
       insert: vi.fn(() => chain),
       update: vi.fn(() => chain),
       delete: vi.fn(() => chain),

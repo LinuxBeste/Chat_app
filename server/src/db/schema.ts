@@ -285,6 +285,25 @@ export const pinnedMessages = pgTable(
   }),
 )
 
+export const reactions = pgTable(
+  "reactions",
+  {
+    messageId: uuid("message_id")
+      .references(() => messages.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    messageUserEmojiUnique: uniqueIndex("reactions_message_user_emoji_idx").on(table.messageId, table.userId, table.emoji),
+    messageIdIdx: index("reactions_message_id_idx").on(table.messageId),
+    userIdIdx: index("reactions_user_id_idx").on(table.userId),
+  }),
+)
+
 export const webhooks = pgTable(
   "webhooks",
   {

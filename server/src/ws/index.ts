@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws"
 import { IncomingMessage as HttpMessage } from "http"
 import { verifyToken } from "../lib/jwt.js"
 import { config } from "../config.js"
-import { handleSendMessage, handleTyping, handleEditMessage, handleDeleteMessage } from "./messages.js"
+import { handleSendMessage, handleTyping, handleReaction, handleEditMessage, handleDeleteMessage } from "./messages.js"
 import { updatePresence } from "./presence.js"
 import { handleCallOffer, handleCallAnswer, handleCallIceCandidate, handleCallEnd } from "./calls.js"
 import {
@@ -124,6 +124,9 @@ export function createWSServer(server: import("http").Server) {
               break
             case "message:typing":
               await handleTyping(ws, msg as any, user!.userId)
+              break
+            case "message:reaction":
+              await handleReaction(ws, msg as any, user!.userId)
               break
             case "message:edit":
               await handleEditMessage(ws, msg as any, user!.userId)

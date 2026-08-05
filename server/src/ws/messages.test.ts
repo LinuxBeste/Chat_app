@@ -8,6 +8,7 @@ const { mockChain, mockSelect, mockInsert, mockUpdate, mockLimit } = vi.hoisted(
     finally: (handler: any) => Promise.resolve(mockChain.current).finally(handler),
     from: vi.fn(() => chain),
     where: vi.fn(() => chain),
+    innerJoin: vi.fn(() => chain),
     limit: mLimit,
     returning: vi.fn(() => chain),
     values: vi.fn(() => ({ returning: chain.returning })),
@@ -52,7 +53,7 @@ vi.mock("./clients.js", () => ({
 }))
 
 import { getRedis } from "../lib/redis.js"
-import { handleSendMessage, handleTyping, handleEditMessage, handleDeleteMessage } from "./messages.js"
+import { handleSendMessage, handleTyping, handleReaction, handleEditMessage, handleDeleteMessage } from "./messages.js"
 
 const mockWs = { send: vi.fn() } as any
 
@@ -268,6 +269,52 @@ describe("handleTyping", () => {
       handleTyping(mockWs, { type: "message:typing", conversationId: "conv1" }, "user1"),
     ).resolves.toBeUndefined()
     expect(mockSendToConversation).toHaveBeenCalled()
+  })
+})
+
+describe("handleReaction", () => {
+  const payload = { type: "message:reaction" as const, messageId: "msg1", conversationId: "conv1", emoji: "❤️" }
+
+  it("rejects non-members", async () => {
+    mockChain.current = []
+
+    await handleReaction(mockWs, payload, "user1")
+
+    expect(mockWs.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: "error", error: "Not a member of this conversation" }),
+    )
+    expect(mockSendToConversation).not.toHaveBeenCalled()
+  })
+
+  it("toggles a reaction off when already reacted and broadcasts the list", async () => {
+    vi.mocked(getRedis).mockReturnValue(null)
+    mockChain.current = [{ userId: "user1", conversationId: "conv1", emoji: "❤️", username: "user1" }]
+
+    await handleReaction(mockWs, payload, "user1")
+
+    expect(mockWs.send).not.toHaveBeenCalledWith(
+      JSON.stringify({ type: "error", error: "Message not found" }),
+    )
+    const event = {
+      type: "message:reaction",
+      messageId: "msg1",
+      conversationId: "conv1",
+      reactions: mockChain.current,
+    }
+    expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify(event))
+    expect(mockSendToConversation).toHaveBeenCalledWith("conv1", event, "user1")
+  })
+
+  it("publishes via redis when available", async () => {
+    const mockRedis = { publish: mockRedisPublish }
+    vi.mocked(getRedis).mockReturnValue(mockRedis as any)
+    mockChain.current = [{ userId: "user1", conversationId: "conv1", emoji: "❤️", username: "user1" }]
+
+    await handleReaction(mockWs, payload, "user1")
+
+    expect(mockRedisPublish).toHaveBeenCalledWith("chat:conversation:conv1", expect.stringContaining("message:reaction"))
+    expect(mockSendToConversation).not.toHaveBeenCalled()
+    expect(mockWs.send).toHaveBeenCalled()
   })
 })
 
